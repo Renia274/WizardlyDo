@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "781929258268",
+    "project_id": "wizardlydo-825e5",
+    "storage_bucket": "wizardlydo-825e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:781929258268:android:2c0eb81a5bcdb556502ed9",
+        "android_client_info": {
+          "package_name": "com.example.wizardlydo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvudCgvCpHGjxXIqYfBI4pl89xmghuQ2k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
