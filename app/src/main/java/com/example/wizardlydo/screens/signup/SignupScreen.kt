@@ -1,8 +1,7 @@
 package com.example.wizardlydo.screens.signup
 
 import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -41,6 +40,8 @@ fun SignupScreen(
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
 
+
+
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -68,7 +69,7 @@ fun SignupScreen(
 
             EmailField(
                 email = state.email,
-                onEmailChange = viewModel::onEmailChange,
+                onEmailChange = viewModel.updateEmail(),
                 emailError = state.emailError,
                 enabled = !state.loading
             )
@@ -77,7 +78,7 @@ fun SignupScreen(
 
             PasswordField(
                 password = state.password,
-                onPasswordChange = viewModel::onPasswordChange,
+                onPasswordChange = viewModel.updatePassword(),
                 passwordError = state.passwordError,
                 enabled = !state.loading
             )
@@ -85,7 +86,7 @@ fun SignupScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             SignupButton(
-                onClick = viewModel::signupWithEmail,
+                onClick = viewModel.signUpWithEmail(),
                 isLoading = state.loading,
                 enabled = !state.loading
             )
@@ -95,7 +96,7 @@ fun SignupScreen(
             GoogleSignInButton(
                 onClick = {
                     googleSignInLauncher.launch(
-                        viewModel.credentialManager.createGetCredentialIntent(viewModel.signInRequest)
+                        viewModel.handleGoogleSignIn()
                     )
                 },
                 enabled = !state.loading

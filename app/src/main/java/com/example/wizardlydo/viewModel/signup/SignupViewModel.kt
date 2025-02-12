@@ -47,7 +47,7 @@ class SignupViewModel @Inject constructor(
                     _state.value.password
                 ).await()
                 _state.value = _state.value.copy(
-                    success = true,
+                    authSuccess = true,
                     loading = false,
                     error = null
                 )
@@ -68,7 +68,7 @@ class SignupViewModel @Inject constructor(
                 val credential = GoogleAuthProvider.getCredential(token, null)
                 auth.signInWithCredential(credential).await()
                 _state.value = _state.value.copy(
-                    success = true,
+                    authSuccess = true,
                     loading = false,
                     error = null
                 )
