@@ -2,9 +2,8 @@ package com.example.wizardlydo.navigation.screens
 
 
 
-sealed class Navigation(val route: String) {
-    object Screen {
-        object Splash : Navigation("splash")
-        object Main : Navigation("main")
-    }
+sealed class Screen(val route: String) {
+    data object Splash : Screen("splash")
+    data object Signup : Screen("signup")
+
 }

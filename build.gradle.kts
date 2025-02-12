@@ -2,12 +2,11 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
-    alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.google.services) apply false
-//    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0" apply false
-//    id("com.google.dagger.hilt.android") version "2.48" apply false
-    alias(libs.plugins.kotlin.serialization) apply false // New alias
-    alias(libs.plugins.hilt.android) apply false         // New alias
+    alias(libs.plugins.compose.compiler) apply false
+ // New alias
+           // New alias
+    alias(libs.plugins.org.jetbrains.kotlin.kapt) apply false
 
 }
 
