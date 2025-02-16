@@ -1,12 +1,9 @@
 package com.example.wizardlydo.viewModel.signup
 
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wizardlydo.R
 import com.example.wizardlydo.viewModel.signup.data.SignupState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -97,6 +94,4 @@ class SignupViewModel @Inject constructor(
     fun clearError() {
         _state.value = _state.value.copy(error = null)
     }
-
-
 }

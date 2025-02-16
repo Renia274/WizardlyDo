@@ -16,24 +16,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
 
-
 @Composable
-fun SplashScreen(navController: NavController) {
+fun SplashScreen(
+    navigateToSignup: () -> Unit
+) {
     LaunchedEffect(key1 = true) {
         delay(2000)
-        navController.navigate("main_screen") {
-            popUpTo(0)
-        }
+        navigateToSignup()
     }
 
     SplashContent()
 }
-
-
 
 @Composable
 fun SplashContent() {
@@ -179,10 +174,8 @@ fun SplashContent() {
     }
 }
 
-
-
 @Preview(showBackground = true)
 @Composable
 fun WizardSplashPreview() {
-    WizardSplashScreen(rememberNavController())
+    SplashContent()
 }

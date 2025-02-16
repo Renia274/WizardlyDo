@@ -1,7 +1,6 @@
 package com.example.wizardlydo.screens.signup
 
 import android.app.Activity
-
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -22,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.wizardlydo.R
 import com.example.wizardlydo.screens.signup.comps.EmailField
 import com.example.wizardlydo.screens.signup.comps.ErrorDialogComponent
 import com.example.wizardlydo.screens.signup.comps.GoogleSignInButton
@@ -30,6 +30,8 @@ import com.example.wizardlydo.screens.signup.comps.PasswordField
 import com.example.wizardlydo.screens.signup.comps.SignupButton
 import com.example.wizardlydo.screens.signup.comps.SignupHeader
 import com.example.wizardlydo.viewModel.signup.SignupViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 @Composable
 fun SignupScreen(
@@ -40,14 +42,24 @@ fun SignupScreen(
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
 
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(context.getString(R.string.default_web_client_id))
+        .requestEmail()
+        .build()
 
+    val googleSignInClient = GoogleSignIn.getClient(context, gso)
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            LaunchedEffect(Unit) {
-                viewModel.handleGoogleSignIn()
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            task.addOnSuccessListener { account ->
+                account.idToken?.let { token ->
+                    viewModel.handleGoogleSignIn(token)
+                }
+            }.addOnFailureListener {
+                viewModel.clearError()
             }
         }
     }
@@ -69,7 +81,7 @@ fun SignupScreen(
 
             EmailField(
                 email = state.email,
-                onEmailChange = viewModel.updateEmail(),
+                onEmailChange = { viewModel.updateEmail(it) },
                 emailError = state.emailError,
                 enabled = !state.loading
             )
@@ -78,7 +90,7 @@ fun SignupScreen(
 
             PasswordField(
                 password = state.password,
-                onPasswordChange = viewModel.updatePassword(),
+                onPasswordChange = { viewModel.updatePassword(it) },
                 passwordError = state.passwordError,
                 enabled = !state.loading
             )
@@ -86,7 +98,7 @@ fun SignupScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             SignupButton(
-                onClick = viewModel.signUpWithEmail(),
+                onClick = { viewModel.signUpWithEmail() },
                 isLoading = state.loading,
                 enabled = !state.loading
             )
@@ -95,9 +107,7 @@ fun SignupScreen(
 
             GoogleSignInButton(
                 onClick = {
-                    googleSignInLauncher.launch(
-                        viewModel.handleGoogleSignIn()
-                    )
+                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
                 },
                 enabled = !state.loading
             )
