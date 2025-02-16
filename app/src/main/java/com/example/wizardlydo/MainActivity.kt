@@ -12,6 +12,7 @@ import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,12 +20,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             WizardlyDoTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     NavigationGraph()
+
                 }
             }
         }
     }
+
+
 }
+

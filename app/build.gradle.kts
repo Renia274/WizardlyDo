@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.org.jetbrains.kotlin.kapt)
+
 }
 
 android {
@@ -68,9 +69,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.auth)
 
-    // Hilt
-    implementation(libs.hilt.android)
-    implementation(libs.hilt.navigation.compose)
+
 
     // Testing
     testImplementation(libs.junit)
@@ -105,6 +104,16 @@ dependencies {
 
     implementation ("androidx.credentials:credentials-play-services-auth:1.2.2")
 
+
+    //Koin
+    // Koin Core
+    implementation (libs.koin.core)
+
+    // Koin Android
+    implementation (libs.koin.android)
+
+    // Koin Compose
+    implementation (libs.koin.androidx.compose)
 
 
 
