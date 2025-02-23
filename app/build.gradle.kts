@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.services)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.org.jetbrains.kotlin.kapt)
+   // alias(libs.plugins.org.jetbrains.kotlin.kapt)
 
 }
 
@@ -114,6 +114,9 @@ dependencies {
 
     // Koin Compose
     implementation (libs.koin.androidx.compose)
+
+    //Firestore
+    implementation (libs.google.firebase.firestore)
 
 
 

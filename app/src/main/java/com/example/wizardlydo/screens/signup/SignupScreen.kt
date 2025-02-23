@@ -3,13 +3,7 @@ package com.example.wizardlydo.screens.signup
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -20,22 +14,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.wizardlydo.R
-import com.example.wizardlydo.screens.signup.comps.EmailField
-import com.example.wizardlydo.screens.signup.comps.ErrorDialogComponent
-import com.example.wizardlydo.screens.signup.comps.GoogleSignInButton
-import com.example.wizardlydo.screens.signup.comps.LoginRedirectButton
-import com.example.wizardlydo.screens.signup.comps.PasswordField
-import com.example.wizardlydo.screens.signup.comps.SignupButton
-import com.example.wizardlydo.screens.signup.comps.SignupHeader
-import com.example.wizardlydo.viewModel.signup.SignupViewModel
+import com.example.wizardlydo.WizardAuthViewModel
+import com.example.wizardlydo.screens.signup.comps.*
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.GoogleAuthProvider
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SignupScreen(
-    viewModel: SignupViewModel = hiltViewModel(),
+    viewModel: WizardAuthViewModel = koinViewModel(),
     onLoginClick: () -> Unit,
     onSignupSuccess: () -> Unit
 ) {
@@ -55,17 +44,16 @@ fun SignupScreen(
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             task.addOnSuccessListener { account ->
-                account.idToken?.let { token ->
-                    viewModel.handleGoogleSignIn(token)
-                }
+                val credential = GoogleAuthProvider.getCredential(account.idToken!!, null)
+                viewModel.handleGoogleSignIn(credential)
             }.addOnFailureListener {
-                viewModel.clearError()
+                viewModel.handleError("Google sign-in failed")
             }
         }
     }
 
-    LaunchedEffect(state.authSuccess) {
-        if (state.authSuccess) onSignupSuccess()
+    LaunchedEffect(state.isProfileComplete) {
+        if (state.isProfileComplete) onSignupSuccess()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -79,51 +67,70 @@ fun SignupScreen(
             SignupHeader()
             Spacer(modifier = Modifier.height(32.dp))
 
+            WizardNameField(
+                name = state.wizardName,
+                onNameChange = viewModel::updateWizardName,
+                error = state.error?.takeIf { it.contains("Wizard name") },
+                enabled = !state.isLoading
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            WizardClassSelector(
+                selectedClass = state.wizardClass,
+                onClassSelected = viewModel::updateWizardClass,
+                enabled = !state.isLoading
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             EmailField(
                 email = state.email,
-                onEmailChange = { viewModel.updateEmail(it) },
-                emailError = state.emailError,
-                enabled = !state.loading
+                onEmailChange = viewModel::updateEmail,
+                emailError = state.error?.takeIf { it.contains("email") },
+                enabled = !state.isLoading
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             PasswordField(
                 password = state.password,
-                onPasswordChange = { viewModel.updatePassword(it) },
-                passwordError = state.passwordError,
-                enabled = !state.loading
+                onPasswordChange = viewModel::updatePassword,
+                passwordError = state.error?.takeIf { it.contains("Password") },
+                enabled = !state.isLoading
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             SignupButton(
-                onClick = { viewModel.signUpWithEmail() },
-                isLoading = state.loading,
-                enabled = !state.loading
+                onClick = viewModel::signUpWithEmail,
+                isLoading = state.isLoading,
+                enabled = !state.isLoading && viewModel.isFormValid
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             GoogleSignInButton(
                 onClick = {
-                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    if (viewModel.validateForm()) {
+                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    }
                 },
-                enabled = !state.loading
+                enabled = !state.isLoading && viewModel.isFormValid
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             LoginRedirectButton(
                 onClick = onLoginClick,
-                enabled = !state.loading
+                enabled = !state.isLoading
             )
         }
 
         state.error?.let { error ->
             ErrorDialogComponent(
                 error = error,
-                onDismiss = viewModel::clearError
+                onDismiss = { viewModel.handleError(null) }
             )
         }
     }

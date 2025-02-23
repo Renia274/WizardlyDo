@@ -6,7 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.wizardlydo.navigation.screens.Screen
 import com.example.wizardlydo.screens.splash.SplashScreen
-import com.example.wizardlydo.screens.signup.SignupScreen as SignupScreen1
+import com.example.wizardlydo.screens.signup.SignupScreen
 
 
 @Composable
@@ -28,15 +28,15 @@ fun NavigationGraph() {
         }
 
         composable(Screen.Signup.route) {
-            SignupScreen1(
+            SignupScreen(
                 onSignupSuccess = {
-                    // Navigate to main screen after successful signup
-                    // Add your main screen route when ready
+
                 },
                 onLoginClick = {
-                    // Navigate to login screen when added
+
                 }
             )
         }
+
     }
 }

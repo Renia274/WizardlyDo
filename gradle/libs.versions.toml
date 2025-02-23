@@ -5,8 +5,7 @@ coilCompose = "2.7.0"
 constraintlayoutCompose = "1.1.0"
 firebaseBom = "33.9.0"
 firebaseUiAuth = "8.0.2"
-hilt = "2.48"
-hiltCompiler = "2.53.1"
+
 koinAndroid = "3.5.3"
 koinAndroidxCompose = "3.5.3"
 koinCore = "3.5.3"
@@ -51,6 +50,7 @@ firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore
 
 # Google
 firebase-ui-auth = { module = "com.firebaseui:firebase-ui-auth", version.ref = "firebaseUiAuth" }
+google-firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinAndroid" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koinAndroidxCompose" }
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koinCore" }

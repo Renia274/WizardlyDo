@@ -1,122 +1,181 @@
 package com.example.wizardlydo
 
-import android.content.Context
-import android.content.Intent
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import java.util.regex.Pattern
 
-
-sealed class AuthState {
-    data object Initial : AuthState()
-    data object Loading : AuthState()
-    data class Success(val user: FirebaseUser?) : AuthState()
-    data class Error(val message: String) : AuthState()
-    data class EmailSignUpSuccess(val user: FirebaseUser?) : AuthState()
-    data class EmailSignUpError(val message: String) : AuthState()
-
-
-}
-
-data class LoginState(
+data class WizardSignUpState(
     val email: String = "",
     val password: String = "",
+    val wizardName: String = "",
+    val wizardClass: WizardClass = WizardClass.MYSTWEAVER,
     val isLoading: Boolean = false,
-    val error: String? = null,
-    val user: FirebaseUser? = null
+    val isProfileComplete: Boolean = false,
+    val error: String? = null
 )
 
-class AuthViewModel(
-    private val auth: FirebaseAuth,
-    private val context: Context
-) : ViewModel() {
+class WizardAuthViewModel: ViewModel(), KoinComponent{
+    private val auth: FirebaseAuth by inject()
+    private val firestoreManager: WizardFirestoreManager by inject()
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Initial)
-    val authState = _authState.asStateFlow()
+    private val _state = MutableStateFlow(WizardSignUpState())
+    val state = _state.asStateFlow()
 
-    private val _loginState = MutableStateFlow(LoginState())
-    val loginState = _loginState.asStateFlow()
+    val isFormValid: Boolean
+        get() = _state.value.wizardName.isNotBlank() &&
+                _state.value.email.isNotBlank() &&
+                _state.value.password.isNotBlank()
 
-    // Email/Password Sign Up
-    fun signUpWithEmail(email: String, password: String) {
-        if (!isValidEmail(email)) {
-            _authState.value = AuthState.EmailSignUpError("Invalid email format")
-            return
-        }
+    fun signUpWithEmail() {
+        if (!validateForm()) return
 
-        if (password.length < 6) {
-            _authState.value = AuthState.EmailSignUpError("Password must be at least 6 characters")
-            return
-        }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            try {
+                val result = auth.createUserWithEmailAndPassword(
+                    _state.value.email,
+                    _state.value.password
+                ).await()
 
-        _authState.value = AuthState.Loading
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    _authState.value = AuthState.EmailSignUpSuccess(auth.currentUser)
-                    _loginState.value = loginState.value.copy(
-                        user = auth.currentUser,
-                        isLoading = false
-                    )
-                } else {
-                    _authState.value = AuthState.EmailSignUpError(
-                        task.exception?.message ?: "Registration failed"
-                    )
-                    _loginState.value = loginState.value.copy(
-                        isLoading = false,
-                        error = task.exception?.message
+                result.user?.let { user ->
+                    createWizardProfile(
+                        userId = user.uid,
+                        provider = SignInProvider.EMAIL
                     )
                 }
+            } catch (e: Exception) {
+                handleError("Sign up failed: ${e.message}")
             }
-    }
-
-    // Google Sign-In
-    private val googleSignInClient by lazy {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(context.getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-
-        GoogleSignIn.getClient(context, gso)
-    }
-
-    fun handleGoogleSignInResult(data: Intent?) {
-        _authState.value = AuthState.Loading
-        try {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            val account = task.getResult(ApiException::class.java)
-            firebaseAuthWithGoogle(account.idToken!!)
-        } catch (e: Exception) {
-            _authState.value = AuthState.Error(e.message ?: "Google sign-in failed")
         }
     }
 
-    private fun firebaseAuthWithGoogle(idToken: String) {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(credential)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    _authState.value = AuthState.Success(auth.currentUser)
-                } else {
-                    _authState.value = AuthState.Error(
-                        task.exception?.message ?: "Authentication failed"
-                    )
-                }
+    fun handleGoogleSignIn(credential: AuthCredential) {
+        if (!validateForm()) return
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            try {
+                // Authenticate with Firebase
+                val authResult = auth.signInWithCredential(credential).await()
+
+                // Get user from authentication result
+                val user = authResult.user ?: throw Exception("Authentication failed")
+
+                // Check if profile exists
+                firestoreManager.getWizardProfile(user.uid).fold(
+                    onSuccess = { existingProfile ->
+                        if (existingProfile == null) {
+                            // Create new profile with collected data
+                            val newProfile = WizardProfile(
+                                userId = user.uid,
+                                wizardClass = _state.value.wizardClass,
+                                wizardName = _state.value.wizardName,
+                                email = user.email ?: _state.value.email,
+                                signInProvider = SignInProvider.GOOGLE
+                            )
+
+                            // Save to Firestore
+                            firestoreManager.createWizardProfile(newProfile).fold(
+                                onSuccess = {
+                                    _state.value = _state.value.copy(
+                                        isLoading = false,
+                                        isProfileComplete = true
+                                    )
+                                },
+                                onFailure = { handleError("Profile creation failed: ${it.message}") }
+                            )
+                        } else {
+                            // Existing profile found
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                isProfileComplete = true
+                            )
+                        }
+                    },
+                    onFailure = { handleError("Profile check failed: ${it.message}") }
+                )
+            } catch (e: Exception) {
+                handleError("Google sign-in failed: ${e.message}")
             }
+        }
     }
 
-    fun getGoogleSignInIntent(): Intent = googleSignInClient.signInIntent
+    private suspend fun createWizardProfile(
+        userId: String,
+        provider: SignInProvider,
+        email: String = _state.value.email
+    ) {
+        val profile = WizardProfile(
+            userId = userId,
+            wizardClass = _state.value.wizardClass,
+            wizardName = _state.value.wizardName,
+            email = email,
+            signInProvider = provider
+        )
 
-    // Input validation
-    private fun isValidEmail(email: String): Boolean {
-        return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        firestoreManager.createWizardProfile(profile).fold(
+            onSuccess = {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    isProfileComplete = true
+                )
+            },
+            onFailure = { handleError("Profile creation failed: ${it.message}") }
+        )
     }
 
+    fun validateForm(): Boolean {
+        val errors = mutableListOf<String>()
+
+        if (_state.value.wizardName.isBlank()) {
+            errors.add("Wizard name required")
+        }
+
+        val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$")
+        if (!emailPattern.matcher(_state.value.email).matches()) {
+            errors.add("Invalid email format")
+        }
+
+        if (_state.value.password.length !in 8..16) {
+            errors.add("Password must be 8-16 characters")
+        }
+
+        return if (errors.isNotEmpty()) {
+            handleError(errors.joinToString("\n"))
+            false
+        } else {
+            true
+        }
+    }
+
+    fun handleError(message: String?) {
+        _state.value = _state.value.copy(
+            error = message,
+            isLoading = message != null
+        )
+    }
+
+    fun updateWizardName(name: String) {
+        _state.value = _state.value.copy(wizardName = name)
+    }
+
+    fun updateWizardClass(wizardClass: WizardClass) {
+        _state.value = _state.value.copy(wizardClass = wizardClass)
+    }
+
+    fun updateEmail(email: String) {
+        _state.value = _state.value.copy(email = email)
+    }
+
+    fun updatePassword(password: String) {
+        _state.value = _state.value.copy(password = password)
+    }
 }

@@ -5,8 +5,8 @@ plugins {
     alias(libs.plugins.google.services) apply false
     alias(libs.plugins.compose.compiler) apply false
  // New alias
-           // New alias
-    alias(libs.plugins.org.jetbrains.kotlin.kapt) apply false
+//           // New alias
+//    alias(libs.plugins.org.jetbrains.kotlin.kapt) apply false
 
 }
 

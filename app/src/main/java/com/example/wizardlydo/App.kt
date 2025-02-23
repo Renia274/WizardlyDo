@@ -2,13 +2,15 @@ package com.example.wizardlydo
 
 import android.app.Application
 import com.google.firebase.FirebaseApp
-import android.content.Context
-import android.content.SharedPreferences
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import org.koin.android.ext.koin.androidContext
-import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.core.context.startKoin
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 class MyApp : Application() {
@@ -23,16 +25,12 @@ class MyApp : Application() {
     }
 }
 
-// Create your Koin module
 val appModule = module {
-    // Firebase Auth
-    single { Firebase.auth }
+    // Firebase Services (singleton SDK instances)
+    singleOf(::FirebaseAuth) { Firebase.auth }
+    single<FirebaseAuth> { Firebase.auth }
+    single<FirebaseFirestore> { Firebase.firestore }
 
-    // Add other dependencies
-    single<SharedPreferences> {
-        androidContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    }
-
-    // ViewModels
-    viewModel { AuthViewModel(get(),get()) }
+    // ViewModel (scoped to composable lifecycle)
+    viewModelOf(::WizardAuthViewModel)
 }
