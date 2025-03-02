@@ -1,4 +1,4 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.providers
 
 enum class SignInProvider {
     EMAIL, GOOGLE

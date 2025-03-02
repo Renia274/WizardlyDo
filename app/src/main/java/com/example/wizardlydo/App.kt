@@ -1,6 +1,11 @@
 package com.example.wizardlydo
 
 import android.app.Application
+import com.example.wizardlydo.repository.WizardRepository
+import com.example.wizardlydo.room.WizardDatabase
+import com.example.wizardlydo.room.WizardTypeConverters
+import com.example.wizardlydo.viewmodel.LoginViewModel
+import com.example.wizardlydo.viewmodel.WizardAuthViewModel
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -29,12 +34,18 @@ val appModule = module {
     // Firebase Services (singleton SDK instances)
     singleOf(::FirebaseAuth) { Firebase.auth }
     single<FirebaseAuth> { Firebase.auth }
-    single<FirebaseFirestore> { Firebase.firestore }
 
-    // ViewModel (scoped to composable lifecycle)
+    // Room Database
+    single { WizardDatabase.getDatabase(androidContext()) }
+    single { get<WizardDatabase>().wizardDao() }
+
+    // Repository
+    single { WizardRepository(get()) }
+
+    // Utilities
+    single { WizardTypeConverters() }
+
+    // ViewModels
     viewModelOf(::WizardAuthViewModel)
-
-
-    single<WizardFirestoreManager> { WizardFirestoreManager() }
-
+    viewModelOf(::LoginViewModel)
 }

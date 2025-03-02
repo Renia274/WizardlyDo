@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.compose.compiler) apply false
  // New alias
 //           // New alias
-//    alias(libs.plugins.org.jetbrains.kotlin.kapt) apply false
+    alias(libs.plugins.org.jetbrains.kotlin.kapt) apply false
 
 }
 

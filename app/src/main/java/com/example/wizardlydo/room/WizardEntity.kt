@@ -1,7 +1,9 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.room
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.wizardlydo.providers.SignInProvider
+import com.example.wizardlydo.WizardClass
 import java.util.Date
 
 @Entity(tableName = "wizards")

@@ -1,7 +1,11 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wizardlydo.providers.SignInProvider
+import com.example.wizardlydo.WizardClass
+import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.repository.WizardRepository
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow

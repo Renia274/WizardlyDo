@@ -1,8 +1,8 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.data
 
+import com.example.wizardlydo.WizardClass
+import com.example.wizardlydo.providers.SignInProvider
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.ServerTimestamp
 
 data class WizardProfile(
     val userId: String = "",

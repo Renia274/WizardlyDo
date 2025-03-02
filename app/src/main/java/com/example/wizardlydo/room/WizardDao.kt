@@ -1,4 +1,4 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.room
 
 import androidx.room.Dao
 import androidx.room.Insert

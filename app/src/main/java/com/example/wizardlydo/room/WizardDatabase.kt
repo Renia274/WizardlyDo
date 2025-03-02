@@ -1,4 +1,4 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.room
 
 import android.content.Context
 import androidx.room.Database

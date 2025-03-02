@@ -1,6 +1,8 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.room
 
 import androidx.room.TypeConverter
+import com.example.wizardlydo.providers.SignInProvider
+import com.example.wizardlydo.WizardClass
 import java.util.Date
 
 class WizardTypeConverters {

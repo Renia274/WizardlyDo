@@ -1,5 +1,9 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.repository
 
+import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.room.WizardDao
+import com.example.wizardlydo.room.WizardEntity
+import com.example.wizardlydo.room.WizardTypeConverters
 import com.google.firebase.Timestamp
 
 class WizardRepository(
