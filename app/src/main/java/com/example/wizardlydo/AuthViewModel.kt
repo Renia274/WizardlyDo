@@ -24,7 +24,7 @@ data class WizardSignUpState(
 
 class WizardAuthViewModel: ViewModel(), KoinComponent{
     private val auth: FirebaseAuth by inject()
-    private val firestoreManager: WizardFirestoreManager by inject()
+    private val wizardRepository: WizardRepository by inject()
 
     private val _state = MutableStateFlow(WizardSignUpState())
     val state = _state.asStateFlow()
@@ -70,7 +70,7 @@ class WizardAuthViewModel: ViewModel(), KoinComponent{
                 val user = authResult.user ?: throw Exception("Authentication failed")
 
                 // Check if profile exists
-                firestoreManager.getWizardProfile(user.uid).fold(
+                wizardRepository.getWizardProfile(user.uid).fold(
                     onSuccess = { existingProfile ->
                         if (existingProfile == null) {
                             // Create new profile with collected data
@@ -82,8 +82,8 @@ class WizardAuthViewModel: ViewModel(), KoinComponent{
                                 signInProvider = SignInProvider.GOOGLE
                             )
 
-                            // Save to Firestore
-                            firestoreManager.createWizardProfile(newProfile).fold(
+                            // Save to Repository
+                            wizardRepository.createWizardProfile(newProfile).fold(
                                 onSuccess = {
                                     _state.value = _state.value.copy(
                                         isLoading = false,
@@ -121,7 +121,7 @@ class WizardAuthViewModel: ViewModel(), KoinComponent{
             signInProvider = provider
         )
 
-        firestoreManager.createWizardProfile(profile).fold(
+        wizardRepository.createWizardProfile(profile).fold(
             onSuccess = {
                 _state.value = _state.value.copy(
                     isLoading = false,

@@ -33,4 +33,8 @@ val appModule = module {
 
     // ViewModel (scoped to composable lifecycle)
     viewModelOf(::WizardAuthViewModel)
+
+
+    single<WizardFirestoreManager> { WizardFirestoreManager() }
+
 }
