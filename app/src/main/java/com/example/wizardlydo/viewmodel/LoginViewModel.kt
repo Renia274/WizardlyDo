@@ -3,13 +3,18 @@ package com.example.wizardlydo.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wizardlydo.repository.WizardRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-class LoginViewModel(
-    private val wizardRepository: WizardRepository
-) : ViewModel() {
+class LoginViewModel : ViewModel(), KoinComponent {
+    private val auth: FirebaseAuth by inject()
+    private val wizardRepository: WizardRepository by inject()
+
     private val _state = MutableStateFlow(LoginState())
     val state = _state.asStateFlow()
 
@@ -30,11 +35,18 @@ class LoginViewModel(
             _state.value = _state.value.copy(isLoading = true)
 
             try {
-                val result = wizardRepository.getWizardProfile(
-                    _state.value.email
-                )
+                // Authenticate with Firebase
+                val authResult = auth.signInWithEmailAndPassword(
+                    _state.value.email,
+                    _state.value.password
+                ).await()
 
-                result.fold(
+                // Get current user ID from Firebase Auth
+                val userId = authResult.user?.uid
+                    ?: throw Exception("Authentication failed")
+
+                // fetch the wizard profile using the authenticated user ID
+                wizardRepository.getWizardProfile(userId).fold(
                     onSuccess = { profile ->
                         if (profile != null) {
                             _state.value = _state.value.copy(
@@ -44,7 +56,7 @@ class LoginViewModel(
                         } else {
                             _state.value = _state.value.copy(
                                 isLoading = false,
-                                error = "User not found"
+                                error = "Profile not found. Please complete registration."
                             )
                         }
                     },
@@ -58,7 +70,7 @@ class LoginViewModel(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = "An unexpected error occurred"
+                    error = "Authentication failed: ${e.message}"
                 )
             }
         }
