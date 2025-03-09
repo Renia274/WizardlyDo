@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.wizardlydo.navigation.screens.Screen
 import com.example.wizardlydo.screens.login.LoginScreen
+import com.example.wizardlydo.screens.recovery.RecoveryScreen
 import com.example.wizardlydo.screens.splash.SplashScreen
 import com.example.wizardlydo.screens.signup.SignupScreen
 
@@ -50,9 +51,19 @@ fun NavigationGraph() {
                     navController.navigate(Screen.Splash.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
+                },
+                onForgotPasswordClick = {
+                    navController.navigate(Screen.Recovery.route)
                 }
             )
         }
 
+        composable(Screen.Recovery.route) {
+            RecoveryScreen(
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
 }

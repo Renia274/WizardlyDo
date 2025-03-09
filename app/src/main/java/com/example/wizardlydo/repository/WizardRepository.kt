@@ -5,9 +5,12 @@ import com.example.wizardlydo.room.WizardDao
 import com.example.wizardlydo.room.WizardEntity
 import com.example.wizardlydo.room.WizardTypeConverters
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.tasks.await
 
 class WizardRepository(
-private val wizardDao: WizardDao
+private val wizardDao: WizardDao,
+    private val firebaseAuth: FirebaseAuth
 ) {
     private val typeConverters = WizardTypeConverters()
 
@@ -88,6 +91,46 @@ private val wizardDao: WizardDao
         return try {
             wizardDao.updateLevel(userId, level, System.currentTimeMillis())
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+
+    // New method for sending password reset email via Firebase Auth
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            firebaseAuth.sendPasswordResetEmail(email).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Method to find user by email in Room database
+    suspend fun findUserByEmail(email: String): Result<WizardProfile?> {
+        return try {
+            val wizardEntity = wizardDao.getWizardByEmail(email)
+            val profile = wizardEntity?.let { entity ->
+                WizardProfile(
+                    userId = entity.userId,
+                    wizardClass = entity.wizardClass,
+                    wizardName = entity.wizardName,
+                    email = entity.email,
+                    signInProvider = entity.signInProvider,
+                    level = entity.level,
+                    experience = entity.experience,
+                    spells = entity.spells,
+                    achievements = entity.achievements,
+                    joinDate = entity.joinDate?.let { date ->
+                        Timestamp(date.time / 1000, (date.time % 1000 * 1_000_000).toInt())
+                    },
+                    lastLogin = entity.lastLogin?.let { date ->
+                        Timestamp(date.time / 1000, (date.time % 1000 * 1_000_000).toInt())
+                    }
+                )
+            }
+            Result.success(profile)
         } catch (e: Exception) {
             Result.failure(e)
         }

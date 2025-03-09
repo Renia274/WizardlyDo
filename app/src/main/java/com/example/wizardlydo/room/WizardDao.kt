@@ -31,4 +31,6 @@ interface WizardDao {
 
     @Query("UPDATE wizards SET level = :level, lastLogin = :loginTime WHERE userId = :userId")
     suspend fun updateLevel(userId: String, level: Int, loginTime: Long)
+
+
 }
