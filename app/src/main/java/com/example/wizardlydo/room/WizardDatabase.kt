@@ -7,13 +7,15 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [WizardEntity::class],
-    version = 1,
+    entities = [WizardEntity::class,PinEntity::class],
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(WizardTypeConverters::class)
 abstract class WizardDatabase : RoomDatabase() {
     abstract fun wizardDao(): WizardDao
+    abstract fun pinDao(): PinDao
+
 
     companion object {
         @Volatile

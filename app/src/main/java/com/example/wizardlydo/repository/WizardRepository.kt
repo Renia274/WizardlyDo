@@ -107,9 +107,16 @@ private val wizardDao: WizardDao,
         }
     }
 
-    // Method to find user by email in Room database
     suspend fun findUserByEmail(email: String): Result<WizardProfile?> {
         return try {
+            try {
+                // This will throw an exception if the user doesn't exist
+                firebaseAuth.fetchSignInMethodsForEmail(email).await()
+            } catch (e: Exception) {
+                return Result.success(null)
+            }
+
+            // If user exists in Firebase Auth, try to find in local database
             val wizardEntity = wizardDao.getWizardByEmail(email)
             val profile = wizardEntity?.let { entity ->
                 WizardProfile(
@@ -122,17 +129,15 @@ private val wizardDao: WizardDao,
                     experience = entity.experience,
                     spells = entity.spells,
                     achievements = entity.achievements,
-                    joinDate = entity.joinDate?.let { date ->
-                        Timestamp(date.time / 1000, (date.time % 1000 * 1_000_000).toInt())
-                    },
-                    lastLogin = entity.lastLogin?.let { date ->
-                        Timestamp(date.time / 1000, (date.time % 1000 * 1_000_000).toInt())
-                    }
+                    joinDate = entity.joinDate?.let { Timestamp(it) },
+                    lastLogin = entity.lastLogin?.let { Timestamp(it) }
                 )
             }
+
             Result.success(profile)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-}
+    }
+

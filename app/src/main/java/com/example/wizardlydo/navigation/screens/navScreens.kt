@@ -7,5 +7,8 @@ sealed class Screen(val route: String) {
     data object Signup : Screen("signup")
     data object Login : Screen("login")
     data object Recovery : Screen("recovery")
+    data object PinSetup : Screen("pin_setup")
+    data object PinAuth : Screen("pin_auth")
+
 
 }
