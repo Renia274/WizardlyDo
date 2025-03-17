@@ -16,9 +16,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.wizardlydo.screens.pin.comps.BiometricsToggleSection
 import com.example.wizardlydo.screens.pin.comps.ErrorDialog
 import com.example.wizardlydo.screens.pin.comps.PinInputSection
 import com.example.wizardlydo.screens.pin.comps.PinSetupHeader
@@ -34,6 +34,9 @@ fun PinSetupScreen(
     onPinSetupComplete: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+
 
     LaunchedEffect(state.isPinSaved) {
         if (state.isPinSaved) {
@@ -44,9 +47,7 @@ fun PinSetupScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         PinSetupContent(
             pin = state.pin,
-            fingerprintEnabled = state.biometricsEnabled,
             onPinChange = viewModel::updatePin,
-            onToggleFingerprint = viewModel::toggleBiometrics,
             onSavePin = viewModel::validateAndSavePin,
             isLoading = false,
             hasError = state.error != null,
@@ -60,14 +61,13 @@ fun PinSetupScreen(
 @Composable
 fun PinSetupContent(
     pin: String,
-    fingerprintEnabled: Boolean,
     onPinChange: (String) -> Unit,
-    onToggleFingerprint: () -> Unit,
     onSavePin: () -> Unit,
     isLoading: Boolean,
     hasError: Boolean,
     error: String?,
-    onDismissError: () -> Unit
+    onDismissError: () -> Unit,
+
 ) {
     Column(
         modifier = Modifier
@@ -87,12 +87,6 @@ fun PinSetupContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        BiometricsToggleSection(
-            biometricsEnabled = fingerprintEnabled,
-            onToggleBiometrics = onToggleFingerprint
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         SavePinButton(
             pin = pin,

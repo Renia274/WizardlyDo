@@ -60,31 +60,7 @@ fun PinInputSection(
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.R)
-@Composable
-fun BiometricsToggleSection(
-    biometricsEnabled: Boolean,
-    onToggleBiometrics: () -> Unit
-) {
-    val context = LocalContext.current
-    val isFingerprintAvailable = remember {
-        context.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
-    }
 
-    if (isFingerprintAvailable) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Checkbox(
-                checked = biometricsEnabled,
-                onCheckedChange = { onToggleBiometrics() }
-            )
-            Text("Enable Fingerprint Authentication")
-        }
-    }
-}
 
 @Composable
 fun SavePinButton(

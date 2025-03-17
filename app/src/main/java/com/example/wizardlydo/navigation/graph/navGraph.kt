@@ -1,7 +1,6 @@
 package com.example.wizardlydo.navigation.graph
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,11 +10,11 @@ import com.example.wizardlydo.screens.login.LoginScreen
 import com.example.wizardlydo.screens.pin.PinAuthScreen
 import com.example.wizardlydo.screens.pin.PinSetupScreen
 import com.example.wizardlydo.screens.recovery.RecoveryScreen
-import com.example.wizardlydo.screens.splash.SplashScreen
 import com.example.wizardlydo.screens.signup.SignupScreen
+import com.example.wizardlydo.screens.splash.SplashScreen
 
 
-@RequiresApi(Build.VERSION_CODES.R)
+
 @Composable
 fun NavigationGraph() {
     val navController = rememberNavController()
@@ -37,7 +36,6 @@ fun NavigationGraph() {
         composable(Screen.Signup.route) {
             SignupScreen(
                 onSignupSuccess = {
-
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Signup.route) { inclusive = true }
                     }
@@ -80,6 +78,7 @@ fun NavigationGraph() {
                 }
             )
         }
+
         composable(Screen.PinAuth.route) {
             PinAuthScreen(
                 onPinSuccess = {

@@ -1,7 +1,7 @@
 package com.example.wizardlydo.viewmodel
 
 import android.content.Context
-import android.content.pm.PackageManager
+import androidx.biometric.BiometricManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wizardlydo.repository.pin.PinRepository
@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
-
 
 
 class PinViewModel(
@@ -25,31 +24,11 @@ class PinViewModel(
         )
     }
 
-    fun toggleBiometrics() {
-        viewModelScope.launch {
-            val currentState = _state.value.biometricsEnabled
-            val result = pinRepository.updateBiometricPreference(!currentState)
 
-            result.fold(
-                onSuccess = {
-                    _state.value = _state.value.copy(
-                        biometricsEnabled = !currentState,
-                        error = null
-                    )
-                },
-                onFailure = { e ->
-                    _state.value = _state.value.copy(
-                        error = "Failed to update biometrics: ${e.message}"
-                    )
-                }
-            )
-        }
-    }
 
     fun validateAndSavePin() {
         viewModelScope.launch {
             val pin = _state.value.pin
-            val biometricsEnabled = _state.value.biometricsEnabled
 
             // Validate pin is exactly 4 digits
             if (pin.length != 4 || !pin.all { it.isDigit() }) {
@@ -60,10 +39,7 @@ class PinViewModel(
             }
 
             // Save PIN with biometrics preference
-            val result = pinRepository.savePin(
-                pin,
-                enableBiometrics = biometricsEnabled
-            )
+            val result = pinRepository.savePin(pin)
 
             result.fold(
                 onSuccess = {
@@ -87,7 +63,11 @@ class PinViewModel(
     }
 
     fun isBiometricsAvailable(context: Context): Boolean {
-        return context.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
+        val biometricManager = BiometricManager.from(context)
+        return biometricManager.canAuthenticate(
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        ) == BiometricManager.BIOMETRIC_SUCCESS
     }
 
     fun verifyPin() {
@@ -130,9 +110,9 @@ class PinViewModel(
     }
 
 
+
     data class PinSetupState(
         val pin: String = "",
-        val biometricsEnabled: Boolean = false,
         val isPinSaved: Boolean = false,
         val error: String? = null,
         val isLoading: Boolean = false

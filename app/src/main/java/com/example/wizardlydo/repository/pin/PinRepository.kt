@@ -8,15 +8,14 @@ class PinRepository(
     private val pinDao: PinDao,
     private val securityProvider: SecurityProvider
 ) {
-    suspend fun savePin(pin: String, enableBiometrics: Boolean = false): Result<Unit> {
+    suspend fun savePin(pin: String): Result<Unit> {
         return try {
             // Encrypt the PIN
             val encryptedPin = securityProvider.encrypt(pin)
 
             // Create or update PIN entity
             val pinEntity = PinEntity(
-                encryptedPin = encryptedPin,
-                biometricsEnabled = enableBiometrics
+                encryptedPin = encryptedPin
             )
 
             // Insert or replace
@@ -43,25 +42,9 @@ class PinRepository(
         }
     }
 
-    suspend fun updateBiometricPreference(enabled: Boolean): Result<Unit> {
-        return try {
-            val currentPin = pinDao.getPin()
-                ?: throw Exception("No PIN set")
-
-            val updatedPin = currentPin.copy(biometricsEnabled = enabled)
-            pinDao.insertPin(updatedPin)
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 
     suspend fun hasPinSet(): Boolean {
         return pinDao.getPinCount() > 0
     }
 
-    suspend fun isBiometricsEnabled(): Boolean {
-        return pinDao.getPin()?.biometricsEnabled ?: false
-    }
 }

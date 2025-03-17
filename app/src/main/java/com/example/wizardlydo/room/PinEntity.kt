@@ -7,6 +7,5 @@ import androidx.room.PrimaryKey
 data class PinEntity(
     @PrimaryKey val id: Int = 1,
     val encryptedPin: String,
-    val biometricsEnabled: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )
