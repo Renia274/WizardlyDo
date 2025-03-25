@@ -236,7 +236,6 @@ fun ColorPickers(
                     Text("Choose Color", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(16.dp))
 
-                    // Color preview
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()

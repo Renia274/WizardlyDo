@@ -30,7 +30,6 @@ fun NavigationGraph() {
         navController = navController,
         startDestination = Screen.Splash.route
     ) {
-        // Splash Screen
         composable(Screen.Splash.route) {
             SplashScreen(
                 navigateToWelcomeAuth = {
