@@ -17,7 +17,7 @@ import com.example.wizardlydo.screens.signupsigin.WelcomeAuthScreen
 import com.example.wizardlydo.screens.splash.SplashScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.example.wizardlydo.WizardClass
+import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.screens.customization.CustomizationScreen
 
 

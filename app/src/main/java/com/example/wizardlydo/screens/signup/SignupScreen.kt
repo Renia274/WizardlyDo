@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.WizardClass
+import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.screens.signup.comps.EmailField
 import com.example.wizardlydo.screens.signup.comps.ErrorDialogComponent
 import com.example.wizardlydo.screens.signup.comps.GoogleSignInButton

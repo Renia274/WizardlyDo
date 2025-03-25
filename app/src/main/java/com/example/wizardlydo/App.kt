@@ -61,7 +61,7 @@ val appModule = module {
     viewModel { params ->
         CustomizationViewModel(
             repository = get(),
-            wizardClass = params.get()  // Get from navigation parameters
+            wizardClass = params.get()
         )
     }
 

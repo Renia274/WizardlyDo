@@ -1,9 +1,8 @@
 package com.example.wizardlydo.viewmodel
 
-import android.content.Context
-import androidx.biometric.BiometricManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wizardlydo.data.models.PinSetupState
 import com.example.wizardlydo.repository.pin.PinRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,14 +61,6 @@ class PinViewModel(
         _state.value = _state.value.copy(error = null)
     }
 
-    fun isBiometricsAvailable(context: Context): Boolean {
-        val biometricManager = BiometricManager.from(context)
-        return biometricManager.canAuthenticate(
-            BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
-        ) == BiometricManager.BIOMETRIC_SUCCESS
-    }
-
     fun verifyPin() {
         viewModelScope.launch {
             val pin = _state.value.pin
@@ -109,12 +100,4 @@ class PinViewModel(
         }
     }
 
-
-
-    data class PinSetupState(
-        val pin: String = "",
-        val isPinSaved: Boolean = false,
-        val error: String? = null,
-        val isLoading: Boolean = false
-    )
 }

@@ -1,6 +1,5 @@
 package com.example.wizardlydo.data
 
-import com.example.wizardlydo.WizardClass
 import com.example.wizardlydo.providers.SignInProvider
 import com.example.wizardlydo.room.WizardEntity
 import com.google.firebase.Timestamp

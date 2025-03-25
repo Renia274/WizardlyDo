@@ -3,8 +3,9 @@ package com.example.wizardlydo.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wizardlydo.providers.SignInProvider
-import com.example.wizardlydo.WizardClass
+import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.data.models.WizardSignUpState
 import com.example.wizardlydo.repository.WizardRepository
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
@@ -16,15 +17,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.regex.Pattern
 
-data class WizardSignUpState(
-    val email: String = "",
-    val password: String = "",
-    val wizardName: String = "",
-    val wizardClass: WizardClass = WizardClass.MYSTWEAVER,
-    val isLoading: Boolean = false,
-    val isProfileComplete: Boolean = false,
-    val error: String? = null
-)
+
 
 class WizardAuthViewModel: ViewModel(), KoinComponent{
     private val auth: FirebaseAuth by inject()

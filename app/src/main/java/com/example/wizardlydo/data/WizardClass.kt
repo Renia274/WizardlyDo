@@ -1,4 +1,4 @@
-package com.example.wizardlydo
+package com.example.wizardlydo.data
 
 enum class WizardClass(
     val title: String,

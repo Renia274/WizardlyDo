@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.example.wizardlydo.WizardClass
+import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.providers.SignInProvider
 import com.google.firebase.Timestamp
 

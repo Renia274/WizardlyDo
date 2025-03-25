@@ -2,6 +2,7 @@ package com.example.wizardlydo.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wizardlydo.data.models.LoginState
 import com.example.wizardlydo.repository.WizardRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,10 +82,3 @@ class LoginViewModel : ViewModel(), KoinComponent {
     }
 }
 
-data class LoginState(
-    val email: String = "",
-    val password: String = "",
-    val isLoading: Boolean = false,
-    val loginSuccess: Boolean = false,
-    val error: String? = null
-)

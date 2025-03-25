@@ -2,7 +2,7 @@ package com.example.wizardlydo.room
 
 import androidx.room.TypeConverter
 import com.example.wizardlydo.providers.SignInProvider
-import com.example.wizardlydo.WizardClass
+import com.example.wizardlydo.data.WizardClass
 import java.util.Date
 import com.google.firebase.Timestamp
 

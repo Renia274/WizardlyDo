@@ -36,8 +36,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.WizardClass
-import com.example.wizardlydo.viewmodel.CustomizationState
+import com.example.wizardlydo.data.WizardClass
+import com.example.wizardlydo.data.models.CustomizationState
+
 
 
 @Composable
