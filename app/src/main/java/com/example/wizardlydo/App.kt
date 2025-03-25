@@ -7,6 +7,7 @@ import com.example.wizardlydo.repository.pin.PinRepository
 import com.example.wizardlydo.room.WizardDatabase
 import com.example.wizardlydo.room.WizardTypeConverters
 import com.example.wizardlydo.utilities.SecurityProvider
+import com.example.wizardlydo.viewmodel.CustomizationViewModel
 import com.example.wizardlydo.viewmodel.LoginViewModel
 import com.example.wizardlydo.viewmodel.PinViewModel
 import com.example.wizardlydo.viewmodel.RecoveryViewModel
@@ -56,5 +57,12 @@ val appModule = module {
     viewModelOf(::LoginViewModel)
     viewModelOf(::RecoveryViewModel)
     viewModel { PinViewModel(get()) }
+
+    viewModel { params ->
+        CustomizationViewModel(
+            repository = get(),
+            wizardClass = params.get()  // Get from navigation parameters
+        )
+    }
 
 }

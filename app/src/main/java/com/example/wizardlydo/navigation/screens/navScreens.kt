@@ -1,14 +1,18 @@
 package com.example.wizardlydo.navigation.screens
 
+import com.example.wizardlydo.WizardClass
 
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
+    data object WelcomeAuth : Screen("welcome_auth")
     data object Signup : Screen("signup")
     data object Login : Screen("login")
     data object Recovery : Screen("recovery")
     data object PinSetup : Screen("pin_setup")
     data object PinAuth : Screen("pin_auth")
 
-
+    data object Customization : Screen("customization/{wizardClass}") {
+        fun createRoute(wizardClass: WizardClass) = "customization/${wizardClass.name}"
+    }
 }

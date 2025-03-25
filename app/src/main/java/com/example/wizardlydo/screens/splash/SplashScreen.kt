@@ -20,11 +20,11 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    navigateToSignup: () -> Unit
+    navigateToWelcomeAuth: () -> Unit
 ) {
     LaunchedEffect(key1 = true) {
         delay(2000)
-        navigateToSignup()
+        navigateToWelcomeAuth()
     }
 
     SplashContent()

@@ -1,15 +1,15 @@
 package com.example.wizardlydo.repository
 
 import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.mappers.toEntity
 import com.example.wizardlydo.room.WizardDao
 import com.example.wizardlydo.room.WizardEntity
 import com.example.wizardlydo.room.WizardTypeConverters
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 
 class WizardRepository(
-private val wizardDao: WizardDao,
+    private val wizardDao: WizardDao,
     private val firebaseAuth: FirebaseAuth
 ) {
     private val typeConverters = WizardTypeConverters()
@@ -26,12 +26,8 @@ private val wizardDao: WizardDao,
                 experience = profile.experience,
                 spells = profile.spells,
                 achievements = profile.achievements,
-                joinDate = profile.joinDate?.let {
-                    typeConverters.fromTimestamp(it.seconds * 1000 + it.nanoseconds / 1_000_000)
-                },
-                lastLogin = profile.lastLogin?.let {
-                    typeConverters.fromTimestamp(it.seconds * 1000 + it.nanoseconds / 1_000_000)
-                },
+                joinDate = profile.joinDate,
+                lastLogin = profile.lastLogin,
                 passwordHash = ""
             )
             wizardDao.insertWizard(wizardEntity)
@@ -55,12 +51,12 @@ private val wizardDao: WizardDao,
                     experience = entity.experience,
                     spells = entity.spells,
                     achievements = entity.achievements,
-                    joinDate = entity.joinDate?.let { date ->
-                        Timestamp(date.time / 1000, (date.time % 1000 * 1_000_000).toInt())
-                    },
-                    lastLogin = entity.lastLogin?.let { date ->
-                        Timestamp(date.time / 1000, (date.time % 1000 * 1_000_000).toInt())
-                    }
+                    joinDate = entity.joinDate,
+                    lastLogin = entity.lastLogin,
+                    gender = entity.gender,
+                    bodyColor = entity.bodyColor,
+                    clothingColor = entity.clothingColor,
+                    accessoryColor = entity.accessoryColor
                 )
             }
             Result.success(profile)
@@ -129,8 +125,8 @@ private val wizardDao: WizardDao,
                     experience = entity.experience,
                     spells = entity.spells,
                     achievements = entity.achievements,
-                    joinDate = entity.joinDate?.let { Timestamp(it) },
-                    lastLogin = entity.lastLogin?.let { Timestamp(it) }
+                    joinDate = entity.joinDate,
+                    lastLogin = entity.lastLogin
                 )
             }
 
@@ -139,5 +135,32 @@ private val wizardDao: WizardDao,
             Result.failure(e)
         }
     }
+
+    fun getCurrentUserId(): String? = firebaseAuth.currentUser?.uid
+
+    suspend fun updateWizard(profile: WizardProfile) {
+        val entity = profile.toEntity()
+        val dao = wizardDao
+        dao.updateWizard(
+            userId = entity.userId,
+            wizardClass = entity.wizardClass,
+            wizardName = entity.wizardName,
+            email = entity.email,
+            passwordHash = entity.passwordHash,
+            signInProvider = entity.signInProvider,
+            level = entity.level,
+            experience = entity.experience,
+            spells = entity.spells,
+            achievements = entity.achievements,
+            joinDate = entity.joinDate,
+            lastLogin = entity.lastLogin,
+            gender = entity.gender,
+            bodyColor = entity.bodyColor,
+            clothingColor = entity.clothingColor,
+            accessoryColor = entity.accessoryColor
+        )
     }
+
+
+}
 
