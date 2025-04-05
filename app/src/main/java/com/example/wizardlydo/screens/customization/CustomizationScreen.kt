@@ -12,19 +12,23 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
-import com.example.wizardlydo.screens.customization.comps.ColorPickers
 import com.example.wizardlydo.screens.customization.comps.GenderSelector
 import com.example.wizardlydo.screens.customization.comps.WizardPreview
+import com.example.wizardlydo.screens.customization.comps.SkinSelector
+import com.example.wizardlydo.screens.customization.comps.HairStyleSelector
+import com.example.wizardlydo.screens.customization.comps.HairColorSelector
+import com.example.wizardlydo.screens.customization.comps.OutfitSelector
+import com.example.wizardlydo.screens.customization.comps.AccessorySelector
 import com.example.wizardlydo.viewmodel.CustomizationViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
-
 
 @Composable
 fun CustomizationScreen(
@@ -37,12 +41,36 @@ fun CustomizationScreen(
 
     val state by viewModel.state.collectAsState()
 
+    // Add a LaunchedEffect that runs when the wizard class changes
+    LaunchedEffect(wizardClass) {
+        // Set default values based on wizard class
+        val defaultOutfit = when(wizardClass) {
+            WizardClass.CHRONOMANCER -> "Astronomer Robe"
+            WizardClass.LUMINARI -> "Crystal Robe"
+            WizardClass.DRACONIST -> "Flame Costume"
+            WizardClass.MYSTWEAVER -> "Mystic Robe"
+        }
+
+        val defaultAccessory = when(wizardClass) {
+            WizardClass.CHRONOMANCER -> "Time Glasses"
+            WizardClass.LUMINARI -> "Light Mask"
+            WizardClass.DRACONIST -> "Dragon Eyes"
+            WizardClass.MYSTWEAVER -> "Arcane Monocle"
+        }
+
+        // Update the ViewModel with these default values
+        viewModel.updateOutfit(defaultOutfit)
+        viewModel.updateAccessory(defaultAccessory)
+    }
+
     CustomizationContent(
         state = state,
         onGenderSelected = viewModel::updateGender,
-        onColorsChanged = { body, clothing, accessory ->
-            viewModel.updateColors(body, clothing, accessory)
-        },
+        onSkinSelected = viewModel::updateSkin,
+        onHairStyleSelected = viewModel::updateHairStyle,
+        onHairColorSelected = viewModel::updateHairColor,
+        onOutfitSelected = viewModel::updateOutfit,
+        onAccessorySelected = viewModel::updateAccessory,
         onSave = {
             viewModel.saveCustomization()
             onComplete()
@@ -50,12 +78,15 @@ fun CustomizationScreen(
     )
 }
 
-
 @Composable
 fun CustomizationContent(
     state: CustomizationState,
     onGenderSelected: (String) -> Unit,
-    onColorsChanged: (body: String, clothing: String, accessory: String) -> Unit,
+    onSkinSelected: (String) -> Unit,
+    onHairStyleSelected: (Int) -> Unit,
+    onHairColorSelected: (String) -> Unit,
+    onOutfitSelected: (String) -> Unit,
+    onAccessorySelected: (String) -> Unit,
     onSave: () -> Unit
 ) {
     Column(
@@ -63,43 +94,77 @@ fun CustomizationContent(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
+        // Character preview with updated state
         WizardPreview(state = state)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-
+        // Customization options
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
                 .weight(1f)
         ) {
-
+            // Gender selection
             GenderSelector(
                 selectedGender = state.gender,
                 onGenderSelected = onGenderSelected
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // Skin selection
+            SkinSelector(
+                selectedSkin = state.skinColor,
+                onSkinSelected = onSkinSelected
+            )
 
-            ColorPickers(
-                state = state,
-                onColorsChanged = onColorsChanged
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Hair style selection
+            HairStyleSelector(
+                gender = state.gender,
+                selectedStyle = state.hairStyle,
+                onHairStyleSelected = onHairStyleSelected
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Hair color selection
+            HairColorSelector(
+                selectedColor = state.hairColor,
+                onHairColorSelected = onHairColorSelected
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Outfit selection based on wizard class
+            OutfitSelector(
+                wizardClass = state.wizardClass,
+                selectedOutfit = state.outfit,
+                onOutfitSelected = onOutfitSelected
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Accessory selection based on wizard class
+            AccessorySelector(
+                wizardClass = state.wizardClass,
+                selectedAccessory = state.accessory,
+                onAccessorySelected = onAccessorySelected
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-
+        // Save button
         Button(
             onClick = onSave,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp))
-        {
+                .height(50.dp)
+        ) {
             Text("Save Customization", style = MaterialTheme.typography.titleMedium)
         }
     }
 }
-

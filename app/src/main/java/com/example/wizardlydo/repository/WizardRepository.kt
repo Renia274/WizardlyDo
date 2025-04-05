@@ -24,7 +24,6 @@ class WizardRepository(
                 signInProvider = profile.signInProvider,
                 level = profile.level,
                 experience = profile.experience,
-                spells = profile.spells,
                 achievements = profile.achievements,
                 joinDate = profile.joinDate,
                 lastLogin = profile.lastLogin,
@@ -49,7 +48,6 @@ class WizardRepository(
                     signInProvider = entity.signInProvider,
                     level = entity.level,
                     experience = entity.experience,
-                    spells = entity.spells,
                     achievements = entity.achievements,
                     joinDate = entity.joinDate,
                     lastLogin = entity.lastLogin,
@@ -123,7 +121,6 @@ class WizardRepository(
                     signInProvider = entity.signInProvider,
                     level = entity.level,
                     experience = entity.experience,
-                    spells = entity.spells,
                     achievements = entity.achievements,
                     joinDate = entity.joinDate,
                     lastLogin = entity.lastLogin

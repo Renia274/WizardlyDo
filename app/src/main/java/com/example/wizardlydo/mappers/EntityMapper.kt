@@ -12,7 +12,6 @@ fun WizardProfile.toEntity() = WizardEntity(
     signInProvider = signInProvider,
     level = level,
     experience = experience,
-    spells = spells,
     achievements = achievements,
     joinDate = joinDate,
     lastLogin = lastLogin,

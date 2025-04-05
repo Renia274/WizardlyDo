@@ -14,27 +14,57 @@ import org.koin.core.component.KoinComponent
 
 class CustomizationViewModel(
     private val repository: WizardRepository,
-    private val wizardClass: WizardClass
-) : ViewModel() , KoinComponent {
-    private val _state = MutableStateFlow(CustomizationState())
+    wizardClass: WizardClass
+) : ViewModel(), KoinComponent {
+    private val _state = MutableStateFlow(
+        CustomizationState(
+            wizardClass = wizardClass,
+            accessory = getDefaultAccessory(wizardClass),
+            outfit = getDefaultOutfit(wizardClass)
+        )
+    )
     val state = _state.asStateFlow()
 
+    private fun getDefaultAccessory(wizardClass: WizardClass): String {
+        return when (wizardClass) {
+            WizardClass.CHRONOMANCER -> "Time Glasses"
+            WizardClass.LUMINARI -> "Light Mask"
+            WizardClass.DRACONIST -> "Dragon Eyes"
+            WizardClass.MYSTWEAVER -> "Arcane Monocle"
+        }
+    }
 
-
-
+    private fun getDefaultOutfit(wizardClass: WizardClass): String {
+        return when (wizardClass) {
+            WizardClass.CHRONOMANCER -> "Astronomer Robe"
+            WizardClass.LUMINARI -> "Crystal Robe"
+            WizardClass.DRACONIST -> "Flame Costume"
+            WizardClass.MYSTWEAVER -> "Mystic Robe"
+        }
+    }
 
     fun updateGender(gender: String) {
         _state.update { it.copy(gender = gender) }
     }
 
-    fun updateColors(body: String, clothing: String, accessory: String) {
-        _state.update {
-            it.copy(
-                bodyColor = body,
-                clothingColor = clothing,
-                accessoryColor = accessory
-            )
-        }
+    fun updateSkin(skin: String) {
+        _state.update { it.copy(skinColor = skin) }
+    }
+
+    fun updateHairStyle(style: Int) {
+        _state.update { it.copy(hairStyle = style) }
+    }
+
+    fun updateHairColor(color: String) {
+        _state.update { it.copy(hairColor = color) }
+    }
+
+    fun updateAccessory(accessory: String) {
+        _state.update { it.copy(accessory = accessory) }
+    }
+
+    fun updateOutfit(outfit: String) {
+        _state.update { it.copy(outfit = outfit) }
     }
 
     fun saveCustomization() = viewModelScope.launch {
@@ -47,9 +77,11 @@ class CustomizationViewModel(
                 userId = userId,
                 wizardClass = current.wizardClass,
                 gender = current.gender,
-                bodyColor = current.bodyColor,
-                clothingColor = current.clothingColor,
-                accessoryColor = current.accessoryColor
+                skinColor = current.skinColor,
+                hairStyle = current.hairStyle,
+                hairColor = current.hairColor,
+                accessory = current.accessory,
+                outfit = current.outfit
             )
 
             repository.updateWizard(updated)
@@ -58,7 +90,4 @@ class CustomizationViewModel(
             _state.update { it.copy(error = e.message) }
         }
     }
-
-
 }
-

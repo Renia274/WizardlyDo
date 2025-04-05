@@ -5,7 +5,7 @@ enum class WizardClass(
     val description: String,
     val bodyColor: String,
     val clothingColor: String,
-    val accessoryColor: String
+    val weaponColor: String
 ) {
     CHRONOMANCER(
         "Chronomancer",
