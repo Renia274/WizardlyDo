@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -31,24 +32,33 @@ fun PinAuthScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-
     LaunchedEffect(state.isPinSaved) {
         if (state.isPinSaved) {
             onPinSuccess()
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        PinAuthContent(
-            pin = state.pin,
-            onPinChange = viewModel::updatePin,
-            onVerifyPin = viewModel::verifyPin,
-            isLoading = state.isLoading,
-            hasError = state.error != null,
-            error = state.error,
-            onDismissError = viewModel::clearError,
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
 
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            PinAuthContent(
+                pin = state.pin,
+                onPinChange = viewModel::updatePin,
+                onVerifyPin = viewModel::verifyPin,
+                isLoading = state.isLoading,
+                hasError = state.error != null,
+                error = state.error,
+                onDismissError = viewModel::clearError
+            )
+        }
     }
 }
 
@@ -60,14 +70,12 @@ fun PinAuthContent(
     isLoading: Boolean,
     hasError: Boolean,
     error: String?,
-    onDismissError: () -> Unit,
-
+    onDismissError: () -> Unit
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(horizontal = 24.dp)
+            .widthIn(max = 450.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         PinAuthHeader()
@@ -86,15 +94,14 @@ fun PinAuthContent(
             onVerifyPin = onVerifyPin,
             isLoading = isLoading
         )
+    }
 
-
-
-        // Error Dialog within Content
-        error?.let {
-            ErrorDialog(
-                error = it,
-                onDismiss = onDismissError
-            )
-        }
+    // Show error dialog if needed - moved outside content layout
+    error?.let {
+        ErrorDialog(
+            error = it,
+            onDismiss = onDismissError
+        )
     }
 }
+

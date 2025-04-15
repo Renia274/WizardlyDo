@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -36,24 +37,33 @@ fun PinSetupScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-
-
     LaunchedEffect(state.isPinSaved) {
         if (state.isPinSaved) {
             onPinSetupComplete()
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        PinSetupContent(
-            pin = state.pin,
-            onPinChange = viewModel::updatePin,
-            onSavePin = viewModel::validateAndSavePin,
-            isLoading = false,
-            hasError = state.error != null,
-            error = state.error,
-            onDismissError = viewModel::clearError
-        )
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            PinSetupContent(
+                pin = state.pin,
+                onPinChange = viewModel::updatePin,
+                onSavePin = viewModel::validateAndSavePin,
+                isLoading = false,
+                hasError = state.error != null,
+                error = state.error,
+                onDismissError = viewModel::clearError
+            )
+        }
     }
 }
 
@@ -67,13 +77,11 @@ fun PinSetupContent(
     hasError: Boolean,
     error: String?,
     onDismissError: () -> Unit,
-
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(horizontal = 24.dp)
+            .widthIn(max = 450.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         PinSetupHeader()
@@ -85,20 +93,20 @@ fun PinSetupContent(
             onPinChange = onPinChange
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
+        Spacer(modifier = Modifier.height(24.dp))
 
         SavePinButton(
             pin = pin,
             onSavePin = onSavePin
         )
 
-        // Error Dialog within Content
-        error?.let {
-            ErrorDialog(
-                error = it,
-                onDismiss = onDismissError
-            )
-        }
+
+    }
+
+    error?.let {
+        ErrorDialog(
+            error = it,
+            onDismiss = onDismissError
+        )
     }
 }

@@ -1,8 +1,5 @@
 package com.example.wizardlydo.screens.pin.comps
 
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -15,19 +12,21 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 
@@ -36,7 +35,8 @@ fun PinSetupHeader() {
     Text(
         text = "Set Up Security PIN",
         style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.primary,
+        textAlign = TextAlign.Center
     )
 }
 
@@ -45,9 +45,12 @@ fun PinAuthHeader() {
     Text(
         text = "Enter PIN",
         style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.primary,
+        textAlign = TextAlign.Center
     )
 }
+
+
 
 @Composable
 fun PinInputSection(
@@ -59,8 +62,6 @@ fun PinInputSection(
         onPinChange = onPinChange
     )
 }
-
-
 
 @Composable
 fun SavePinButton(
@@ -81,6 +82,12 @@ fun PinInputField(
     pin: String,
     onPinChange: (String) -> Unit
 ) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     BasicTextField(
         value = pin,
         onValueChange = {
@@ -93,6 +100,7 @@ fun PinInputField(
             keyboardType = KeyboardType.Number,
             imeAction = ImeAction.Done
         ),
+        modifier = Modifier.focusRequester(focusRequester),
         decorationBox = { innerTextField ->
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 repeat(4) { index ->
