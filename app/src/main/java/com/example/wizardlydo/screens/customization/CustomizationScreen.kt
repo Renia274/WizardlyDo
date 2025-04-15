@@ -1,5 +1,7 @@
 package com.example.wizardlydo.screens.customization
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,22 +12,24 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
 import com.example.wizardlydo.screens.customization.comps.GenderSelector
+import com.example.wizardlydo.screens.customization.comps.HairColorSelector
 import com.example.wizardlydo.screens.customization.comps.WizardPreview
 import com.example.wizardlydo.screens.customization.comps.SkinSelector
 import com.example.wizardlydo.screens.customization.comps.HairStyleSelector
-import com.example.wizardlydo.screens.customization.comps.HairColorSelector
 import com.example.wizardlydo.screens.customization.comps.OutfitSelector
-import com.example.wizardlydo.screens.customization.comps.AccessorySelector
 import com.example.wizardlydo.viewmodel.CustomizationViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -60,7 +64,7 @@ fun CustomizationScreen(
 
         // Update the ViewModel with these default values
         viewModel.updateOutfit(defaultOutfit)
-        viewModel.updateAccessory(defaultAccessory)
+
     }
 
     CustomizationContent(
@@ -70,7 +74,6 @@ fun CustomizationScreen(
         onHairStyleSelected = viewModel::updateHairStyle,
         onHairColorSelected = viewModel::updateHairColor,
         onOutfitSelected = viewModel::updateOutfit,
-        onAccessorySelected = viewModel::updateAccessory,
         onSave = {
             viewModel.saveCustomization()
             onComplete()
@@ -86,7 +89,6 @@ fun CustomizationContent(
     onHairStyleSelected: (Int) -> Unit,
     onHairColorSelected: (String) -> Unit,
     onOutfitSelected: (String) -> Unit,
-    onAccessorySelected: (String) -> Unit,
     onSave: () -> Unit
 ) {
     Column(
@@ -147,12 +149,7 @@ fun CustomizationContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Accessory selection based on wizard class
-            AccessorySelector(
-                wizardClass = state.wizardClass,
-                selectedAccessory = state.accessory,
-                onAccessorySelected = onAccessorySelected
-            )
+
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -167,4 +164,83 @@ fun CustomizationContent(
             Text("Save Customization", style = MaterialTheme.typography.titleMedium)
         }
     }
+}
+
+
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun CustomizationScreenPreview() {
+    Surface(modifier = Modifier.fillMaxSize()) {
+        // Create a sample state for preview
+        val previewState = CustomizationState(
+            wizardClass = WizardClass.MYSTWEAVER,
+            gender = "Female",
+            skinColor = "Medium",
+            hairStyle = 2, // Long wavy hair
+            hairColor = "#8E44AD", // Purple
+            outfit = "Mystic Robe",
+
+        )
+
+        CustomizationContent(
+            state = previewState,
+            onGenderSelected = {},
+            onSkinSelected = {},
+            onHairStyleSelected = {},
+            onHairColorSelected = {},
+            onOutfitSelected = {},
+            onSave = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MaleDraconistPreview() {
+    Box(modifier = Modifier.background(Color.LightGray)) {
+        val draconistState = CustomizationState(
+            wizardClass = WizardClass.DRACONIST,
+            gender = "Male",
+            skinColor = "Tan",
+            hairStyle = 1, // Short spiky hair
+            hairColor = "#C0392B", // Red
+            outfit = "Flame Costume",
+
+        )
+
+        CustomizationContent(
+            state = draconistState,
+            onGenderSelected = {},
+            onSkinSelected = {},
+            onHairStyleSelected = {},
+            onHairColorSelected = {},
+            onOutfitSelected = {},
+            onSave = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun NarrowScreenPreview() {
+    val chronomancerState = CustomizationState(
+        wizardClass = WizardClass.CHRONOMANCER,
+        gender = "Male",
+        skinColor = "Light",
+        hairStyle = 3, // Medium length
+        hairColor = "#2E86C1", // Blue
+        outfit = "Astronomer Robe",
+
+    )
+
+    CustomizationContent(
+        state = chronomancerState,
+        onGenderSelected = {},
+        onSkinSelected = {},
+        onHairStyleSelected = {},
+        onHairColorSelected = {},
+        onOutfitSelected = {},
+        onSave = {}
+    )
 }

@@ -53,8 +53,7 @@ class WizardRepository(
                     lastLogin = entity.lastLogin,
                     gender = entity.gender,
                     bodyColor = entity.bodyColor,
-                    clothingColor = entity.clothingColor,
-                    accessoryColor = entity.accessoryColor
+                    clothingColor = entity.clothingColor
                 )
             }
             Result.success(profile)
@@ -153,9 +152,19 @@ class WizardRepository(
             lastLogin = entity.lastLogin,
             gender = entity.gender,
             bodyColor = entity.bodyColor,
-            clothingColor = entity.clothingColor,
-            accessoryColor = entity.accessoryColor
+            clothingColor = entity.clothingColor
         )
+    }
+
+
+    suspend fun isWizardNameTaken(wizardName: String): Result<Boolean> {
+        return try {
+            // Query the database to check if this wizard name already exists
+            val exists = wizardDao.isWizardNameExists(wizardName)
+            Result.success(exists)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
 

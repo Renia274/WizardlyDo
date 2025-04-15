@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -27,6 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
 import com.example.wizardlydo.data.WizardClass
@@ -68,17 +71,27 @@ fun PasswordField(
     password: String,
     onPasswordChange: (String) -> Unit,
     passwordError: String?,
-    enabled: Boolean
+    enabled: Boolean,
+    isPasswordVisible: Boolean = false,
+    onTogglePasswordVisibility: () -> Unit
 ) {
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
         label = { Text("Password") },
-        visualTransformation = PasswordVisualTransformation(),
+        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password,
             imeAction = ImeAction.Done
         ),
+        trailingIcon = {
+            IconButton(onClick = onTogglePasswordVisibility) {
+                Icon(
+                    painter = painterResource(id = if (isPasswordVisible) R.drawable.ic_show else R.drawable.ic_hide),
+                    contentDescription = if (isPasswordVisible) "Hide password" else "Show password"
+                )
+            }
+        },
         isError = passwordError != null,
         supportingText = { passwordError?.let { ErrorText(it) } },
         modifier = Modifier.fillMaxWidth(),

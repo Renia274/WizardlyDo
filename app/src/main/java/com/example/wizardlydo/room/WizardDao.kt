@@ -36,8 +36,7 @@ interface WizardDao {
             lastLogin = :lastLogin,
             gender = :gender,
             bodyColor = :bodyColor,
-            clothingColor = :clothingColor,
-            accessoryColor = :accessoryColor
+            clothingColor = :clothingColor
         WHERE userId = :userId
     """
     )
@@ -56,11 +55,9 @@ interface WizardDao {
         lastLogin: Timestamp?,
         gender: String,
         bodyColor: String,
-        clothingColor: String,
-        accessoryColor: String
+        clothingColor: String
     )
 
-    // Change parameters to Long (timestamp milliseconds)
     @Query("UPDATE wizards SET lastLogin = :loginTime WHERE userId = :userId")
     suspend fun updateLastLogin(userId: String, loginTime: Long?)
 
@@ -77,6 +74,9 @@ interface WizardDao {
 
     @Query("UPDATE wizards SET level = :level, lastLogin = :loginTime WHERE userId = :userId")
     suspend fun updateLevel(userId: String, level: Int, loginTime: Timestamp)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM wizards WHERE wizardName = :wizardName)")
+    suspend fun isWizardNameExists(wizardName: String): Boolean
 
 
 }

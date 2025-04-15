@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 
 @Database(
     entities = [WizardEntity::class,PinEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(WizardTypeConverters::class)

@@ -19,7 +19,6 @@ class CustomizationViewModel(
     private val _state = MutableStateFlow(
         CustomizationState(
             wizardClass = wizardClass,
-            accessory = getDefaultAccessory(wizardClass),
             outfit = getDefaultOutfit(wizardClass)
         )
     )
@@ -59,9 +58,7 @@ class CustomizationViewModel(
         _state.update { it.copy(hairColor = color) }
     }
 
-    fun updateAccessory(accessory: String) {
-        _state.update { it.copy(accessory = accessory) }
-    }
+
 
     fun updateOutfit(outfit: String) {
         _state.update { it.copy(outfit = outfit) }
@@ -80,7 +77,6 @@ class CustomizationViewModel(
                 skinColor = current.skinColor,
                 hairStyle = current.hairStyle,
                 hairColor = current.hairColor,
-                accessory = current.accessory,
                 outfit = current.outfit
             )
 

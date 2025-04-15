@@ -53,7 +53,6 @@ private fun WizardProfile.toEntity() = WizardEntity(
     skinColor = skinColor,
     bodyColor = bodyColor,
     clothingColor = clothingColor,
-    accessoryColor = accessoryColor,
     hairColor = hairColor,
     hairStyle = hairStyle,
     outfit = outfit,

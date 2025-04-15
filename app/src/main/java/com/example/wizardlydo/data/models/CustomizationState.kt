@@ -8,7 +8,6 @@ data class CustomizationState(
     val skinColor: String = "light",
     val hairStyle: Int = 0,
     val hairColor: String = "brown",
-    val accessory: String = "",
     val outfit: String = "",
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,

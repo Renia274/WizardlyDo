@@ -17,6 +17,5 @@ fun WizardProfile.toEntity() = WizardEntity(
     lastLogin = lastLogin,
     gender = gender,
     bodyColor = bodyColor,
-    clothingColor = clothingColor,
-    accessoryColor = accessoryColor
+    clothingColor = clothingColor
 )
