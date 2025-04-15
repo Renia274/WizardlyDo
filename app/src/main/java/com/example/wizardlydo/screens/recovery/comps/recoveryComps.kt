@@ -39,7 +39,7 @@ fun RecoveryHeader() {
             text = "Enter your email to receive password reset instructions",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal =24.dp)
         )
     }
 }
@@ -51,19 +51,29 @@ fun RecoveryEmailField(
     emailError: String? = null,
     enabled: Boolean = true
 ) {
-    OutlinedTextField(
-        value = email,
-        onValueChange = onEmailChange,
-        label = { Text("Email") },
-        modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Email,
-            imeAction = ImeAction.Done
-        ),
-        isError = emailError != null,
-        enabled = enabled,
-        supportingText = emailError?.let { { Text(it) } }
-    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = email,
+            onValueChange = onEmailChange,
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Done
+            ),
+            isError = emailError != null,
+            enabled = enabled
+        )
+
+        if (emailError != null) {
+            Text(
+                text = emailError,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
+    }
 }
 
 @Composable

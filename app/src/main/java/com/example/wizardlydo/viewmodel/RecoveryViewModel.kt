@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.util.regex.Pattern
 
 class RecoveryViewModel : ViewModel(), KoinComponent {
     private val firebaseAuth: FirebaseAuth by inject()
@@ -19,15 +20,30 @@ class RecoveryViewModel : ViewModel(), KoinComponent {
     private val _state = MutableStateFlow(RecoveryState())
     val state = _state.asStateFlow()
 
+    private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
     val isEmailValid: Boolean
         get() = _state.value.email.isNotBlank() &&
-                android.util.Patterns.EMAIL_ADDRESS.matcher(_state.value.email).matches()
+                emailPattern.matcher(_state.value.email).matches() &&
+                _state.value.emailError == null
 
     fun updateEmail(email: String) {
-        _state.value = _state.value.copy(email = email)
+        val error = when {
+            email.isBlank() -> "Email is required"
+            !emailPattern.matcher(email).matches() -> "Invalid email format"
+            else -> null
+        }
+
+        _state.value = _state.value.copy(
+            email = email,
+            emailError = error
+        )
     }
 
     fun sendPasswordResetEmail() {
+        // Validate email first
+        updateEmail(_state.value.email)
+
         if (!isEmailValid) return
 
         viewModelScope.launch {
@@ -84,4 +100,3 @@ class RecoveryViewModel : ViewModel(), KoinComponent {
         _state.value = RecoveryState()
     }
 }
-

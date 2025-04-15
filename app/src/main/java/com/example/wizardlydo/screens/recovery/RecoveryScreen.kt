@@ -7,10 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,30 +32,32 @@ fun RecoveryScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    // Optional effect to handle success navigation
-    LaunchedEffect(state.isRecoveryEmailSent) {
-        // We'll handle this through the success dialog instead of auto-navigation
-    }
-
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        RecoveryContent(
-            email = state.email,
-            onEmailChange = viewModel::updateEmail,
-            onSubmitClick = viewModel::sendPasswordResetEmail,
-            onBackToLoginClick = {
-                viewModel.resetState()
-                onNavigateToLogin()
-            },
-            emailError = state.error?.takeIf { it.contains("email", ignoreCase = true) },
-            isEmailValid = viewModel.isEmailValid,
-            isLoading = state.isLoading
-        )
 
-        // Dialogs
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            RecoveryContent(
+                email = state.email,
+                onEmailChange = viewModel::updateEmail,
+                onSubmitClick = viewModel::sendPasswordResetEmail,
+                onBackToLoginClick = {
+                    viewModel.resetState()
+                    onNavigateToLogin()
+                },
+                emailError = state.emailError,
+                isEmailValid = viewModel.isEmailValid,
+                isLoading = state.isLoading
+            )
+        }
+
         state.error?.let { error ->
             RecoveryErrorDialog(
                 error = error,
@@ -87,8 +89,8 @@ fun RecoveryContent(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
+            .padding(horizontal = 24.dp)
+            .widthIn(max = 450.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         RecoveryHeader()
@@ -107,7 +109,7 @@ fun RecoveryContent(
         RecoverySubmitButton(
             onClick = onSubmitClick,
             isLoading = isLoading,
-            enabled = isEmailValid
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(16.dp))
