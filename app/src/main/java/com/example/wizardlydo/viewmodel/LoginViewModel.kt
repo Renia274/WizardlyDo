@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.util.regex.Pattern
 
 class LoginViewModel : ViewModel(), KoinComponent {
     private val auth: FirebaseAuth by inject()
@@ -19,19 +20,59 @@ class LoginViewModel : ViewModel(), KoinComponent {
     private val _state = MutableStateFlow(LoginState())
     val state = _state.asStateFlow()
 
+    // Email validation pattern
+    private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
     val isFormValid: Boolean
-        get() = _state.value.email.isNotBlank() &&
-                _state.value.password.isNotBlank()
+    get() = _state.value.emailError == null &&
+            _state.value.passwordError == null &&
+            _state.value.email.isNotBlank() &&
+            _state.value.password.isNotBlank()
 
     fun updateEmail(email: String) {
-        _state.value = _state.value.copy(email = email)
+        val error = when {
+            email.isBlank() -> "Email is required"
+            !emailPattern.matcher(email).matches() -> "Invalid email format"
+            else -> null
+        }
+
+        _state.value = _state.value.copy(
+            email = email,
+            emailError = error
+        )
     }
 
+    // Password pattern requiring at least 8 chars, 1 uppercase, 1 lowercase, 1 number, and 1 special character
+    private val passwordPattern = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$")
+
     fun updatePassword(password: String) {
-        _state.value = _state.value.copy(password = password)
+        val error = when {
+            password.isBlank() -> "Password is required"
+            password.length < 8 -> "Password must be at least 8 characters"
+            !passwordPattern.matcher(password).matches() -> "Password must contain uppercase, lowercase, number, and special character"
+            else -> null
+        }
+
+        _state.value = _state.value.copy(
+            password = password,
+            passwordError = error
+        )
+    }
+
+    fun togglePasswordVisibility() {
+        _state.value = _state.value.copy(
+            isPasswordVisible = !_state.value.isPasswordVisible
+        )
     }
 
     fun login() {
+        // Validate fields before attempting login
+        updateEmail(_state.value.email)
+        updatePassword(_state.value.password)
+
+        // Check if form is valid after validation
+        if (!isFormValid) return
+
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
 

@@ -41,14 +41,9 @@ class WizardAuthViewModel: ViewModel(), KoinComponent {
 
     // Validation patterns
     private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
-    private val passwordPattern = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{12,}$")
+    private val passwordPattern = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$")
 
-    init {
-        // Initial validation to show the form state
-        validateWizardName(_state.value.wizardName)
-        validateEmail(_state.value.email)
-        validatePassword(_state.value.password)
-    }
+
 
     fun signUpWithEmail() {
         if (!validateForm()) return
@@ -213,7 +208,7 @@ class WizardAuthViewModel: ViewModel(), KoinComponent {
     fun validatePassword(password: String) {
         val error = when {
             password.isBlank() -> "Password required"
-            password.length < 12 -> "Password must be at least 12 characters"
+            password.length < 12 -> "Password must be at least 8 characters"
             !passwordPattern.matcher(password).matches() -> "Password must contain uppercase, lowercase, number, and special character"
             else -> null
         }

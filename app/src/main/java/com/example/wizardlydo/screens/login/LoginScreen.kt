@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,13 +21,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wizardlydo.screens.login.comps.EmailField
-import com.example.wizardlydo.screens.login.comps.ForgotPasswordButton
 import com.example.wizardlydo.screens.login.comps.LoginButton
 import com.example.wizardlydo.screens.login.comps.LoginErrorDialog
 import com.example.wizardlydo.screens.login.comps.LoginHeader
 import com.example.wizardlydo.screens.login.comps.PasswordField
 import com.example.wizardlydo.viewmodel.LoginViewModel
 import org.koin.androidx.compose.koinViewModel
+
 
 @Composable
 fun LoginScreen(
@@ -51,7 +54,11 @@ fun LoginScreen(
             onForgotPasswordClick = onForgotPasswordClick,
             isFormValid = viewModel.isFormValid,
             isLoading = state.isLoading,
-            hasError = state.error != null
+            hasError = state.error != null,
+            emailError = state.emailError,
+            passwordError = state.passwordError,
+            isPasswordVisible = state.isPasswordVisible,
+            onTogglePasswordVisibility = viewModel::togglePasswordVisibility
         )
 
         // Error Dialog
@@ -74,49 +81,69 @@ fun LoginContent(
     onForgotPasswordClick: () -> Unit,
     isFormValid: Boolean,
     isLoading: Boolean,
-    hasError: Boolean
+    hasError: Boolean,
+    emailError: String? = null,
+    passwordError: String? = null,
+    isPasswordVisible: Boolean,
+    onTogglePasswordVisibility: () -> Unit
 ) {
-    Column(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
     ) {
-        LoginHeader()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 450.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            LoginHeader()
 
-        EmailField(
-            email = email,
-            onEmailChange = onEmailChange,
-            isError = hasError,
-            enabled = !isLoading
-        )
+            EmailField(
+                email = email,
+                onEmailChange = onEmailChange,
+                isError = hasError,
+                errorMessage = emailError,
+                enabled = !isLoading
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        PasswordField(
-            password = password,
-            onPasswordChange = onPasswordChange,
-            isError = hasError,
-            enabled = !isLoading
-        )
+            PasswordField(
+                password = password,
+                onPasswordChange = onPasswordChange,
+                isError = hasError,
+                errorMessage = passwordError,
+                enabled = !isLoading,
+                isPasswordVisible = isPasswordVisible,
+                onTogglePasswordVisibility = onTogglePasswordVisibility
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        // Forgot Password Button
-        ForgotPasswordButton(
-            onClick = onForgotPasswordClick,
-            enabled = !isLoading
-        )
+            // Forgot Password Button aligned to end
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                TextButton(
+                    onClick = onForgotPasswordClick,
+                    enabled = !isLoading
+                ) {
+                    Text("Forgot Password?")
+                }
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        LoginButton(
-            onClick = onLoginClick,
-            isLoading = isLoading,
-            enabled = isFormValid && !isLoading
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
+            LoginButton(
+                onClick = onLoginClick,
+                isLoading = isLoading,
+                enabled = !isLoading
+            )
+        }
     }
 }
