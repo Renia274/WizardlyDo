@@ -19,6 +19,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.screens.customization.CustomizationScreen
+import com.example.wizardlydo.screens.tasks.TaskScreen
 
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -130,11 +131,62 @@ fun NavigationGraph() {
         composable(Screen.PinAuth.route) {
             PinAuthScreen(
                 onPinSuccess = {
-                    navController.navigate(Screen.Splash.route) {
+                    navController.navigate(Screen.Tasks.route) {
                         popUpTo(Screen.PinAuth.route) { inclusive = true }
                     }
                 }
             )
         }
+
+
+        composable(Screen.Tasks.route) {
+            TaskScreen(
+                onHome = {
+                    navController.popBackStack(Screen.Tasks.route, inclusive = false)
+                },
+                onCreateTask = {
+                    navController.navigate(Screen.Tasks.CreateTask.route)
+                },
+                onEditTask = { taskId ->
+                    navController.navigate(Screen.Tasks.EditTask.createRoute(taskId.toString()))
+                },
+                onEditMode = {
+                    navController.navigate(Screen.Tasks.EditMode.route)
+                },
+                onSettings = {
+                    navController.navigate(Screen.Tasks.Settings.route)
+                },
+                onCompleteTask = { taskId ->
+                    // Add the required parameter
+                    // This will be passed to the viewModel.completeTask method
+                }
+            )
+        }
+
+//        // Nested Task Screens
+//        composable(Screen.Tasks.CreateTask.route) {
+//            CreateTaskScreen(
+//                onBack = { navController.popBackStack() },
+//                onComplete = { navController.popBackStack() }
+//            )
+//        }
+//
+//        composable(
+//            route = Screen.Tasks.EditTask.route,
+//            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+//        ) { backStackEntry ->
+//            EditTaskScreen(
+//                taskId = backStackEntry.arguments?.getString("taskId") ?: "",
+//                onBack = { navController.popBackStack() },
+//                onSave = { navController.popBackStack() }
+//            )
+//        }
+//
+//        composable(Screen.Tasks.Settings.route) {
+//            SettingsScreen(
+//                onBack = { navController.popBackStack() }
+//            )
+//        }
+//    }
     }
 }

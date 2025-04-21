@@ -18,12 +18,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wizardlydo.screens.pin.comps.ErrorDialog
 import com.example.wizardlydo.screens.pin.comps.PinInputSection
 import com.example.wizardlydo.screens.pin.comps.PinSetupHeader
 import com.example.wizardlydo.screens.pin.comps.SavePinButton
+import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.PinViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -107,6 +109,23 @@ fun PinSetupContent(
         ErrorDialog(
             error = it,
             onDismiss = onDismissError
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.R)
+@Preview(showBackground = true)
+@Composable
+fun PinSetupContentPreview() {
+    WizardlyDoTheme {
+        PinSetupContent(
+            pin = "1234",
+            onPinChange = {},
+            onSavePin = {},
+            isLoading = false,
+            hasError = false,
+            error = null,
+            onDismissError = {}
         )
     }
 }

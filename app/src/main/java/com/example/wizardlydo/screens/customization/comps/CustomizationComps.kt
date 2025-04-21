@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wizardlydo.R
+import com.example.wizardlydo.comps.getHairResourceId
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
 
@@ -419,66 +420,6 @@ fun ColorChip(color: Color, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-private fun getHairResourceId(gender: String, hairStyle: Int, hairColor: String): Int {
-    val colorSuffix = when (hairColor) {
-        "black" -> "black"
-        "blond" -> "blond"
-        "brown" -> "brown"
-        "red" -> "red"
-        "white" -> "white"
-        else -> "black"
-    }
-
-    return if (gender == "Male") {
-        when (hairStyle) {
-            0 -> when (colorSuffix) {
-                "black" -> R.drawable.creator_hair_bangs_1_black
-                "blond" -> R.drawable.creator_hair_bangs_1_blond
-                "brown" -> R.drawable.creator_hair_bangs_1_brown
-                "red" -> R.drawable.creator_hair_bangs_1_red
-                "white" -> R.drawable.creator_hair_bangs_1_white
-                else -> R.drawable.creator_hair_bangs_1_black
-            }
-            1 -> when (colorSuffix) {
-                "black" -> R.drawable.creator_hair_bangs_2_black
-                "blond" -> R.drawable.creator_hair_bangs_2_blond
-                "brown" -> R.drawable.creator_hair_bangs_2_brown
-                "red" -> R.drawable.creator_hair_bangs_2_red
-                "white" -> R.drawable.creator_hair_bangs_2_white
-                else -> R.drawable.creator_hair_bangs_2_black
-            }
-            2 -> when (colorSuffix) {
-                "black" -> R.drawable.creator_hair_bangs_3_black
-                "blond" -> R.drawable.creator_hair_bangs_3_blond
-                "brown" -> R.drawable.creator_hair_bangs_3_brown
-                "red" -> R.drawable.creator_hair_bangs_3_red
-                "white" -> R.drawable.creator_hair_bangs_3_white
-                else -> R.drawable.creator_hair_bangs_3_black
-            }
-            else -> R.drawable.creator_hair_bangs_1_black
-        }
-    } else { // Female
-        when (hairStyle) {
-            0 -> when (colorSuffix) { // Wavy
-                "black" -> R.drawable.creator_hair_bangs_1_black
-                "blond" -> R.drawable.creator_hair_bangs_1_blond
-                "brown" -> R.drawable.creator_hair_bangs_1_brown
-                "red" -> R.drawable.creator_hair_bangs_1_red
-                "white" -> R.drawable.creator_hair_bangs_1_white
-                else -> R.drawable.creator_hair_bangs_1_white
-            }
-            1 -> when (colorSuffix) { // Classic
-                "black" -> R.drawable.creator_hair_bangs_2_black
-                "blond" -> R.drawable.creator_hair_bangs_2_blond
-                "brown" -> R.drawable.creator_hair_bangs_2_brown
-                "red" -> R.drawable.creator_hair_bangs_2_red
-                "white" -> R.drawable.creator_hair_bangs_2_white
-                else -> R.drawable.creator_hair_bangs_1_blond
-            }
-            else -> R.drawable.creator_hair_bangs_1_white
-        }
-    }
-}
 
 /**
  * Get the appropriate outfit resource based on wizard class, selection, and gender

@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.wizardlydo"
-        minSdk = 24
+        minSdk = 25
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -68,7 +68,9 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.auth)
-
+    implementation(libs.play.services.fido)
+    implementation(libs.material)
+    implementation(libs.androidx.compose.material)
 
 
     // Testing

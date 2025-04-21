@@ -1,9 +1,10 @@
 package com.example.wizardlydo
 
 import android.app.Application
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.wizardlydo.repository.WizardRepository
+import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.example.wizardlydo.repository.pin.PinRepository
+import com.example.wizardlydo.repository.tasks.TaskRepository
+import com.example.wizardlydo.room.WizardDao
 import com.example.wizardlydo.room.WizardDatabase
 import com.example.wizardlydo.room.WizardTypeConverters
 import com.example.wizardlydo.utilities.SecurityProvider
@@ -11,6 +12,7 @@ import com.example.wizardlydo.viewmodel.CustomizationViewModel
 import com.example.wizardlydo.viewmodel.LoginViewModel
 import com.example.wizardlydo.viewmodel.PinViewModel
 import com.example.wizardlydo.viewmodel.RecoveryViewModel
+import com.example.wizardlydo.viewmodel.TaskViewModel
 import com.example.wizardlydo.viewmodel.WizardAuthViewModel
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
@@ -43,10 +45,16 @@ val appModule = module {
     single { WizardDatabase.getDatabase(androidContext()) }
     single { get<WizardDatabase>().wizardDao() }
     single { get<WizardDatabase>().pinDao() }
+    single { get<WizardDatabase>().taskDao() }
 
-    // Repository
-    single { WizardRepository(get(), get()) }
+    single<WizardRepository> {
+        object : WizardRepository {
+            override val wizardDao = get<WizardDao>()
+            override val firebaseAuth = get<FirebaseAuth>()
+        }
+    }
     single { PinRepository(get(), get()) }
+    single { TaskRepository(get()) }
 
     // Utilities
     single { WizardTypeConverters() }
@@ -56,7 +64,8 @@ val appModule = module {
     viewModelOf(::WizardAuthViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::RecoveryViewModel)
-    viewModel { PinViewModel(get()) }
+    viewModel { TaskViewModel(get(), get()) } 
+    viewModelOf(::PinViewModel)
 
     viewModel { params ->
         CustomizationViewModel(
@@ -64,5 +73,4 @@ val appModule = module {
             wizardClass = params.get()
         )
     }
-
 }

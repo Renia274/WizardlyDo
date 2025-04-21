@@ -30,6 +30,7 @@ import com.example.wizardlydo.screens.customization.comps.WizardPreview
 import com.example.wizardlydo.screens.customization.comps.SkinSelector
 import com.example.wizardlydo.screens.customization.comps.HairStyleSelector
 import com.example.wizardlydo.screens.customization.comps.OutfitSelector
+import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.CustomizationViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -48,14 +49,14 @@ fun CustomizationScreen(
     // Add a LaunchedEffect that runs when the wizard class changes
     LaunchedEffect(wizardClass) {
         // Set default values based on wizard class
-        val defaultOutfit = when(wizardClass) {
+        val defaultOutfit = when (wizardClass) {
             WizardClass.CHRONOMANCER -> "Astronomer Robe"
             WizardClass.LUMINARI -> "Crystal Robe"
             WizardClass.DRACONIST -> "Flame Costume"
             WizardClass.MYSTWEAVER -> "Mystic Robe"
         }
 
-        val defaultAccessory = when(wizardClass) {
+        val defaultAccessory = when (wizardClass) {
             WizardClass.CHRONOMANCER -> "Time Glasses"
             WizardClass.LUMINARI -> "Light Mask"
             WizardClass.DRACONIST -> "Dragon Eyes"
@@ -166,51 +167,22 @@ fun CustomizationContent(
     }
 }
 
-
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun CustomizationScreenPreview() {
-    Surface(modifier = Modifier.fillMaxSize()) {
-        // Create a sample state for preview
-        val previewState = CustomizationState(
-            wizardClass = WizardClass.MYSTWEAVER,
-            gender = "Female",
-            skinColor = "Medium",
-            hairStyle = 2, // Long wavy hair
-            hairColor = "#8E44AD", // Purple
-            outfit = "Mystic Robe",
-
-        )
-
-        CustomizationContent(
-            state = previewState,
-            onGenderSelected = {},
-            onSkinSelected = {},
-            onHairStyleSelected = {},
-            onHairColorSelected = {},
-            onOutfitSelected = {},
-            onSave = {}
-        )
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
-fun MaleDraconistPreview() {
-    Box(modifier = Modifier.background(Color.LightGray)) {
-        val draconistState = CustomizationState(
-            wizardClass = WizardClass.DRACONIST,
-            gender = "Male",
-            skinColor = "Tan",
-            hairStyle = 1, // Short spiky hair
-            hairColor = "#C0392B", // Red
-            outfit = "Flame Costume",
+fun CustomizationContentPreview() {
 
+    WizardlyDoTheme {
+        val sampleState = CustomizationState(
+            wizardClass = WizardClass.CHRONOMANCER,
+            gender = "Male",
+            skinColor = "#FFDBAC",
+            hairStyle = 2,
+            hairColor = "#3A2D1E",
+            outfit = "Astronomer Robe"
         )
 
         CustomizationContent(
-            state = draconistState,
+            state = sampleState,
             onGenderSelected = {},
             onSkinSelected = {},
             onHairStyleSelected = {},
@@ -221,26 +193,3 @@ fun MaleDraconistPreview() {
     }
 }
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
-@Composable
-fun NarrowScreenPreview() {
-    val chronomancerState = CustomizationState(
-        wizardClass = WizardClass.CHRONOMANCER,
-        gender = "Male",
-        skinColor = "Light",
-        hairStyle = 3, // Medium length
-        hairColor = "#2E86C1", // Blue
-        outfit = "Astronomer Robe",
-
-    )
-
-    CustomizationContent(
-        state = chronomancerState,
-        onGenderSelected = {},
-        onSkinSelected = {},
-        onHairStyleSelected = {},
-        onHairColorSelected = {},
-        onOutfitSelected = {},
-        onSave = {}
-    )
-}

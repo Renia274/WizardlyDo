@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wizardlydo.screens.recovery.comps.BackToLoginButton
@@ -22,6 +23,7 @@ import com.example.wizardlydo.screens.recovery.comps.RecoveryErrorDialog
 import com.example.wizardlydo.screens.recovery.comps.RecoveryHeader
 import com.example.wizardlydo.screens.recovery.comps.RecoverySubmitButton
 import com.example.wizardlydo.screens.recovery.comps.RecoverySuccessDialog
+import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.RecoveryViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -117,6 +119,22 @@ fun RecoveryContent(
         BackToLoginButton(
             onClick = onBackToLoginClick,
             enabled = !isLoading
+        )
+    }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun RecoveryContentPreview() {
+    WizardlyDoTheme {
+        RecoveryContent(
+            email = "wizard@hogwarts.com",
+            onEmailChange = {},
+            onSubmitClick = {},
+            onBackToLoginClick = {},
+            emailError = null,
+            isEmailValid = true,
+            isLoading = false
         )
     }
 }

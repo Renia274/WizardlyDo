@@ -20,6 +20,9 @@ material3 = "1.3.1"
 navigationCompose = "2.8.7"
 playServicesAuth = "21.3.0"
 org-jetbrains-kotlin-android = "1.8.0"
+playServicesFido = "20.0.1"
+material = "1.12.0"
+composeMaterial = "1.4.1"
 
 
 
@@ -62,6 +65,9 @@ play-services-auth = { group = "com.google.android.gms", name = "play-services-a
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext = { group = "androidx.test.ext", name = "junit", version = "1.1.5" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+play-services-fido = { group = "com.google.android.gms", name = "play-services-fido", version.ref = "playServicesFido" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "composeMaterial" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

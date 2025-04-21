@@ -15,12 +15,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wizardlydo.screens.pin.comps.ErrorDialog
 import com.example.wizardlydo.screens.pin.comps.PinAuthHeader
 import com.example.wizardlydo.screens.pin.comps.PinInputSection
 import com.example.wizardlydo.screens.pin.comps.PinVerifyButton
+import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.PinViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -105,3 +107,18 @@ fun PinAuthContent(
     }
 }
 
+@Composable
+@Preview(showBackground = true)
+fun PinAuthContentPreview() {
+    WizardlyDoTheme {
+        PinAuthContent(
+            pin = "1234",
+            onPinChange = {},
+            onVerifyPin = {},
+            isLoading = false,
+            hasError = false,
+            error = null,
+            onDismissError = {}
+        )
+    }
+}

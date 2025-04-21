@@ -6,7 +6,7 @@ import com.example.wizardlydo.providers.SignInProvider
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.data.models.WizardSignUpState
-import com.example.wizardlydo.repository.WizardRepository
+import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow

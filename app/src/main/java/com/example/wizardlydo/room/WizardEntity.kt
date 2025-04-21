@@ -22,12 +22,7 @@ data class WizardEntity(
     // Color and appearance fields
     val gender: String = "Male",
     val skinColor: String = "light",
-    val bodyColor: String = "#FFD700",
-    val headColor: String = "#FFD700",
-    val legsColor: String = "#2E0854",
-    val armsColor: String = "#2E0854",
     val hairColor: String = "brown",
-    val clothingColor: String = "#2E0854",
     val hairStyle: Int = 0,
     val outfit: String = "",
     val accessory: String = "",
@@ -42,5 +37,7 @@ data class WizardEntity(
     val achievements: List<String> = emptyList(),
     // Timestamp fields
     val joinDate: Timestamp? = null,
-    val lastLogin: Timestamp? = null
+    val lastLogin: Timestamp? = null,
+    val stamina: Int = 75,
+
 )

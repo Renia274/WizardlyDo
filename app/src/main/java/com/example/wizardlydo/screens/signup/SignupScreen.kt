@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
 import com.example.wizardlydo.data.WizardClass
@@ -31,6 +32,7 @@ import com.example.wizardlydo.screens.signup.comps.SignupButton
 import com.example.wizardlydo.screens.signup.comps.SignupHeader
 import com.example.wizardlydo.screens.signup.comps.WizardClassSelector
 import com.example.wizardlydo.screens.signup.comps.WizardNameField
+import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.WizardAuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -191,6 +193,33 @@ fun SignupContent(
         LoginRedirectButton(
             onClick = onLoginClick,
             enabled = !isLoading
+        )
+    }
+}
+
+
+@Composable
+@Preview(showBackground = true)
+fun SignupContentPreview() {
+    WizardlyDoTheme {
+        SignupContent(
+            wizardName = "Gandalf",
+            onNameChange = {},
+            wizardClass = WizardClass.MYSTWEAVER,
+            onClassSelected = {},
+            email = "gandalf@middleearth.com",
+            onEmailChange = {},
+            password = "YouShallNotPass123",
+            onPasswordChange = {},
+            onSignupClick = {},
+            onGoogleSignIn = {},
+            onLoginClick = {},
+            nameError = null,
+            emailError = null,
+            passwordError = null,
+            isLoading = false,
+            isPasswordVisible = false,
+            onTogglePasswordVisibility = {}
         )
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wizardlydo.screens.login.comps.EmailField
@@ -25,6 +26,7 @@ import com.example.wizardlydo.screens.login.comps.LoginButton
 import com.example.wizardlydo.screens.login.comps.LoginErrorDialog
 import com.example.wizardlydo.screens.login.comps.LoginHeader
 import com.example.wizardlydo.screens.login.comps.PasswordField
+import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.LoginViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -145,5 +147,28 @@ fun LoginContent(
                 enabled = !isLoading
             )
         }
+    }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun LoginContentPreview() {
+    WizardlyDoTheme {
+        LoginContent(
+            email = "user@example.com",
+            password = "password123",
+            onEmailChange = {},
+            onPasswordChange = {},
+            onLoginClick = {},
+            onForgotPasswordClick = {},
+            isFormValid = true,
+            isLoading = false,
+            hasError = false,
+            emailError = null,
+            passwordError = null,
+            isPasswordVisible = false,
+            onTogglePasswordVisibility = {}
+        )
     }
 }
