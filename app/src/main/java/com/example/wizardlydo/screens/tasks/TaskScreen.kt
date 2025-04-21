@@ -29,6 +29,8 @@ import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
 import com.example.wizardlydo.screens.tasks.comps.CharacterStatsSection
+import com.example.wizardlydo.screens.tasks.comps.EmptyTaskList
+import com.example.wizardlydo.screens.tasks.comps.ErrorMessage
 import com.example.wizardlydo.screens.tasks.comps.FullScreenLoading
 import com.example.wizardlydo.screens.tasks.comps.TaskBottomBar
 import com.example.wizardlydo.screens.tasks.comps.TaskFilterChips
@@ -105,25 +107,40 @@ fun TaskContent(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        // Character Stats Section with Result handling
         CharacterStatsSection(
-            wizard = state.wizardProfile?.getOrNull(),
+            wizardResult = state.wizardProfile,
             modifier = Modifier.padding(vertical = 8.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Filter Chips
         TaskFilterChips(
             currentFilter = state.currentFilter,
-            onFilterChange = state.onFilterChange ?: {}
+            onFilterChange = { filter ->
+                state.onFilterChange?.invoke(filter)
+            }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        TaskListSection(
-            tasks = state.filteredTasks,
-            onCompleteTask = onCompleteTask,
-            onEditTask = onEditTask
-        )
+        // Content Area
+        when {
+            state.error != null -> {
+                ErrorMessage(error = state.error)
+            }
+            state.filteredTasks.isEmpty() -> {
+                EmptyTaskList()
+            }
+            else -> {
+                TaskListSection(
+                    tasks = state.filteredTasks,
+                    onCompleteTask = onCompleteTask,
+                    onEditTask = onEditTask
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.weight(1f))
     }

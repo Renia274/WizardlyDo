@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -58,33 +57,11 @@ import java.util.Locale
 
 @Composable
 fun WizardAvatar(
-    wizardProfile: WizardProfile?,
+    wizardResult: Result<WizardProfile?>?,
     modifier: Modifier = Modifier
 ) {
-    // If profile is null, show a placeholder avatar
-    if (wizardProfile == null) {
-        Box(
-            modifier = modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            // Show a placeholder or loading indicator
-            CircularProgressIndicator(
-                modifier = Modifier.size(40.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        return
-    }
-
-    // Extract customization details from the profile
-    val outfit = wizardProfile.outfit
-    val hairStyle = wizardProfile.hairStyle
-    val hairColor = wizardProfile.hairColor
-    val gender = wizardProfile.gender
-    val skinColor = wizardProfile.skinColor
+    val wizardProfile = wizardResult?.getOrNull()
+    val error = wizardResult?.exceptionOrNull()
 
     Box(
         modifier = modifier
@@ -93,108 +70,160 @@ fun WizardAvatar(
             .background(MaterialTheme.colorScheme.primaryContainer),
         contentAlignment = Alignment.Center
     ) {
-        // Get the skin resource based on skinColor
-        val skinResourceId = getSkinResourceId(skinColor)
+        when {
+            wizardProfile != null -> {
+                // Actual avatar rendering
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Image(
+                        painter = painterResource(id = getSkinResourceId(wizardProfile.skinColor)),
+                        contentDescription = "Skin",
+                        modifier = Modifier.size(80.dp)
+                    )
+                    Image(
+                        painter = painterResource(id = getOutfitResourceId(
+                            wizardProfile.wizardClass,
+                            wizardProfile.outfit,
+                            wizardProfile.gender
+                        )),
+                        contentDescription = "Outfit",
+                        modifier = Modifier.size(80.dp)
+                    )
+                    Image(
+                        painter = painterResource(id = getHairResourceId(
+                            wizardProfile.gender,
+                            wizardProfile.hairStyle,
+                            wizardProfile.hairColor
+                        )),
+                        contentDescription = "Hair",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
 
-        // Skin/Body
-        Image(
-            painter = painterResource(id = skinResourceId),
-            contentDescription = "Character Body",
-            modifier = Modifier
-                .size(80.dp)
-                .align(Alignment.Center)
-        )
+            error != null -> {
+                Text(
+                    text = "⚠",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
 
-
-        val outfitResId = getOutfitResourceId(wizardProfile.wizardClass, outfit, gender)
-
-        Image(
-            painter = painterResource(id = outfitResId),
-            contentDescription = "Character Outfit",
-            modifier = Modifier
-                .size(80.dp)
-                .align(Alignment.Center)
-        )
-
-        // Hair with proper styling
-        val hairResId = getHairResourceId(gender, hairStyle, hairColor)
-
-        Image(
-            painter = painterResource(id = hairResId),
-            contentDescription = "Character Hair",
-            modifier = Modifier
-                .size(40.dp)
-                .align(Alignment.TopCenter)
-                .offset(x = 10.dp, y = 35.dp)
-        )
+            else -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(40.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }
 
 @Composable
 fun CharacterStatsSection(
-    wizard: WizardProfile?,
+    wizardResult: Result<WizardProfile?>?,
     modifier: Modifier = Modifier
 ) {
-    // Use wizard's properties directly
-    val health = wizard?.health ?: 0
-    val maxHealth = wizard?.maxHealth ?: 100
-    val stamina = wizard?.stamina ?: 0
-    val level = wizard?.level ?: 1
+    val wizardProfile = wizardResult?.getOrNull()
+    val error = wizardResult?.exceptionOrNull()
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Avatar Section
             WizardAvatar(
-                wizardProfile = wizard,
+                wizardResult = wizardResult,
                 modifier = Modifier.size(120.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = wizard?.wizardName ?: "Loading...",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = wizard?.wizardClass?.name ?: "",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            StatBar(
-                label = "HP",
-                value = health,
-                maxValue = maxHealth,
-                color = Color(0xFFE53935),
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Name and Class
+            when {
+                error != null -> {
+                    Text(
+                        text = "Character Load Failed",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = error.message ?: "Unknown error",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                wizardProfile != null -> {
+                    Text(
+                        text = wizardProfile.wizardName,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = wizardProfile.wizardClass.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                else -> {
+                    Text(
+                        text = "Loading Character...",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            StatBar(
-                label = "Stamina",
-                value = stamina,
-                maxValue = 100,
-                color = Color(0xFF43A047),
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Stats Section
+            if (wizardProfile != null) {
+                StatBar(
+                    label = "HP",
+                    value = wizardProfile.health,
+                    maxValue = wizardProfile.maxHealth,
+                    color = Color(0xFFE53935),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Level $level",
-                style = MaterialTheme.typography.bodyMedium
-            )
+                StatBar(
+                    label = "Stamina",
+                    value = wizardProfile.stamina,
+                    maxValue = 100,
+                    color = Color(0xFF43A047),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Level ${wizardProfile.level}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else if (error == null) {
+                // Loading placeholders
+                repeat(2) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
         }
     }
 }
@@ -212,19 +241,29 @@ private fun StatBar(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = label, style = MaterialTheme.typography.bodyMedium)
-            Text(text = "$value/$maxValue", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "$value/$maxValue",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
 
         Spacer(modifier = Modifier.height(4.dp))
 
         LinearProgressIndicator(
-            progress = { if (maxValue > 0) value.toFloat() / maxValue.toFloat() else 0f },
+            progress = {
+                if (maxValue > 0) value.toFloat() / maxValue.toFloat() else 0f
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp),
             color = color,
-            trackColor = color.copy(alpha = 0.2f),
+            trackColor = color.copy(alpha = 0.2f)
         )
     }
 }
@@ -408,6 +447,39 @@ fun TaskBottomBar(
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator()
+    }
+}
+
+
+@Composable
+ fun ErrorMessage(error: String?) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = error ?: "Unknown error occurred",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+ fun EmptyTaskList() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "No tasks found",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
     }
 }
 

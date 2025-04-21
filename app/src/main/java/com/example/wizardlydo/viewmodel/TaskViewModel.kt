@@ -13,10 +13,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 
-class TaskViewModel(
+
+class TaskViewModel (
     private val taskRepository: TaskRepository,
     private val wizardRepository: WizardRepository
-) : ViewModel(), KoinComponent {
+) : ViewModel(),KoinComponent {
 
     private val _uiState = MutableStateFlow(TaskUiState())
     val uiState = _uiState.asStateFlow()
@@ -31,25 +32,39 @@ class TaskViewModel(
                     return@launch
                 }
 
-                val wizard = wizardRepository.getWizardProfile(userId)
-                // Assuming userId is now properly typed as Int
-                val tasks = taskRepository.getAllTasks(userId.toInt())
+                // Get wizard profile with proper error handling
+                val wizardResult = runCatching {
+                    wizardRepository.getWizardProfile(userId).getOrThrow()
+                }
+
+                // Get tasks with error handling
+                val tasks = runCatching {
+                    taskRepository.getAllTasks(userId.toInt())
+                }.getOrElse {
+                    _uiState.update { it.copy(error = "Failed to load tasks") }
+                    emptyList()
+                }
+
                 val filteredTasks = filterTasks(tasks, _uiState.value.currentFilter)
 
                 _uiState.update {
                     it.copy(
-                        wizardProfile = wizard,
+                        wizardProfile = wizardResult.fold(
+                            onSuccess = { Result.success(it) },
+                            onFailure = { Result.failure(it) }
+                        ),
                         tasks = tasks,
                         filteredTasks = filteredTasks,
                         isLoading = false
                     )
                 }
+
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         error = "Failed to load: ${e.message}",
                         isLoading = false,
-                        wizardProfile = null
+                        wizardProfile = Result.failure(e)
                     )
                 }
             }
@@ -59,27 +74,9 @@ class TaskViewModel(
     fun completeTask(taskId: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-
             try {
                 taskRepository.updateTaskCompletionStatus(taskId, true)
-
-                // Refresh task data
-                val userId = wizardRepository.getCurrentUserId() ?: return@launch
-
-                // Assuming userId is now properly typed as Int
-                val updatedTasks = taskRepository.getAllTasks(userId.toInt())
-                val filteredTasks = filterTasks(updatedTasks, _uiState.value.currentFilter)
-
-                // Refresh wizard data after completion
-                val updatedWizard = wizardRepository.getWizardProfile(userId)
-                _uiState.update {
-                    it.copy(
-                        wizardProfile = updatedWizard,
-                        tasks = updatedTasks,
-                        filteredTasks = filteredTasks,
-                        isLoading = false
-                    )
-                }
+                loadData() // Refresh data after completion
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -101,17 +98,15 @@ class TaskViewModel(
     }
 
     fun setFilter(filter: TaskFilter) {
-        viewModelScope.launch {
-            val filteredTasks = filterTasks(_uiState.value.tasks, filter)
-            _uiState.update {
-                it.copy(
-                    currentFilter = filter,
-                    filteredTasks = filteredTasks
-                )
-            }
+        _uiState.update { state ->
+            state.copy(
+                currentFilter = filter,
+                filteredTasks = filterTasks(state.tasks, filter)
+            )
         }
-    }
 
+
+    }
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
