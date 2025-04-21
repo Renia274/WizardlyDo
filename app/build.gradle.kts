@@ -3,8 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.services)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.org.jetbrains.kotlin.kapt)
-
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -46,6 +45,10 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
+
+    sourceSets.configureEach {
+        kotlin.srcDir("build/generated/ksp/${name}/kotlin")
+    }
 }
 
 dependencies {
@@ -85,15 +88,15 @@ dependencies {
 
 
 
-    // Coil for Image Loading (recommended)
+    // Coil for Image Loading
     implementation(libs.coil.compose)
 
-    // Firebase UI (optional but helpful)
+    // Firebase UI
     implementation(libs.firebase.ui.auth)
 
 
 
-    // Accompanist Permissions (if needed)
+    // Accompanist Permissions 
     implementation(libs.accompanist.permissions)
 
     // Compose Constraint Layout
@@ -117,10 +120,13 @@ dependencies {
     // Koin Compose
     implementation (libs.koin.androidx.compose)
 
+    implementation(libs.koin.annotations)
+    ksp(libs.koin.ksp)
+
     // Room
     implementation ("androidx.room:room-runtime:2.6.1")
     implementation ("androidx.room:room-ktx:2.6.1")
-    kapt ("androidx.room:room-compiler:2.6.1")
+    ksp ("androidx.room:room-compiler:2.6.1")
 
     //Biometrics
     implementation ("androidx.biometric:biometric:1.2.0-alpha04")

@@ -114,7 +114,6 @@ fun TaskContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Filter Chips
         TaskFilterChips(
             currentFilter = state.currentFilter,
             onFilterChange = { filter ->
@@ -124,7 +123,6 @@ fun TaskContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Content Area
         when {
             state.error != null -> {
                 ErrorMessage(error = state.error)
