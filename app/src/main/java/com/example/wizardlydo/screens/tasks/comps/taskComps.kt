@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -72,30 +73,41 @@ fun WizardAvatar(
     ) {
         when {
             wizardProfile != null -> {
-                // Actual avatar rendering
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(modifier = Modifier.size(100.dp)) {
+                    // Skin/Body
                     Image(
                         painter = painterResource(id = getSkinResourceId(wizardProfile.skinColor)),
-                        contentDescription = "Skin",
-                        modifier = Modifier.size(80.dp)
+                        contentDescription = "Character Body",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .align(Alignment.Center)
                     )
+
+                    // Outfit
                     Image(
                         painter = painterResource(id = getOutfitResourceId(
                             wizardProfile.wizardClass,
                             wizardProfile.outfit,
                             wizardProfile.gender
                         )),
-                        contentDescription = "Outfit",
-                        modifier = Modifier.size(80.dp)
+                        contentDescription = "Character Outfit",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .align(Alignment.Center)
                     )
+
+                    // Hair
                     Image(
                         painter = painterResource(id = getHairResourceId(
                             wizardProfile.gender,
                             wizardProfile.hairStyle,
                             wizardProfile.hairColor
                         )),
-                        contentDescription = "Hair",
-                        modifier = Modifier.size(40.dp)
+                        contentDescription = "Character Hair",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .align(Alignment.TopCenter)
+                            .offset(x=10.dp,y = 24.dp)
                     )
                 }
             }
@@ -104,8 +116,8 @@ fun WizardAvatar(
                 Text(
                     text = "⚠",
                     style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.size(40.dp)
-                )
+                    modifier = Modifier.size(40.dp))
+
             }
 
             else -> {

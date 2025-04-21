@@ -37,7 +37,7 @@ import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
 
 
-// WizardPreview component and related helper functions
+// WizardPreview Customization component
 @Composable
 fun WizardPreview(state: CustomizationState) {
     Box(
@@ -45,10 +45,10 @@ fun WizardPreview(state: CustomizationState) {
             .fillMaxWidth()
             .height(300.dp)
     ) {
-        // Main container for all character parts
+
         Box(
             modifier = Modifier
-                .size(200.dp)  // Larger container to accommodate positioned elements
+                .size(200.dp)
                 .align(Alignment.Center)
         ) {
             // 1. Skin/Body - centered as the base
@@ -97,9 +97,9 @@ fun WizardPreview(state: CustomizationState) {
                 painter = painterResource(id = hairResId),
                 contentDescription = "Character Hair",
                 modifier = Modifier
-                    .size(40.dp)  // Larger size for hair
+                    .size(40.dp)
                     .align(Alignment.TopCenter)
-                    .offset(x = 10.dp, y = 71.dp)  // Shift right and up
+                    .offset(x = 10.dp, y = 73.dp)
             )
         }
     }

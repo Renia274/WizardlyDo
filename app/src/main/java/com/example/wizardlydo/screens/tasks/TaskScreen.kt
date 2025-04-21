@@ -46,7 +46,7 @@ fun TaskScreen(
     onHome: () -> Unit,
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,  // For individual task editing
-    onEditMode: () -> Unit,        // For general edit mode
+    onEditMode: () -> Unit,        // For  edit screen
     onSettings: () -> Unit,
     onCompleteTask: (Int) -> Unit
 ) {
@@ -107,7 +107,6 @@ fun TaskContent(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        // Character Stats Section with Result handling
         CharacterStatsSection(
             wizardResult = state.wizardProfile,
             modifier = Modifier.padding(vertical = 8.dp)

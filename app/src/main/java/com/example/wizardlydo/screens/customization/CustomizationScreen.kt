@@ -46,7 +46,7 @@ fun CustomizationScreen(
 
     val state by viewModel.state.collectAsState()
 
-    // Add a LaunchedEffect that runs when the wizard class changes
+    // runs when the wizard class changes
     LaunchedEffect(wizardClass) {
         // Set default values based on wizard class
         val defaultOutfit = when (wizardClass) {
@@ -56,14 +56,8 @@ fun CustomizationScreen(
             WizardClass.MYSTWEAVER -> "Mystic Robe"
         }
 
-        val defaultAccessory = when (wizardClass) {
-            WizardClass.CHRONOMANCER -> "Time Glasses"
-            WizardClass.LUMINARI -> "Light Mask"
-            WizardClass.DRACONIST -> "Dragon Eyes"
-            WizardClass.MYSTWEAVER -> "Arcane Monocle"
-        }
 
-        // Update the ViewModel with these default values
+
         viewModel.updateOutfit(defaultOutfit)
 
     }
@@ -176,7 +170,7 @@ fun CustomizationContentPreview() {
             wizardClass = WizardClass.CHRONOMANCER,
             gender = "Male",
             skinColor = "#FFDBAC",
-            hairStyle = 2,
+            hairStyle = 1,
             hairColor = "#3A2D1E",
             outfit = "Astronomer Robe"
         )
