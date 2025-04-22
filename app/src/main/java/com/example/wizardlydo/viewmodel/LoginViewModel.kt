@@ -7,27 +7,28 @@ import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
+import org.koin.android.annotation.KoinViewModel
 import java.util.regex.Pattern
 
-class LoginViewModel : ViewModel(), KoinComponent {
-    private val auth: FirebaseAuth by inject()
-    private val wizardRepository: WizardRepository by inject()
-
-    private val _state = MutableStateFlow(LoginState())
-    val state = _state.asStateFlow()
+@KoinViewModel
+class LoginViewModel(
+    private val auth: FirebaseAuth,
+    private val wizardRepository: WizardRepository
+) : ViewModel() {
+    private val mutableState = MutableStateFlow(LoginState())
+    val state = mutableState.asStateFlow()
 
     // Email validation pattern
     private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
 
     val isFormValid: Boolean
-    get() = _state.value.emailError == null &&
-            _state.value.passwordError == null &&
-            _state.value.email.isNotBlank() &&
-            _state.value.password.isNotBlank()
+        get() = state.value.emailError == null &&
+                state.value.passwordError == null &&
+                state.value.email.isNotBlank() &&
+                state.value.password.isNotBlank()
 
     fun updateEmail(email: String) {
         val error = when {
@@ -36,10 +37,7 @@ class LoginViewModel : ViewModel(), KoinComponent {
             else -> null
         }
 
-        _state.value = _state.value.copy(
-            email = email,
-            emailError = error
-        )
+        mutableState.update { it.copy(email = email, emailError = error) }
     }
 
     // Password pattern requiring at least 8 chars, 1 uppercase, 1 lowercase, 1 number, and 1 special character
@@ -53,73 +51,66 @@ class LoginViewModel : ViewModel(), KoinComponent {
             else -> null
         }
 
-        _state.value = _state.value.copy(
-            password = password,
-            passwordError = error
-        )
+        mutableState.update { it.copy(password = password, passwordError = error) }
     }
 
     fun togglePasswordVisibility() {
-        _state.value = _state.value.copy(
-            isPasswordVisible = !_state.value.isPasswordVisible
-        )
+        mutableState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
     }
 
     fun login() {
         // Validate fields before attempting login
-        updateEmail(_state.value.email)
-        updatePassword(_state.value.password)
+        updateEmail(state.value.email)
+        updatePassword(state.value.password)
 
-        // Check if form is valid after validation
         if (!isFormValid) return
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
+            mutableState.update { it.copy(isLoading = true) }
 
             try {
-                // Authenticate with Firebase
                 val authResult = auth.signInWithEmailAndPassword(
-                    _state.value.email,
-                    _state.value.password
+                    state.value.email,
+                    state.value.password
                 ).await()
 
-                // Get current user ID from Firebase Auth
                 val userId = authResult.user?.uid
                     ?: throw Exception("Authentication failed")
 
-                // fetch the wizard profile using the authenticated user ID
                 wizardRepository.getWizardProfile(userId).fold(
                     onSuccess = { profile ->
-                        if (profile != null) {
-                            _state.value = _state.value.copy(
-                                isLoading = false,
-                                loginSuccess = true
-                            )
-                        } else {
-                            _state.value = _state.value.copy(
-                                isLoading = false,
-                                error = "Profile not found. Please complete registration."
-                            )
+                        mutableState.update {
+                            if (profile != null) {
+                                it.copy(isLoading = false, loginSuccess = true)
+                            } else {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "Profile not found. Please complete registration."
+                                )
+                            }
                         }
                     },
-                    onFailure = {
-                        _state.value = _state.value.copy(
-                            isLoading = false,
-                            error = "Login failed: ${it.message}"
-                        )
+                    onFailure = { e ->
+                        mutableState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "Login failed: ${e.message}"
+                            )
+                        }
                     }
                 )
             } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = "Authentication failed: ${e.message}"
-                )
+                mutableState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Authentication failed: ${e.message}"
+                    )
+                }
             }
         }
     }
 
     fun clearError() {
-        _state.value = _state.value.copy(error = null)
+        mutableState.update { it.copy(error = null) }
     }
 }
-

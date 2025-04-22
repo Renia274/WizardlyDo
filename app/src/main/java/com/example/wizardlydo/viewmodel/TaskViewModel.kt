@@ -11,43 +11,46 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
+import org.koin.android.annotation.KoinViewModel
 
 
-class TaskViewModel (
+
+@KoinViewModel
+class TaskViewModel(
     private val taskRepository: TaskRepository,
     private val wizardRepository: WizardRepository
-) : ViewModel(),KoinComponent {
+) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TaskUiState())
-    val uiState = _uiState.asStateFlow()
+    private val mutableState = MutableStateFlow(TaskUiState())
+    val uiState = mutableState.asStateFlow()
 
     fun loadData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            mutableState.update { it.copy(isLoading = true, error = null) }
 
             try {
                 val userId = wizardRepository.getCurrentUserId() ?: run {
-                    _uiState.update { it.copy(error = "Not logged in", isLoading = false) }
+                    mutableState.update { it.copy(error = "Not logged in", isLoading = false) }
                     return@launch
                 }
 
-                // Get wizard profile with proper error handling
                 val wizardResult = runCatching {
                     wizardRepository.getWizardProfile(userId).getOrThrow()
                 }
 
-                // Get tasks with error handling
                 val tasks = runCatching {
                     taskRepository.getAllTasks(userId.toInt())
-                }.getOrElse {
-                    _uiState.update { it.copy(error = "Failed to load tasks") }
-                    emptyList()
-                }
+                }.fold(
+                    onSuccess = { it },
+                    onFailure = {
+                        mutableState.update { it.copy(error = "Failed to load tasks") }
+                        emptyList()
+                    }
+                )
 
-                val filteredTasks = filterTasks(tasks, _uiState.value.currentFilter)
+                val filteredTasks = filterTasks(tasks, uiState.value.currentFilter)
 
-                _uiState.update {
+                mutableState.update { it ->
                     it.copy(
                         wizardProfile = wizardResult.fold(
                             onSuccess = { Result.success(it) },
@@ -60,7 +63,7 @@ class TaskViewModel (
                 }
 
             } catch (e: Exception) {
-                _uiState.update {
+                mutableState.update {
                     it.copy(
                         error = "Failed to load: ${e.message}",
                         isLoading = false,
@@ -73,12 +76,12 @@ class TaskViewModel (
 
     fun completeTask(taskId: Int) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            mutableState.update { it.copy(isLoading = true) }
             try {
                 taskRepository.updateTaskCompletionStatus(taskId, true)
                 loadData() // Refresh data after completion
             } catch (e: Exception) {
-                _uiState.update {
+                mutableState.update {
                     it.copy(
                         error = "Failed to complete task: ${e.message}",
                         isLoading = false
@@ -98,16 +101,15 @@ class TaskViewModel (
     }
 
     fun setFilter(filter: TaskFilter) {
-        _uiState.update { state ->
+        mutableState.update { state ->
             state.copy(
                 currentFilter = filter,
                 filteredTasks = filterTasks(state.tasks, filter)
             )
         }
-
-
     }
+
     fun clearError() {
-        _uiState.update { it.copy(error = null) }
+        mutableState.update { it.copy(error = null) }
     }
 }

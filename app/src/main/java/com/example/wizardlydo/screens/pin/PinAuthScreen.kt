@@ -34,8 +34,8 @@ fun PinAuthScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state.isPinSaved) {
-        if (state.isPinSaved) {
+    LaunchedEffect(state.isPinVerified) {
+        if (state.isPinVerified) {
             onPinSuccess()
         }
     }
@@ -44,7 +44,6 @@ fun PinAuthScreen(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -63,7 +62,6 @@ fun PinAuthScreen(
         }
     }
 }
-
 @Composable
 fun PinAuthContent(
     pin: String,

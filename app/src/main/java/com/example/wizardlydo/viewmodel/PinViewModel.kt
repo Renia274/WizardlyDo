@@ -6,98 +6,104 @@ import com.example.wizardlydo.data.models.PinSetupState
 import com.example.wizardlydo.repository.pin.PinRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.koin.android.annotation.KoinViewModel
 import org.koin.core.component.KoinComponent
 
 
+@KoinViewModel
 class PinViewModel(
     private val pinRepository: PinRepository
-) : ViewModel(), KoinComponent {
-    private val _state = MutableStateFlow(PinSetupState())
-    val state = _state.asStateFlow()
+) : ViewModel() {
+    private val mutableState = MutableStateFlow(PinSetupState())
+    val state = mutableState.asStateFlow()
 
     fun updatePin(pin: String) {
-        _state.value = _state.value.copy(
-            pin = pin,
-            error = null
-        )
+        mutableState.update {
+            it.copy(
+                pin = pin,
+                error = null
+            )
+        }
     }
-
-
 
     fun validateAndSavePin() {
         viewModelScope.launch {
-            val pin = _state.value.pin
+            val currentPin = state.value.pin
 
-            // Validate pin is exactly 4 digits
-            if (pin.length != 4 || !pin.all { it.isDigit() }) {
-                _state.value = _state.value.copy(
-                    error = "PIN must be exactly 4 digits"
-                )
+            if (currentPin.length != 4 || !currentPin.all { it.isDigit() }) {
+                mutableState.update {
+                    it.copy(
+                        error = "PIN must be exactly 4 digits"
+                    )
+                }
                 return@launch
             }
 
-            // Save PIN with biometrics preference
-            val result = pinRepository.savePin(pin)
-
-            result.fold(
+            pinRepository.savePin(currentPin).fold(
                 onSuccess = {
-                    _state.value = _state.value.copy(
-                        isPinSaved = true,
-                        error = null
-                    )
+                    mutableState.update {
+                        it.copy(
+                            isPinSaved = true,
+                            error = null
+                        )
+                    }
                 },
                 onFailure = { e ->
-                    _state.value = _state.value.copy(
-                        error = "Failed to save PIN: ${e.message}",
-                        isPinSaved = false
-                    )
+                    mutableState.update {
+                        it.copy(
+                            error = "Failed to save PIN: ${e.message}",
+                            isPinSaved = false
+                        )
+                    }
                 }
             )
         }
     }
 
     fun clearError() {
-        _state.value = _state.value.copy(error = null)
+        mutableState.update { it.copy(error = null) }
     }
 
     fun verifyPin() {
         viewModelScope.launch {
-            val pin = _state.value.pin
+            val currentPin = state.value.pin
 
-            // Validate pin is exactly 4 digits
-            if (pin.length != 4 || !pin.all { it.isDigit() }) {
-                _state.value = _state.value.copy(
-                    error = "PIN must be exactly 4 digits"
-                )
+            if (currentPin.length != 4 || !currentPin.all { it.isDigit() }) {
+                mutableState.update {
+                    it.copy(
+                        error = "PIN must be exactly 4 digits"
+                    )
+                }
                 return@launch
             }
 
-            // Verify PIN
-            val result = pinRepository.validatePin(pin)
-
-            result.fold(
+            pinRepository.validatePin(currentPin).fold(
                 onSuccess = { isValid ->
-                    if (isValid) {
-                        _state.value = _state.value.copy(
-                            isPinSaved = true,
-                            error = null
-                        )
-                    } else {
-                        _state.value = _state.value.copy(
-                            error = "Incorrect PIN",
-                            isPinSaved = false
-                        )
+                    mutableState.update {
+                        if (isValid) {
+                            it.copy(
+                                isPinVerified = true,
+                                error = null
+                            )
+                        } else {
+                            it.copy(
+                                error = "Incorrect PIN",
+                                isPinVerified = false
+                            )
+                        }
                     }
                 },
                 onFailure = { e ->
-                    _state.value = _state.value.copy(
-                        error = "PIN verification failed: ${e.message}",
-                        isPinSaved = false
-                    )
+                    mutableState.update {
+                        it.copy(
+                            error = "PIN verification failed: ${e.message}",
+                            isPinVerified = false
+                        )
+                    }
                 }
             )
         }
     }
-
 }
