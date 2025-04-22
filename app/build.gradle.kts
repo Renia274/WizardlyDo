@@ -102,12 +102,12 @@ dependencies {
     // Compose Constraint Layout
     implementation(libs.androidx.constraintlayout.compose)
 
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation(libs.googleid)
 
     // Credential Manager
-    implementation ("androidx.credentials:credentials:1.2.2")
+    implementation (libs.androidx.credentials)
 
-    implementation ("androidx.credentials:credentials-play-services-auth:1.2.2")
+    implementation (libs.androidx.credentials.play.services.auth)
 
 
     //Koin
@@ -120,16 +120,17 @@ dependencies {
     // Koin Compose
     implementation (libs.koin.androidx.compose)
 
-    implementation(libs.koin.annotations)
-    ksp(libs.koin.ksp)
+    implementation(libs.koin.annotation)
+
+    ksp(libs.koin.ksp.compiler)
 
     // Room
-    implementation ("androidx.room:room-runtime:2.6.1")
-    implementation ("androidx.room:room-ktx:2.6.1")
-    ksp ("androidx.room:room-compiler:2.6.1")
+    implementation (libs.androidx.room.runtime)
+    implementation (libs.androidx.room.ktx)
+    ksp (libs.androidx.room.compiler)
 
     //Biometrics
-    implementation ("androidx.biometric:biometric:1.2.0-alpha04")
+    implementation (libs.androidx.biometric)
 
 
 

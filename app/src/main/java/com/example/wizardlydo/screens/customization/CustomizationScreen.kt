@@ -1,7 +1,5 @@
 package com.example.wizardlydo.screens.customization
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,24 +10,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
 import com.example.wizardlydo.screens.customization.comps.GenderSelector
 import com.example.wizardlydo.screens.customization.comps.HairColorSelector
-import com.example.wizardlydo.screens.customization.comps.WizardPreview
-import com.example.wizardlydo.screens.customization.comps.SkinSelector
 import com.example.wizardlydo.screens.customization.comps.HairStyleSelector
 import com.example.wizardlydo.screens.customization.comps.OutfitSelector
+import com.example.wizardlydo.screens.customization.comps.SkinSelector
+import com.example.wizardlydo.screens.customization.comps.WizardPreview
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.CustomizationViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -44,22 +40,11 @@ fun CustomizationScreen(
         parametersOf(wizardClass)
     })
 
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.stateFlow.collectAsState()
 
-    // runs when the wizard class changes
+    // Handle wizard class changes
     LaunchedEffect(wizardClass) {
-        // Set default values based on wizard class
-        val defaultOutfit = when (wizardClass) {
-            WizardClass.CHRONOMANCER -> "Astronomer Robe"
-            WizardClass.LUMINARI -> "Crystal Robe"
-            WizardClass.DRACONIST -> "Flame Costume"
-            WizardClass.MYSTWEAVER -> "Mystic Robe"
-        }
-
-
-
-        viewModel.updateOutfit(defaultOutfit)
-
+        viewModel.updateOutfit(viewModel.getDefaultOutfit(wizardClass))
     }
 
     CustomizationContent(

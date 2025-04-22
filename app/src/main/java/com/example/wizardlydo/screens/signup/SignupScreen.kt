@@ -46,7 +46,7 @@ fun SignupScreen(
     onSignupSuccess: (WizardClass) -> Unit
 ) {
     val context = LocalContext.current
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(state.isProfileComplete) {
         if (state.isProfileComplete) {

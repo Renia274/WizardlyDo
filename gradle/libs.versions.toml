@@ -1,14 +1,17 @@
 [versions]
 accompanistPermissions = "0.34.0"
 agp = "8.8.0"
+biometric = "1.2.0-alpha04"
 coilCompose = "2.7.0"
 constraintlayoutCompose = "1.1.0"
+credentialsPlayServicesAuth = "1.2.2"
 firebaseBom = "33.9.0"
 firebaseUiAuth = "8.0.2"
 
-koinAndroid = "3.5.3"
+googleid = "1.1.1"
 koinAndroidxCompose = "3.5.3"
 koinCore = "3.5.3"
+koinAndroid = "3.5.3"
 kotlin = "2.0.0"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -23,22 +26,31 @@ playServicesFido = "20.0.1"
 material = "1.12.0"
 composeMaterial = "1.4.1"
 
+ksp = "2.0.0-1.0.21"
 koin-annotation = "1.4.0-RC3"
-ksp = "2.0.10-1.0.24"
+roomCompiler = "2.6.1"
+roomKtx = "2.6.1"
+roomRuntime = "2.6.1"
 
 
 
 [libraries]
 # AndroidX
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentialsPlayServicesAuth" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 
 # Compose
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomKtx" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
@@ -53,9 +65,11 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth-ktx" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
 
-#Koin
-koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koin-annotation" }
-koin-ksp = { module = "io.insert-koin:koin-ksp-compiler", version.ref = "ksp" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
+# Koin
+koin-annotation = { module = "io.insert-koin:koin-annotations", version.ref = "koin-annotation" }
+koin-ksp-compiler = { module = "io.insert-koin:koin-ksp-compiler", version.ref = "koin-annotation" }
+
 
 # Google
 firebase-ui-auth = { module = "com.firebaseui:firebase-ui-auth", version.ref = "firebaseUiAuth" }
