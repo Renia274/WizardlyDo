@@ -8,12 +8,12 @@ import com.example.wizardlydo.data.Task
 
 @Entity(tableName = "tasks")
 data class TaskEntity(
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "task_id")
     val id: Int,
 
-    @ColumnInfo(name = "user_id", index = true)
-    val userId: Int,
+    @ColumnInfo(name = "user_id")
+    val userId: String,
 
     val title: String,
     val description: String,

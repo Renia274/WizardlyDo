@@ -64,7 +64,7 @@ val appModule = module {
     viewModelOf(::WizardAuthViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::RecoveryViewModel)
-    viewModel { TaskViewModel(get(), get()) } 
+    viewModel { TaskViewModel(get(), get(),get()) }
     viewModelOf(::PinViewModel)
 
     viewModel { params ->

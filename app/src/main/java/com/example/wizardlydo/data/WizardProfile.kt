@@ -19,7 +19,7 @@ data class WizardProfile(
     val hairColor: String = "brown",
     val hairStyle: Int = 0,
     val outfit: String = "",
-    val accessory: String = "",
+
 
     // Color Settings (Legacy Support)
     val headColor: String = "#FFD700",

@@ -40,4 +40,4 @@ data class WizardEntity(
     val lastLogin: Timestamp? = null,
     val stamina: Int = 75,
 
-)
+    )

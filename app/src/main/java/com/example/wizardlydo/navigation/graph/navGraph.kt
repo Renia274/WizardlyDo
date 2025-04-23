@@ -19,6 +19,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.screens.customization.CustomizationScreen
+import com.example.wizardlydo.screens.tasks.CreateTaskScreen
 import com.example.wizardlydo.screens.tasks.TaskScreen
 
 
@@ -162,31 +163,12 @@ fun NavigationGraph() {
                 }
             )
         }
+        composable(Screen.Tasks.CreateTask.route) {
+            CreateTaskScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
 
-//        // Nested Task Screens
-//        composable(Screen.Tasks.CreateTask.route) {
-//            CreateTaskScreen(
-//                onBack = { navController.popBackStack() },
-//                onComplete = { navController.popBackStack() }
-//            )
-//        }
-//
-//        composable(
-//            route = Screen.Tasks.EditTask.route,
-//            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
-//        ) { backStackEntry ->
-//            EditTaskScreen(
-//                taskId = backStackEntry.arguments?.getString("taskId") ?: "",
-//                onBack = { navController.popBackStack() },
-//                onSave = { navController.popBackStack() }
-//            )
-//        }
-//
-//        composable(Screen.Tasks.Settings.route) {
-//            SettingsScreen(
-//                onBack = { navController.popBackStack() }
-//            )
-//        }
-//    }
-    }
+
+        }
 }

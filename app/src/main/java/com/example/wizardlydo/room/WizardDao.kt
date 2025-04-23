@@ -77,7 +77,7 @@ interface WizardDao {
     """
     )
     suspend fun updateWizardCustomization(
-        userId: String,
+        userId: Int,
         gender: String,
         skinColor: String,
         hairStyle: Int,

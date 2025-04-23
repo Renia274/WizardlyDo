@@ -4,11 +4,11 @@ import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.mappers.toEntity
 import com.example.wizardlydo.room.WizardDao
 import com.example.wizardlydo.room.WizardEntity
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 import kotlin.Result
 import kotlin.runCatching
-
 
 interface WizardRepository {
     val wizardDao: WizardDao
@@ -24,18 +24,22 @@ interface WizardRepository {
                 signInProvider = profile.signInProvider,
                 level = profile.level,
                 experience = profile.experience,
-                achievements = profile.achievements,
-                joinDate = profile.joinDate,
-                lastLogin = profile.lastLogin,
-                passwordHash = profile.passwordHash,
+                health = profile.health,
+                maxHealth = profile.maxHealth,
                 gender = profile.gender,
                 skinColor = profile.skinColor,
                 hairStyle = profile.hairStyle,
                 hairColor = profile.hairColor,
                 outfit = profile.outfit,
-                accessory = profile.accessory,
-
-                )
+                lastTaskCompleted = profile.lastTaskCompleted,
+                consecutiveTasksCompleted = profile.consecutiveTasksCompleted,
+                totalTasksCompleted = profile.totalTasksCompleted,
+                achievements = profile.achievements,
+                joinDate = profile.joinDate,
+                lastLogin = profile.lastLogin,
+                passwordHash = profile.passwordHash,
+                stamina = profile.stamina
+            )
         )
     }
 
@@ -56,7 +60,6 @@ interface WizardRepository {
                 hairColor = entity.hairColor,
                 hairStyle = entity.hairStyle,
                 outfit = entity.outfit,
-                accessory = entity.accessory,
                 lastTaskCompleted = entity.lastTaskCompleted,
                 consecutiveTasksCompleted = entity.consecutiveTasksCompleted,
                 totalTasksCompleted = entity.totalTasksCompleted,
@@ -70,16 +73,17 @@ interface WizardRepository {
     }
 
     suspend fun updateWizardLastLogin(userId: String): Result<Unit> = runCatching {
-        wizardDao.updateLastLogin(userId, System.currentTimeMillis())
+        val currentTime = Timestamp.now().toDate().time
+        wizardDao.updateLastLogin(userId, currentTime)
     }
 
-    suspend fun updateWizardExperience(userId: String, experience: Int): Result<Unit> =
-        runCatching {
-            wizardDao.updateExperience(userId, experience)
-        }
+    suspend fun updateWizardExperience(userId: String, experience: Int): Result<Unit> = runCatching {
+        wizardDao.updateExperience(userId, experience)
+    }
 
     suspend fun updateWizardLevel(userId: String, level: Int): Result<Unit> = runCatching {
-        wizardDao.updateLevel(userId, level, System.currentTimeMillis())
+        val currentTime = Timestamp.now().toDate().time
+        wizardDao.updateLevel(userId, level, currentTime)
     }
 
     suspend fun sendPasswordResetEmail(email: String): Result<Unit> = runCatching {
@@ -104,16 +108,23 @@ interface WizardRepository {
                 experience = entity.experience,
                 achievements = entity.achievements,
                 joinDate = entity.joinDate,
-                lastLogin = entity.lastLogin
+                lastLogin = entity.lastLogin,
             )
         }
     }
 
     fun getCurrentUserId(): String? = firebaseAuth.currentUser?.uid
 
-    // Enhanced update method that handles customization fields
-    suspend fun updateWizard(profile: WizardProfile): Result<Unit> = runCatching {
-        val entity = profile.toEntity()
+    suspend fun updateWizardProfile(userId: String, profile: WizardProfile): Result<Unit> = runCatching {
+        val entity = profile.toEntity().copy(
+            joinDate = profile.joinDate,
+            lastLogin = profile.lastLogin,
+            health = profile.health,
+            stamina = profile.stamina,
+            experience = profile.experience,
+            level = profile.level
+        )
+
         wizardDao.updateWizard(
             userId = entity.userId,
             wizardClass = entity.wizardClass,
@@ -135,7 +146,6 @@ interface WizardRepository {
         )
     }
 
-    // Update customization fields only
     suspend fun updateWizardCustomization(
         userId: String,
         gender: String,
@@ -146,7 +156,7 @@ interface WizardRepository {
         accessory: String = ""
     ): Result<Unit> = runCatching {
         wizardDao.updateWizardCustomization(
-            userId = userId,
+            userId = userId.toInt(),
             gender = gender,
             skinColor = skinColor,
             hairStyle = hairStyle,
@@ -160,5 +170,3 @@ interface WizardRepository {
         wizardDao.isWizardNameExists(wizardName)
     }
 }
-
-

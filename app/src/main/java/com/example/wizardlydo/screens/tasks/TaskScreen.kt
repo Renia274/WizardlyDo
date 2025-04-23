@@ -163,7 +163,7 @@ fun TaskContentPreview() {
                         description = "Math and science homework",
                         dueDate = System.currentTimeMillis(),
                         priority = Priority.HIGH,
-                        userId = 1,
+                        userId = "",
                         isCompleted = false,
                         createdAt = System.currentTimeMillis() - 86400000, // 1 day ago
                         isDaily = false,
@@ -175,7 +175,7 @@ fun TaskContentPreview() {
                         description = "Buy groceries",
                         dueDate = System.currentTimeMillis() + 86400000, // 1 day from now
                         priority = Priority.MEDIUM,
-                        userId = 1,
+                        userId = "",
                         isCompleted = true,
                         createdAt = System.currentTimeMillis() - 172800000, // 2 days ago
                         isDaily = true,

@@ -16,11 +16,11 @@ sealed class Screen(val route: String) {
         fun createRoute(wizardClass: WizardClass) = "customization/${wizardClass.name}"
     }
     data object Tasks : Screen("tasks") {
-        data object CreateTask : Screen("$route/create")
-        data object EditTask : Screen("$route/edit/{taskId}") {
-            fun createRoute(taskId: String) = "$route/edit/$taskId"
+        data object CreateTask : Screen("${Tasks.route}/create")  // Explicit route
+        data object EditTask : Screen("${Tasks.route}/edit/{taskId}") {
+            fun createRoute(taskId: String) = "${Tasks.route}/edit/$taskId"
         }
-        data object Settings : Screen("$route/settings")
-        data object EditMode : Screen("$route/edit-mode")
+        data object Settings : Screen("${Tasks.route}/settings")
+        data object EditMode : Screen("${Tasks.route}/edit-mode")
     }
 }
