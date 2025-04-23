@@ -7,9 +7,8 @@ import kotlinx.coroutines.withContext
 
 class TaskRepository(private val taskDao: TaskDao) {
 
-    suspend fun getAllTasks(userId: Int): List<Task> = withContext(Dispatchers.IO) {
+    suspend fun getAllTasks(userId: String): List<Task> =
         taskDao.getTasksByUser(userId).map { it.toDomain() }
-    }
 
     suspend fun getActiveTasks(userId: Int): List<Task> = withContext(Dispatchers.IO) {
         taskDao.getActiveTasksByUser(userId).map { it.toDomain() }

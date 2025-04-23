@@ -20,7 +20,7 @@ interface TaskDao {
     suspend fun delete(task: TaskEntity)
 
     @Query("SELECT * FROM tasks WHERE user_id = :userId ORDER BY due_date ASC")
-    suspend fun getTasksByUser(userId: Int): List<TaskEntity>
+    suspend fun getTasksByUser(userId: String): List<TaskEntity>
 
     @Query("SELECT * FROM tasks WHERE user_id = :userId AND is_completed = 0 ORDER BY due_date ASC")
     suspend fun getActiveTasksByUser(userId: Int): List<TaskEntity>

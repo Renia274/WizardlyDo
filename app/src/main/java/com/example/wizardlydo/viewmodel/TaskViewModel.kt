@@ -63,7 +63,7 @@ class TaskViewModel(
                 }
 
                 val tasks = runCatching {
-                    taskRepository.getAllTasks(userId.toInt())
+                    taskRepository.getAllTasks(userId)
                 }.fold(
                     onSuccess = { it },
                     onFailure = {
