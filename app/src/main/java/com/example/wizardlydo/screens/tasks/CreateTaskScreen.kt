@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
@@ -37,6 +38,7 @@ import com.example.wizardlydo.screens.tasks.comps.DueDateSelector
 import com.example.wizardlydo.screens.tasks.comps.PrioritySelector
 import com.example.wizardlydo.screens.tasks.comps.TaskDescriptionField
 import com.example.wizardlydo.screens.tasks.comps.TaskTitleField
+import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.TaskViewModel
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
@@ -162,6 +164,18 @@ fun CreateTaskContent(
                     )
                 }
             }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CreateTaskContentPreview() {
+    WizardlyDoTheme {
+        CreateTaskContent(
+            padding = PaddingValues(0.dp),
+            onCreateTask = {},
+            userId = "test-user-123"
         )
     }
 }
