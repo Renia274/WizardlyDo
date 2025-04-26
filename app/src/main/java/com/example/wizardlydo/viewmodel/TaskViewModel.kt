@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.data.models.EditTaskField
+import com.example.wizardlydo.data.models.EditTaskState
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
 import com.example.wizardlydo.repository.tasks.TaskRepository
@@ -12,25 +14,31 @@ import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
 import java.lang.Exception
 
 @KoinViewModel
 class TaskViewModel(
     private val taskRepository: TaskRepository,
-    private val auth: FirebaseAuth = Firebase.auth,
+    auth: FirebaseAuth = Firebase.auth,
     private val wizardRepository: WizardRepository
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(TaskUiState())
     val uiState = mutableState.asStateFlow()
 
-    val currentUserId = MutableStateFlow<String?>(auth.currentUser?.uid)
+    val currentUserId = MutableStateFlow(auth.currentUser?.uid)
     val currentUserIdState = currentUserId.asStateFlow()
+
+    // Edit task state - removed underscore
+    private val mutableEditTaskState = MutableStateFlow(EditTaskState())
+    val editTaskState = mutableEditTaskState.asStateFlow()
 
     companion object {
         private const val EXP_PER_LEVEL = 1000
@@ -98,7 +106,143 @@ class TaskViewModel(
         }
     }
 
+    fun loadTaskForEditing(taskId: Int) {
+        viewModelScope.launch {
+            mutableEditTaskState.update { it.copy(isLoading = true) }
 
+            try {
+                // First try to find in current list
+                val foundTask = uiState.value.tasks.find { it.id == taskId }
+                if (foundTask != null) {
+                    mutableEditTaskState.update {
+                        it.copy(
+                            task = foundTask,
+                            title = foundTask.title,
+                            description = foundTask.description,
+                            dueDate = foundTask.dueDate,
+                            priority = foundTask.priority,
+                            category = foundTask.category ?: "",
+                            isDaily = foundTask.isDaily,
+                            isLoading = false
+                        )
+                    }
+                } else {
+                    // If not found in current list, fetch directly from repository
+                    val loadedTask = withContext(Dispatchers.IO) {
+                        taskRepository.getTaskById(taskId)
+                    }
+
+                    if (loadedTask != null) {
+                        mutableEditTaskState.update {
+                            it.copy(
+                                task = loadedTask,
+                                title = loadedTask.title,
+                                description = loadedTask.description,
+                                dueDate = loadedTask.dueDate,
+                                priority = loadedTask.priority,
+                                category = loadedTask.category ?: "",
+                                isDaily = loadedTask.isDaily,
+                                isLoading = false
+                            )
+                        }
+                    } else {
+                        mutableEditTaskState.update {
+                            it.copy(
+                                error = "Task not found",
+                                isLoading = false
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                mutableEditTaskState.update {
+                    it.copy(
+                        error = "Failed to load task: ${e.message}",
+                        isLoading = false
+                    )
+                }
+            }
+        }
+    }
+
+    fun updateEditTaskField(field: EditTaskField, value: Any) {
+        mutableEditTaskState.update { state ->
+            when (field) {
+                EditTaskField.TITLE -> state.copy(title = value as String)
+                EditTaskField.DESCRIPTION -> state.copy(description = value as String)
+                EditTaskField.DUE_DATE -> state.copy(dueDate = value as Long?)
+                EditTaskField.PRIORITY -> state.copy(priority = value as Priority)
+                EditTaskField.CATEGORY -> state.copy(category = value as String)
+                EditTaskField.IS_DAILY -> state.copy(isDaily = value as Boolean)
+            }
+        }
+    }
+
+    fun saveEditedTask(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            val currentState = mutableEditTaskState.value
+            val currentTask = currentState.task ?: return@launch
+
+            mutableEditTaskState.update { it.copy(isSaving = true) }
+
+            try {
+                val updatedTask = currentTask.copy(
+                    title = currentState.title,
+                    description = currentState.description,
+                    dueDate = currentState.dueDate,
+                    priority = currentState.priority,
+                    category = currentState.category.ifEmpty { null },
+                    isDaily = currentState.isDaily
+                )
+
+                taskRepository.updateTask(updatedTask)
+                loadData() // Refresh the main task list
+                mutableEditTaskState.update { it.copy(isSaving = false) }
+                onSuccess()
+            } catch (e: Exception) {
+                mutableEditTaskState.update {
+                    it.copy(
+                        error = "Failed to update task: ${e.message}",
+                        isSaving = false
+                    )
+                }
+            }
+        }
+    }
+
+    fun deleteTask(taskId: Int, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            mutableEditTaskState.update { it.copy(isDeleting = true) }
+
+            try {
+                val task = mutableEditTaskState.value.task ?: run {
+                    val loadedTask = taskRepository.getTaskById(taskId)
+                    if (loadedTask == null) {
+                        mutableEditTaskState.update {
+                            it.copy(
+                                error = "Task not found",
+                                isDeleting = false
+                            )
+                        }
+                        return@launch
+                    }
+                    loadedTask
+                }
+
+                taskRepository.deleteTask(task)
+                loadData() // Refresh the main task list
+                mutableEditTaskState.update { it.copy(isDeleting = false) }
+                onSuccess()
+            } catch (e: Exception) {
+                mutableEditTaskState.update {
+                    it.copy(
+                        error = "Failed to delete task: ${e.message}",
+                        isDeleting = false
+                    )
+                }
+            }
+        }
+    }
 
     fun completeTask(taskId: Int) {
         viewModelScope.launch {
@@ -146,7 +290,6 @@ class TaskViewModel(
         }
     }
 
-
     fun setFilter(filter: TaskFilter) {
         mutableState.update { state ->
             state.copy(
@@ -158,6 +301,14 @@ class TaskViewModel(
 
     fun clearError() {
         mutableState.update { it.copy(error = null) }
+    }
+
+    fun clearEditTaskError() {
+        mutableEditTaskState.update { it.copy(error = null) }
+    }
+
+    fun resetEditTaskState() {
+        mutableEditTaskState.value = EditTaskState()
     }
 
     private fun filterTasks(tasks: List<Task>, filter: TaskFilter): List<Task> {

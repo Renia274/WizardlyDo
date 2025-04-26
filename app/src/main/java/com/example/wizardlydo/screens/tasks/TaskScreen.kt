@@ -45,18 +45,20 @@ fun TaskScreen(
     viewModel: TaskViewModel = koinViewModel(),
     onHome: () -> Unit,
     onCreateTask: () -> Unit,
-    onEditTask: (Int) -> Unit,  // For individual task editing
-    onEditMode: () -> Unit,        // For  edit screen
+    onEditTask: (Int) -> Unit,
+    onEditMode: () -> Unit,
     onSettings: () -> Unit,
     onCompleteTask: (Int) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    // Load data when the screen is first displayed
     LaunchedEffect(Unit) {
         viewModel.loadData()
     }
 
+    // Show toast messages for errors
     LaunchedEffect(state.error) {
         state.error?.let { error ->
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
@@ -92,8 +94,13 @@ fun TaskScreen(
             else -> TaskContent(
                 state = state.copy(onFilterChange = viewModel::setFilter),
                 onEditTask = onEditTask,
-                modifier = Modifier.padding(padding),
-                onCompleteTask = onCompleteTask
+                onCompleteTask = onCompleteTask,
+                onDeleteTask = { taskId ->
+                    viewModel.deleteTask(taskId) {
+                        // Success callback - already handled in viewModel
+                    }
+                },
+                modifier = Modifier.padding(padding)
             )
         }
     }
@@ -104,6 +111,7 @@ fun TaskContent(
     state: TaskUiState,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
+    onDeleteTask: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -134,7 +142,8 @@ fun TaskContent(
                 TaskListSection(
                     tasks = state.filteredTasks,
                     onCompleteTask = onCompleteTask,
-                    onEditTask = onEditTask
+                    onEditTask = onEditTask,
+                    onDeleteTask = onDeleteTask
                 )
             }
         }
@@ -185,7 +194,8 @@ fun TaskContentPreview() {
                 currentFilter = TaskFilter.ALL
             ),
             onCompleteTask = {},
-            onEditTask = {}
+            onEditTask = {},
+            onDeleteTask = {}
         )
     }
 }

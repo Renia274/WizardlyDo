@@ -2,11 +2,11 @@ package com.example.wizardlydo.repository.tasks
 
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.room.tasks.TaskDao
+import com.example.wizardlydo.room.tasks.TaskEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class TaskRepository(private val taskDao: TaskDao) {
-
     suspend fun getAllTasks(userId: String): List<Task> =
         taskDao.getTasksByUser(userId).map { it.toDomain() }
 
@@ -50,5 +50,16 @@ class TaskRepository(private val taskDao: TaskDao) {
         taskDao.updateCompletionStatus(taskId, isCompleted)
     }
 
-
+    private fun Task.toEntity() = TaskEntity(
+        id = id,
+        userId = userId,
+        title = title,
+        description = description,
+        isCompleted = isCompleted,
+        dueDate = dueDate,
+        priority = priority,
+        createdAt = createdAt,
+        isDaily = isDaily,
+        category = category
+    )
 }

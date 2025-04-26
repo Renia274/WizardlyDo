@@ -19,9 +19,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,7 +36,12 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -299,11 +306,13 @@ private fun StatBar(
     }
 }
 
+
 @Composable
 fun TaskListSection(
     tasks: List<Task>,
     onCompleteTask: (Int) -> Unit,
-    onEditTask: (Int) -> Unit
+    onEditTask: (Int) -> Unit,
+    onDeleteTask: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -330,22 +339,52 @@ fun TaskListSection(
             TaskItem(
                 taskEntity = taskEntity,
                 onComplete = { onCompleteTask(taskEntity.id) },
-                onEdit = { onEditTask(taskEntity.id) }
+                onEdit = { onEditTask(taskEntity.id) },
+                onDelete = { onDeleteTask(taskEntity.id) }
             )
         }
     }
 }
 
+
 @Composable
 fun TaskItem(
     taskEntity: Task,
     onComplete: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
+    // State for delete confirmation dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Task") },
+            text = { Text("Are you sure you want to delete '${taskEntity.title}'?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete()
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onEdit)
+            .clickable(onClick = onEdit) // Clicking the card will edit the task
     ) {
         Row(
             modifier = Modifier
@@ -353,9 +392,18 @@ fun TaskItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Checkbox now opens the delete dialog instead of directly completing
             Checkbox(
                 checked = taskEntity.isCompleted,
-                onCheckedChange = { _ -> onComplete() }
+                onCheckedChange = {
+                    if (!taskEntity.isCompleted) {
+                        // If task is not completed, mark it as complete
+                        onComplete()
+                    } else {
+                        // If task is already completed, ask if user wants to delete it
+                        showDeleteDialog = true
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -404,6 +452,15 @@ fun TaskItem(
                         )
                     }
                 }
+            }
+
+            // Add delete icon button for easier deletion
+            IconButton(onClick = { showDeleteDialog = true }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete task",
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
 
             PriorityIndicator(priority = taskEntity.priority)

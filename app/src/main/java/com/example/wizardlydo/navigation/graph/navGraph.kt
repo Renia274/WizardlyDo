@@ -20,6 +20,7 @@ import androidx.navigation.navArgument
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.screens.customization.CustomizationScreen
 import com.example.wizardlydo.screens.tasks.CreateTaskScreen
+import com.example.wizardlydo.screens.tasks.EditTaskScreen
 import com.example.wizardlydo.screens.tasks.TaskScreen
 
 
@@ -158,11 +159,13 @@ fun NavigationGraph() {
                     navController.navigate(Screen.Tasks.Settings.route)
                 },
                 onCompleteTask = { taskId ->
-                    // Add the required parameter
-                    // This will be passed to the viewModel.completeTask method
+                    // This will be handled within the TaskScreen using the viewModel
+                    // No navigation needed for completing a task
                 }
             )
         }
+
+
         composable(Screen.Tasks.CreateTask.route) {
             CreateTaskScreen(
                 onBack = { navController.popBackStack() }
@@ -170,5 +173,19 @@ fun NavigationGraph() {
         }
 
 
+        composable(
+            route = Screen.Tasks.EditTask.route,
+            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val taskIdString = backStackEntry.arguments?.getString("taskId") ?: "0"
+            val taskId = taskIdString.toIntOrNull() ?: 0
+
+            EditTaskScreen(
+                taskId = taskId,
+                onBack = { navController.popBackStack() }
+            )
         }
+
+
+    }
 }
