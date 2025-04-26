@@ -1,28 +1,27 @@
 package com.example.wizardlydo.navigation.graph
 
-
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.navigation.screens.Screen
+import com.example.wizardlydo.screens.customization.CustomizationScreen
 import com.example.wizardlydo.screens.login.LoginScreen
 import com.example.wizardlydo.screens.pin.PinAuthScreen
 import com.example.wizardlydo.screens.pin.PinSetupScreen
 import com.example.wizardlydo.screens.recovery.RecoveryScreen
+import com.example.wizardlydo.screens.settings.SettingsScreen
 import com.example.wizardlydo.screens.signup.SignupScreen
 import com.example.wizardlydo.screens.signupsigin.WelcomeAuthScreen
 import com.example.wizardlydo.screens.splash.SplashScreen
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-import com.example.wizardlydo.data.WizardClass
-import com.example.wizardlydo.screens.customization.CustomizationScreen
 import com.example.wizardlydo.screens.tasks.CreateTaskScreen
 import com.example.wizardlydo.screens.tasks.EditTaskScreen
 import com.example.wizardlydo.screens.tasks.TaskScreen
-
 
 @RequiresApi(Build.VERSION_CODES.R)
 @Composable
@@ -43,14 +42,12 @@ fun NavigationGraph() {
             )
         }
 
-
         composable(Screen.WelcomeAuth.route) {
             WelcomeAuthScreen(
                 onSignUpClick = { navController.navigate(Screen.Signup.route) },
                 onSignInClick = { navController.navigate(Screen.Login.route) }
             )
         }
-
 
         composable(Screen.Signup.route) {
             SignupScreen(
@@ -64,7 +61,6 @@ fun NavigationGraph() {
                 }
             )
         }
-
 
         composable(
             route = Screen.Customization.route,
@@ -93,9 +89,6 @@ fun NavigationGraph() {
             )
         }
 
-
-
-
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -109,7 +102,6 @@ fun NavigationGraph() {
             )
         }
 
-
         composable(Screen.Recovery.route) {
             RecoveryScreen(
                 onNavigateToLogin = {
@@ -117,7 +109,6 @@ fun NavigationGraph() {
                 }
             )
         }
-
 
         composable(Screen.PinSetup.route) {
             PinSetupScreen(
@@ -129,7 +120,6 @@ fun NavigationGraph() {
             )
         }
 
-
         composable(Screen.PinAuth.route) {
             PinAuthScreen(
                 onPinSuccess = {
@@ -139,7 +129,6 @@ fun NavigationGraph() {
                 }
             )
         }
-
 
         composable(Screen.Tasks.route) {
             TaskScreen(
@@ -157,21 +146,15 @@ fun NavigationGraph() {
                 },
                 onSettings = {
                     navController.navigate(Screen.Tasks.Settings.route)
-                },
-                onCompleteTask = { taskId ->
-                    // This will be handled within the TaskScreen using the viewModel
-                    // No navigation needed for completing a task
                 }
             )
         }
-
 
         composable(Screen.Tasks.CreateTask.route) {
             CreateTaskScreen(
                 onBack = { navController.popBackStack() }
             )
         }
-
 
         composable(
             route = Screen.Tasks.EditTask.route,
@@ -186,6 +169,15 @@ fun NavigationGraph() {
             )
         }
 
-
+        composable(Screen.Tasks.Settings.route) {
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Tasks.route) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }

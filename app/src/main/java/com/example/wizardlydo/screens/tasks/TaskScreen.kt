@@ -48,7 +48,7 @@ fun TaskScreen(
     onEditTask: (Int) -> Unit,
     onEditMode: () -> Unit,
     onSettings: () -> Unit,
-    onCompleteTask: (Int) -> Unit
+
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -94,10 +94,16 @@ fun TaskScreen(
             else -> TaskContent(
                 state = state.copy(onFilterChange = viewModel::setFilter),
                 onEditTask = onEditTask,
-                onCompleteTask = onCompleteTask,
+                onCompleteTask = { taskId ->
+                    viewModel.completeTask(taskId)
+                    Toast.makeText(
+                        context,
+                        "Task completed! Check the COMPLETED tab.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
                 onDeleteTask = { taskId ->
                     viewModel.deleteTask(taskId) {
-                        // Success callback - already handled in viewModel
                     }
                 },
                 modifier = Modifier.padding(padding)

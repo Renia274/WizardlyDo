@@ -74,6 +74,9 @@ dependencies {
     implementation(libs.play.services.fido)
     implementation(libs.material)
     implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.play.services.fido)
+    implementation(libs.play.services.fido)
 
 
     // Testing
@@ -129,8 +132,11 @@ dependencies {
     implementation (libs.androidx.room.ktx)
     ksp (libs.androidx.room.compiler)
 
-    //Biometrics
-    implementation (libs.androidx.biometric)
+    implementation(libs.bcrypt)
+
+    // WorkManager with Kotlin support
+    implementation (libs.androidx.work.runtime.ktx.v280)
+
 
 
 

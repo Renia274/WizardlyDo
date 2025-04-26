@@ -1,4 +1,3 @@
-
 package com.example.wizardlydo.screens.tasks
 
 import android.widget.Toast
@@ -8,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,8 +17,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -25,7 +26,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,17 +55,14 @@ import com.example.wizardlydo.screens.tasks.comps.TaskDescriptionField
 import com.example.wizardlydo.screens.tasks.comps.TaskTitleField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.TaskViewModel
-import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
+import org.koin.androidx.compose.koinViewModel
 
-/**
- * Screen for editing an existing task.
- *
- * @param taskId ID of the task to edit
- * @param onBack Callback for navigating back
- * @param viewModel The TaskViewModel instance
- */
+
+
+
+// Updated EditTaskScreen with delete confirmation
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskScreen(
@@ -75,6 +72,9 @@ fun EditTaskScreen(
 ) {
     val editState by viewModel.editTaskState.collectAsState()
     val context = LocalContext.current
+
+    // State for delete confirmation dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     // Initial task loading
     LaunchedEffect(taskId) {
@@ -94,6 +94,43 @@ fun EditTaskScreen(
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
             viewModel.clearEditTaskError()
         }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Task") },
+            text = {
+                Column {
+                    Text("Are you sure you want to delete this task?")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "This action cannot be undone.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteTask(taskId) {
+                            Toast.makeText(context, "Task deleted", Toast.LENGTH_SHORT).show()
+                            onBack()
+                        }
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     // Date picker state
@@ -139,6 +176,16 @@ fun EditTaskScreen(
                             contentDescription = "Back"
                         )
                     }
+                },
+                actions = {
+                    // Delete button in app bar
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Task",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             )
         }
@@ -161,7 +208,6 @@ fun EditTaskScreen(
                 category = editState.category,
                 isDaily = editState.isDaily,
                 isSaving = editState.isSaving,
-                isDeleting = editState.isDeleting,
                 onTitleChange = {
                     viewModel.updateEditTaskField(EditTaskField.TITLE, it)
                 },
@@ -179,10 +225,10 @@ fun EditTaskScreen(
                     viewModel.updateEditTaskField(EditTaskField.IS_DAILY, it)
                 },
                 onSaveClick = {
-                    viewModel.saveEditedTask(onSuccess = onBack)
-                },
-                onDeleteClick = {
-                    viewModel.deleteTask(taskId, onSuccess = onBack)
+                    viewModel.saveEditedTask(onSuccess = {
+                        Toast.makeText(context, "Task saved", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    })
                 },
                 padding = padding
             )
@@ -190,27 +236,6 @@ fun EditTaskScreen(
     }
 }
 
-/**
- * Content of the Edit Task screen.
- *
- * @param title Current task title
- * @param description Current task description
- * @param dueDate Current task due date
- * @param priority Current task priority
- * @param category Current task category
- * @param isDaily Whether the task is daily
- * @param isSaving Whether the task is currently being saved
- * @param isDeleting Whether the task is currently being deleted
- * @param onTitleChange Callback when title changes
- * @param onDescriptionChange Callback when description changes
- * @param onDueDateSelect Callback when due date selection is requested
- * @param onPrioritySelect Callback when priority is selected
- * @param onCategorySelect Callback when category is selected
- * @param onDailyChange Callback when daily status changes
- * @param onSaveClick Callback when save button is clicked
- * @param onDeleteClick Callback when delete button is clicked
- * @param padding Padding values from scaffold
- */
 @Composable
 fun EditTaskScreenContent(
     title: String,
@@ -220,7 +245,6 @@ fun EditTaskScreenContent(
     category: String,
     isDaily: Boolean,
     isSaving: Boolean,
-    isDeleting: Boolean,
     onTitleChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onDueDateSelect: () -> Unit,
@@ -228,11 +252,10 @@ fun EditTaskScreenContent(
     onCategorySelect: (String) -> Unit,
     onDailyChange: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
-    onDeleteClick: () -> Unit,
     padding: PaddingValues
 ) {
     val categories = listOf("School", "Chores", "Work", "Personal")
-    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
     Column(
         modifier = Modifier
@@ -256,8 +279,8 @@ fun EditTaskScreenContent(
         // Save button
         Button(
             onClick = onSaveClick,
-            modifier = Modifier.fillMaxSize(),
-            enabled = title.isNotBlank() && !isSaving && !isDeleting
+            modifier = Modifier.fillMaxWidth(),
+            enabled = title.isNotBlank() && !isSaving
         ) {
             if (isSaving) {
                 CircularProgressIndicator(
@@ -269,38 +292,9 @@ fun EditTaskScreenContent(
             }
             Text("Save Changes")
         }
-
-        // Delete button
-        OutlinedButton(
-            onClick = onDeleteClick,
-            modifier = Modifier.fillMaxSize(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
-            ),
-            enabled = !isDeleting && !isSaving
-        ) {
-            if (isDeleting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.error,
-                    strokeWidth = 2.dp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete Task",
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-            }
-            Text("Delete Task")
-        }
     }
 }
 
-/**
- * Preview of the EditTaskScreen content.
- */
 @Preview(showBackground = true)
 @Composable
 fun EditTaskScreenContentPreview() {
@@ -313,7 +307,6 @@ fun EditTaskScreenContentPreview() {
             category = "School",
             isDaily = false,
             isSaving = false,
-            isDeleting = false,
             onTitleChange = {},
             onDescriptionChange = {},
             onDueDateSelect = {},
@@ -321,8 +314,8 @@ fun EditTaskScreenContentPreview() {
             onCategorySelect = {},
             onDailyChange = {},
             onSaveClick = {},
-            onDeleteClick = {},
             padding = PaddingValues(0.dp)
         )
     }
 }
+

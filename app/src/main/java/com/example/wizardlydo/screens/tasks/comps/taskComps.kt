@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -92,11 +91,13 @@ fun WizardAvatar(
 
                     // Outfit
                     Image(
-                        painter = painterResource(id = getOutfitResourceId(
-                            wizardProfile.wizardClass,
-                            wizardProfile.outfit,
-                            wizardProfile.gender
-                        )),
+                        painter = painterResource(
+                            id = getOutfitResourceId(
+                                wizardProfile.wizardClass,
+                                wizardProfile.outfit,
+                                wizardProfile.gender
+                            )
+                        ),
                         contentDescription = "Character Outfit",
                         modifier = Modifier
                             .size(80.dp)
@@ -105,16 +106,18 @@ fun WizardAvatar(
 
                     // Hair
                     Image(
-                        painter = painterResource(id = getHairResourceId(
-                            wizardProfile.gender,
-                            wizardProfile.hairStyle,
-                            wizardProfile.hairColor
-                        )),
+                        painter = painterResource(
+                            id = getHairResourceId(
+                                wizardProfile.gender,
+                                wizardProfile.hairStyle,
+                                wizardProfile.hairColor
+                            )
+                        ),
                         contentDescription = "Character Hair",
                         modifier = Modifier
                             .size(40.dp)
                             .align(Alignment.TopCenter)
-                            .offset(x=10.dp,y = 24.dp)
+                            .offset(x = 10.dp, y = 24.dp)
                     )
                 }
             }
@@ -123,7 +126,8 @@ fun WizardAvatar(
                 Text(
                     text = "⚠",
                     style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.size(40.dp))
+                    modifier = Modifier.size(40.dp)
+                )
 
             }
 
@@ -180,6 +184,7 @@ fun CharacterStatsSection(
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+
                 wizardProfile != null -> {
                     Text(
                         text = wizardProfile.wizardName,
@@ -193,6 +198,7 @@ fun CharacterStatsSection(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
                 else -> {
                     Text(
                         text = "Loading Character...",
@@ -288,7 +294,7 @@ private fun StatBar(
 }
 
 @Composable
- fun TaskFilterChips(
+fun TaskFilterChips(
     currentFilter: TaskFilter,
     onFilterChange: (TaskFilter) -> Unit
 ) {
@@ -354,27 +360,37 @@ fun TaskItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    // State for delete confirmation dialog
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    // State for completion confirmation dialog
+    var showCompletionDialog by remember { mutableStateOf(false) }
 
-    // Delete confirmation dialog
-    if (showDeleteDialog) {
+    // Completion confirmation dialog
+    if (showCompletionDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Task") },
-            text = { Text("Are you sure you want to delete '${taskEntity.title}'?") },
+            onDismissRequest = { showCompletionDialog = false },
+            title = { Text("Complete Task") },
+            text = {
+                Column {
+                    Text("Mark this task as completed?")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Completing tasks gives you XP and rewards!",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDelete()
-                        showDeleteDialog = false
+                        onComplete()
+                        showCompletionDialog = false
                     }
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("Complete", color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(onClick = { showCompletionDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -392,16 +408,13 @@ fun TaskItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Checkbox now opens the delete dialog instead of directly completing
+            // Checkbox now shows completion dialog
             Checkbox(
                 checked = taskEntity.isCompleted,
-                onCheckedChange = {
+                onCheckedChange = { _ ->
                     if (!taskEntity.isCompleted) {
-                        // If task is not completed, mark it as complete
-                        onComplete()
-                    } else {
-                        // If task is already completed, ask if user wants to delete it
-                        showDeleteDialog = true
+                        // Show confirmation dialog before completing
+                        showCompletionDialog = true
                     }
                 }
             )
@@ -454,19 +467,11 @@ fun TaskItem(
                 }
             }
 
-            // Add delete icon button for easier deletion
-            IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete task",
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-
             PriorityIndicator(priority = taskEntity.priority)
         }
     }
 }
+
 
 @Composable
 fun PriorityIndicator(priority: Priority) {
@@ -482,6 +487,7 @@ fun PriorityIndicator(priority: Priority) {
             .background(color = color, shape = CircleShape)
     )
 }
+
 @Composable
 fun TaskBottomBar(
     onHome: () -> Unit,
@@ -510,7 +516,7 @@ fun TaskBottomBar(
 }
 
 @Composable
- fun FullScreenLoading() {
+fun FullScreenLoading() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -521,7 +527,7 @@ fun TaskBottomBar(
 
 
 @Composable
- fun ErrorMessage(error: String?) {
+fun ErrorMessage(error: String?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -537,7 +543,7 @@ fun TaskBottomBar(
 }
 
 @Composable
- fun EmptyTaskList() {
+fun EmptyTaskList() {
     Box(
         modifier = Modifier
             .fillMaxSize()

@@ -46,6 +46,10 @@ class TaskRepository(private val taskDao: TaskDao) {
         taskDao.delete(task.toEntity())
     }
 
+    suspend fun getDueTasks(userId: String): List<Task> = withContext(Dispatchers.IO) {
+        taskDao.getDueTasks(userId, System.currentTimeMillis()).map { it.toDomain() }
+    }
+
     suspend fun updateTaskCompletionStatus(taskId: Int, isCompleted: Boolean) = withContext(Dispatchers.IO) {
         taskDao.updateCompletionStatus(taskId, isCompleted)
     }

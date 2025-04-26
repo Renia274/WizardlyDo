@@ -10,7 +10,7 @@ import com.example.wizardlydo.room.tasks.TaskEntity
 
 @Database(
     entities = [WizardEntity::class,PinEntity::class,TaskEntity::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(WizardTypeConverters::class)

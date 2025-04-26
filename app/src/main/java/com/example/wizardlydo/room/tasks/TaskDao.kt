@@ -49,4 +49,7 @@ interface TaskDao {
             due_date ASC
     """)
     suspend fun getTasksByCategory(userId: Int, category: String?): List<TaskEntity>
+
+    @Query("SELECT * FROM tasks WHERE user_id = :userId AND due_date < :currentTime AND is_completed = 0")
+    suspend fun getDueTasks(userId: String, currentTime: Long = System.currentTimeMillis()): List<TaskEntity>
 }

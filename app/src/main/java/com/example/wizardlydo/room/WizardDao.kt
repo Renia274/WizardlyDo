@@ -103,4 +103,7 @@ interface WizardDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM wizards WHERE wizardName = :wizardName)")
     suspend fun isWizardNameExists(wizardName: String): Boolean
+
+
+
 }
