@@ -36,7 +36,6 @@ class TaskViewModel(
     val currentUserId = MutableStateFlow(auth.currentUser?.uid)
     val currentUserIdState = currentUserId.asStateFlow()
 
-    // Edit task state - removed underscore
     private val mutableEditTaskState = MutableStateFlow(EditTaskState())
     val editTaskState = mutableEditTaskState.asStateFlow()
 
@@ -212,37 +211,23 @@ class TaskViewModel(
 
     fun deleteTask(taskId: Int, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            mutableEditTaskState.update { it.copy(isDeleting = true) }
-
             try {
-                val task = mutableEditTaskState.value.task ?: run {
-                    val loadedTask = taskRepository.getTaskById(taskId)
-                    if (loadedTask == null) {
-                        mutableEditTaskState.update {
-                            it.copy(
-                                error = "Task not found",
-                                isDeleting = false
-                            )
-                        }
-                        return@launch
-                    }
-                    loadedTask
-                }
+                val task = uiState.value.tasks.find { it.id == taskId }
+                    ?: taskRepository.getTaskById(taskId)
 
-                taskRepository.deleteTask(task)
-                loadData() // Refresh the main task list
-                mutableEditTaskState.update { it.copy(isDeleting = false) }
-                onSuccess()
-            } catch (e: Exception) {
-                mutableEditTaskState.update {
-                    it.copy(
-                        error = "Failed to delete task: ${e.message}",
-                        isDeleting = false
-                    )
+                if (task != null) {
+                    taskRepository.deleteTask(task)
+                    loadData() // refresh list
+                    onSuccess()
+                } else {
+                    mutableState.update { it.copy(error = "Task not found") }
                 }
+            } catch (e: Exception) {
+                mutableState.update { it.copy(error = "Failed to delete task: ${e.message}") }
             }
         }
     }
+
 
     fun completeTask(taskId: Int) {
         viewModelScope.launch {

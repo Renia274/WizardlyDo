@@ -1,6 +1,7 @@
 package com.example.wizardlydo.screens.tasks
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,10 +20,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import com.example.wizardlydo.comps.InAppNotification
 import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardProfile
@@ -36,6 +40,7 @@ import com.example.wizardlydo.screens.tasks.comps.TaskBottomBar
 import com.example.wizardlydo.screens.tasks.comps.TaskFilterChips
 import com.example.wizardlydo.screens.tasks.comps.TaskListSection
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
+import com.example.wizardlydo.viewmodel.SettingsViewModel
 import com.example.wizardlydo.viewmodel.TaskViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -43,22 +48,28 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun TaskScreen(
     viewModel: TaskViewModel = koinViewModel(),
+    settingsViewModel: SettingsViewModel = koinViewModel(),
     onHome: () -> Unit,
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
     onEditMode: () -> Unit,
     onSettings: () -> Unit,
-
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val notification by settingsViewModel.activeNotification.collectAsState()
 
-    // Load data when the screen is first displayed
+    // Show a notification immediately when the screen is composed
     LaunchedEffect(Unit) {
         viewModel.loadData()
+        // Display a welcome notification immediately when the task screen is opened
+        settingsViewModel.activeNotificationFlow.value =
+            SettingsViewModel.InAppNotificationData.Info(
+                message = "Welcome to your task list!",
+                duration = 5000 // 5 seconds
+            )
     }
 
-    // Show toast messages for errors
     LaunchedEffect(state.error) {
         state.error?.let { error ->
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
@@ -66,47 +77,77 @@ fun TaskScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Task Manager") }
-            )
-        },
-        bottomBar = {
-            TaskBottomBar(
-                onHome = onHome,
-                onEditMode = onEditMode,
-                onSettings = onSettings
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onCreateTask,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Create Task")
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.matchParentSize(),
+            topBar = {
+                TopAppBar(
+                    title = { Text("Task Manager") }
+                )
+            },
+            bottomBar = {
+                TaskBottomBar(
+                    onHome = onHome,
+                    onEditMode = onEditMode,
+                    onSettings = onSettings
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = onCreateTask,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Create Task")
+                }
+            }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                when {
+                    state.isLoading -> FullScreenLoading()
+                    else -> TaskContent(
+                        state = state,
+                        onEditTask = onEditTask,
+                        onCompleteTask = { taskId ->
+                            viewModel.completeTask(taskId)
+                            // Always show notification regardless of notifications being enabled
+                            // This will help with testing
+                            settingsViewModel.activeNotificationFlow.value =
+                                SettingsViewModel.InAppNotificationData.Info(
+                                    message = "Task completed! +50 XP"
+                                )
+                        },
+                        onDeleteTask = { taskId ->
+                            viewModel.deleteTask(taskId) {
+                                // Always show notification regardless of notifications being enabled
+                                settingsViewModel.activeNotificationFlow.value =
+                                    SettingsViewModel.InAppNotificationData.Warning(
+                                        message = "Task deleted!"
+                                    )
+                            }
+                        },
+                        onDamageTaken = { damage, _ ->
+                            // Always show notification regardless of notifications being enabled
+                            settingsViewModel.activeNotificationFlow.value =
+                                SettingsViewModel.InAppNotificationData.Warning(
+                                    message = "Damage taken! $damage HP lost!"
+                                )
+                        }
+                    )
+                }
             }
         }
-    ) { padding ->
-        when {
-            state.isLoading -> FullScreenLoading()
-            else -> TaskContent(
-                state = state.copy(onFilterChange = viewModel::setFilter),
-                onEditTask = onEditTask,
-                onCompleteTask = { taskId ->
-                    viewModel.completeTask(taskId)
-                    Toast.makeText(
-                        context,
-                        "Task completed! Check the COMPLETED tab.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                onDeleteTask = { taskId ->
-                    viewModel.deleteTask(taskId) {
-                    }
-                },
-                modifier = Modifier.padding(padding)
+
+        // This part is critical - display the notification at the top layer
+        notification?.let { notif ->
+            InAppNotification(
+                message = notif.message,
+                type = notif.type,
+                onDismiss = { settingsViewModel.clearNotification() },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 100.dp, start = 16.dp, end = 16.dp)
+                    .zIndex(10f) // Ensure it's on top of everything
             )
         }
     }
@@ -118,15 +159,17 @@ fun TaskContent(
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> },
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    val wizardProfile = state.wizardProfile?.getOrNull()
+
+    Column(Modifier.fillMaxSize()) {
         CharacterStatsSection(
             wizardResult = state.wizardProfile,
             modifier = Modifier.padding(vertical = 8.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
         TaskFilterChips(
             currentFilter = state.currentFilter,
@@ -135,28 +178,37 @@ fun TaskContent(
             }
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
         when {
-            state.error != null -> {
-                ErrorMessage(error = state.error)
-            }
-            state.filteredTasks.isEmpty() -> {
-                EmptyTaskList()
-            }
-            else -> {
-                TaskListSection(
-                    tasks = state.filteredTasks,
-                    onCompleteTask = onCompleteTask,
-                    onEditTask = onEditTask,
-                    onDeleteTask = onDeleteTask
-                )
-            }
+            state.error != null -> ErrorMessage(error = state.error)
+            state.isLoading -> FullScreenLoading()
+            state.filteredTasks.isEmpty() -> EmptyTaskList()
+            else -> TaskListSection(
+                tasks = state.filteredTasks,
+                onCompleteTask = onCompleteTask,
+                onEditTask = onEditTask,
+                onDeleteTask = { taskId ->
+                    onDeleteTask(taskId)
+                    val deletedTask = state.filteredTasks.find { it.id == taskId }
+                    deletedTask?.let { task ->
+                        val damage = when (task.priority) {
+                            Priority.HIGH -> 20
+                            Priority.MEDIUM -> 10
+                            Priority.LOW -> 5
+                        }
+                        val currentHealth = wizardProfile?.health ?: 100
+                        onDamageTaken(damage, currentHealth - damage)
+                    }
+                }
+            )
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(Modifier.weight(1f))
     }
 }
+
+
 
 @Preview(showBackground = true)
 @Composable
@@ -201,7 +253,8 @@ fun TaskContentPreview() {
             ),
             onCompleteTask = {},
             onEditTask = {},
-            onDeleteTask = {}
+            onDeleteTask = {},
+            onDamageTaken = { _, _ -> }
         )
     }
 }

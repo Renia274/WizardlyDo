@@ -41,7 +41,7 @@ data class WizardEntity(
     val stamina: Int = 75,
     val reminderEnabled: Boolean = true,
     val reminderDays: Int = 1,
-    val pushNotificationsEnabled: Boolean = true,
+    val inAppNotificationsEnabled: Boolean = true,
     val damageNotificationsEnabled: Boolean = true
 
-    )
+)

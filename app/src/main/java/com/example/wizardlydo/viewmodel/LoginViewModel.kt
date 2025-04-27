@@ -46,7 +46,7 @@ class LoginViewModel(
     fun updatePassword(password: String) {
         val error = when {
             password.isBlank() -> "Password is required"
-            password.length < 8 -> "Password must be at least 8 characters"
+            password.length < 12 -> "Password must be at least 12 characters"
             !passwordPattern.matcher(password).matches() -> "Password must contain uppercase, lowercase, number, and special character"
             else -> null
         }

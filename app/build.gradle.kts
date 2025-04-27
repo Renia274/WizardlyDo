@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.play.services.fido)
     implementation(libs.play.services.fido)
+    implementation(libs.androidx.tools.core)
 
 
     // Testing

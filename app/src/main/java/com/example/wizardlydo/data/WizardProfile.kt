@@ -46,10 +46,10 @@ data class WizardProfile(
 
 
     val stamina: Int = 75,
-
+    val emailNotificationsEnabled:Boolean = true,
     val reminderEnabled: Boolean = true,
     val reminderDays: Int = 1,
-    val pushNotificationsEnabled: Boolean = true,
+    val inAppNotificationsEnabled: Boolean = true,
     val damageNotificationsEnabled: Boolean = true
 
 )
@@ -78,7 +78,7 @@ private fun WizardProfile.toEntity() = WizardEntity(
     lastLogin = lastLogin,
     reminderEnabled = reminderEnabled,
     reminderDays = reminderDays,
-    pushNotificationsEnabled = pushNotificationsEnabled,
+    inAppNotificationsEnabled = inAppNotificationsEnabled,
     damageNotificationsEnabled = damageNotificationsEnabled
 
 )

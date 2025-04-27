@@ -50,11 +50,35 @@ class TaskRepository(private val taskDao: TaskDao) {
         taskDao.getDueTasks(userId, System.currentTimeMillis()).map { it.toDomain() }
     }
 
+    /**
+     * Get tasks that are due in the near future but not overdue yet
+     * @param userId The user ID
+     * @param targetDate The future date milestone (tasks due before this date will be returned)
+     * @return List of upcoming tasks
+     */
+    suspend fun getUpcomingTasks(userId: String, targetDate: Long): List<Task> = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        taskDao.getUpcomingTasks(userId, now, targetDate).map { it.toDomain() }
+    }
+
     suspend fun updateTaskCompletionStatus(taskId: Int, isCompleted: Boolean) = withContext(Dispatchers.IO) {
         taskDao.updateCompletionStatus(taskId, isCompleted)
     }
 
     private fun Task.toEntity() = TaskEntity(
+        id = id,
+        userId = userId,
+        title = title,
+        description = description,
+        isCompleted = isCompleted,
+        dueDate = dueDate,
+        priority = priority,
+        createdAt = createdAt,
+        isDaily = isDaily,
+        category = category
+    )
+
+    private fun TaskEntity.toDomain() = Task(
         id = id,
         userId = userId,
         title = title,

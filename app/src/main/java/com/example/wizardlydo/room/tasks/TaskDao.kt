@@ -52,4 +52,14 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE user_id = :userId AND due_date < :currentTime AND is_completed = 0")
     suspend fun getDueTasks(userId: String, currentTime: Long = System.currentTimeMillis()): List<TaskEntity>
+
+    /**
+     * Get tasks that are due in the near future but not overdue yet
+     * @param userId The user ID
+     * @param currentTime The current time
+     * @param targetDate The future date milestone
+     * @return List of upcoming tasks
+     */
+    @Query("SELECT * FROM tasks WHERE user_id = :userId AND is_completed = 0 AND due_date > :currentTime AND due_date <= :targetDate ORDER BY due_date ASC")
+    suspend fun getUpcomingTasks(userId: String, currentTime: Long, targetDate: Long): List<TaskEntity>
 }
