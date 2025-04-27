@@ -11,7 +11,6 @@ import androidx.work.WorkManager
 import at.favre.lib.crypto.bcrypt.BCrypt
 import com.example.wizardlydo.comps.NotificationType
 import com.example.wizardlydo.data.models.SettingsState
-import com.example.wizardlydo.repository.tasks.TaskRepository
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.example.wizardlydo.utilities.EmailSender
 import com.example.wizardlydo.utilities.NotificationPermissionHandler
@@ -34,7 +33,6 @@ import java.util.concurrent.TimeUnit
 @KoinViewModel
 class SettingsViewModel(
     private val wizardRepository: WizardRepository,
-    private val taskRepository: TaskRepository,
     private val workManager: WorkManager,
     private val context: Context
 ) : ViewModel() {
@@ -64,7 +62,6 @@ class SettingsViewModel(
         loadSettings()
     }
 
-    // Make this public so it can be accessed directly from TaskScreen
     val activeNotificationFlow = MutableStateFlow<InAppNotificationData?>(null)
     val activeNotification: StateFlow<InAppNotificationData?> = activeNotificationFlow.asStateFlow()
 
@@ -81,12 +78,12 @@ class SettingsViewModel(
     }
 
     fun showNotification(notification: InAppNotificationData) {
-        // Remove the conditional check so notifications are shown regardless of settings
-        // This makes testing easier
-        activeNotificationFlow.value = notification
-        viewModelScope.launch {
-            delay(notification.duration)
-            clearNotification()
+        if (state.value.inAppNotificationsEnabled) {
+            activeNotificationFlow.value = notification
+            viewModelScope.launch {
+                delay(notification.duration)
+                clearNotification()
+            }
         }
     }
 
@@ -94,9 +91,7 @@ class SettingsViewModel(
         activeNotificationFlow.value = null
     }
 
-    fun checkNotificationPermission() {
-        notificationPermissionGrantedFlow.value = NotificationPermissionHandler.checkPermission(context)
-    }
+
 
     private fun loadSettings() {
         viewModelScope.launch {
@@ -107,7 +102,7 @@ class SettingsViewModel(
                         email = auth.currentUser?.email,
                         reminderEnabled = profile.reminderEnabled,
                         reminderDays = profile.reminderDays,
-                        inAppNotificationsEnabled = profile.inAppNotificationsEnabled,
+                        inAppNotificationsEnabled = profile.inAppNotificationsEnabled && hasPermission,
                         damageNotificationsEnabled = profile.damageNotificationsEnabled,
                         emailNotificationsEnabled = profile.emailNotificationsEnabled
                     )
@@ -117,82 +112,7 @@ class SettingsViewModel(
         }
     }
 
-    /**
-     * Checks for tasks that are due according to reminder settings and triggers notifications immediately.
-     * This is useful for testing the notification system.
-     */
-    fun checkDueTasksImmediately() {
-        viewModelScope.launch {
-            try {
-                // Get the current user ID
-                val userId = auth.currentUser?.uid ?: return@launch
 
-                // Get current reminder settings
-                val reminderDays = stateFlow.value.reminderDays
-
-                // Get current date
-                val today = System.currentTimeMillis()
-                val oneDayInMillis = 24 * 60 * 60 * 1000L
-
-                // Calculate the threshold date based on reminder settings
-                // Tasks due within this many days will trigger a notification
-                val thresholdDate = today + (reminderDays * oneDayInMillis)
-
-                // Use getUpcomingTasks from TaskRepository
-                val dueTasks = taskRepository.getUpcomingTasks(userId, thresholdDate)
-
-                if (dueTasks.isEmpty()) {
-                    // No due tasks found
-                    showNotification(InAppNotificationData.Info("No upcoming tasks due within $reminderDays day(s)"))
-                    return@launch
-                }
-
-                // Show notification for testing
-                val taskCount = dueTasks.size
-                val dueTasksList = dueTasks.take(3).joinToString(", ") { it.title }
-                val moreTasksText = if (taskCount > 3) " and ${taskCount - 3} more" else ""
-
-                showNotification(
-                    InAppNotificationData.Warning(
-                        "REMINDER: $taskCount task(s) due soon: $dueTasksList$moreTasksText",
-                        duration = 6000
-                    )
-                )
-
-                // Also send a test email if email notifications are enabled
-                if (stateFlow.value.emailNotificationsEnabled) {
-                    val userEmail = stateFlow.value.email ?: return@launch
-
-                    emailSender.sendEmail(
-                        userEmail,
-                        "🧙‍♂️ Task Reminder from WizardlyDo",
-                        WizardEmailTemplates.getTaskReminderTemplate(
-                            taskNames = dueTasks.take(5).map { it.title },
-                            daysUntilDue = reminderDays
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                showNotification(InAppNotificationData.Warning("Error checking due tasks: ${e.message}"))
-            }
-        }
-    }
-
-    fun updateInAppNotifications(enabled: Boolean) {
-        viewModelScope.launch {
-            auth.currentUser?.uid?.let { userId ->
-                wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
-                    val updatedProfile = profile.copy(inAppNotificationsEnabled = enabled)
-                    wizardRepository.updateWizardProfile(userId, updatedProfile).onSuccess {
-                        stateFlow.value = stateFlow.value.copy(inAppNotificationsEnabled = enabled)
-                        if (enabled) {
-                            showNotification(InAppNotificationData.Info("In-app notifications enabled"))
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     fun updateReminderDays(days: Int) {
         viewModelScope.launch {
@@ -208,20 +128,7 @@ class SettingsViewModel(
         }
     }
 
-    fun updateDamageNotifications(enabled: Boolean) {
-        viewModelScope.launch {
-            auth.currentUser?.uid?.let { userId ->
-                wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
-                    val updatedProfile = profile.copy(damageNotificationsEnabled = enabled)
-                    wizardRepository.updateWizardProfile(userId, updatedProfile).onSuccess {
-                        stateFlow.value = stateFlow.value.copy(damageNotificationsEnabled = enabled)
-                        val message = if (enabled) "Damage alerts enabled" else "Damage alerts disabled"
-                        showNotification(InAppNotificationData.Info(message))
-                    }
-                }
-            }
-        }
-    }
+
 
     fun updateEmailNotifications(enabled: Boolean) {
         viewModelScope.launch {

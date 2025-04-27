@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -43,6 +45,9 @@ import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.SettingsViewModel
 import com.example.wizardlydo.viewmodel.TaskViewModel
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,16 +63,35 @@ fun TaskScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val notification by settingsViewModel.activeNotification.collectAsState()
+    val notificationPermissionGranted by settingsViewModel.notificationPermissionGranted.collectAsState()
+    val appSettings by settingsViewModel.state.collectAsState()
 
-    // Show a notification immediately when the screen is composed
+    // Remember the last created task info
+    val lastCreatedTask = remember { mutableStateOf<Task?>(null) }
+
+    // Load data when screen is composed
     LaunchedEffect(Unit) {
         viewModel.loadData()
-        // Display a welcome notification immediately when the task screen is opened
-        settingsViewModel.activeNotificationFlow.value =
-            SettingsViewModel.InAppNotificationData.Info(
-                message = "Welcome to your task list!",
-                duration = 5000 // 5 seconds
-            )
+    }
+
+    // Check if we need to show a task created notification
+    LaunchedEffect(state.tasks) {
+        if (state.tasks.isNotEmpty() &&
+            notificationPermissionGranted &&
+            appSettings.inAppNotificationsEnabled) {
+
+            viewModel.getRecentlyCreatedTask()?.let { task ->
+                settingsViewModel.showNotification(
+                    SettingsViewModel.InAppNotificationData.Info(
+                        message = "Task \"${task.title}\" created successfully!" +
+                                (task.dueDate?.let {
+                                    " (due on ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))})"
+                                } ?: ""),
+                        duration = 5000
+                    )
+                )
+            }
+        }
     }
 
     LaunchedEffect(state.error) {
@@ -110,35 +134,42 @@ fun TaskScreen(
                         onEditTask = onEditTask,
                         onCompleteTask = { taskId ->
                             viewModel.completeTask(taskId)
-                            // Always show notification regardless of notifications being enabled
-                            // This will help with testing
-                            settingsViewModel.activeNotificationFlow.value =
-                                SettingsViewModel.InAppNotificationData.Info(
-                                    message = "Task completed! +50 XP"
-                                )
-                        },
-                        onDeleteTask = { taskId ->
-                            viewModel.deleteTask(taskId) {
-                                // Always show notification regardless of notifications being enabled
+                            // Only show notification if enabled
+                            if (appSettings.inAppNotificationsEnabled && notificationPermissionGranted) {
                                 settingsViewModel.activeNotificationFlow.value =
-                                    SettingsViewModel.InAppNotificationData.Warning(
-                                        message = "Task deleted!"
+                                    SettingsViewModel.InAppNotificationData.Info(
+                                        message = "Task completed! +50 XP"
                                     )
                             }
                         },
-                        onDamageTaken = { damage, _ ->
-                            // Always show notification regardless of notifications being enabled
-                            settingsViewModel.activeNotificationFlow.value =
-                                SettingsViewModel.InAppNotificationData.Warning(
-                                    message = "Damage taken! $damage HP lost!"
-                                )
+                        onDeleteTask = { taskId ->
+                            viewModel.deleteTask(taskId) {
+                                // Only show notification if enabled
+                                if (appSettings.inAppNotificationsEnabled && notificationPermissionGranted) {
+                                    settingsViewModel.activeNotificationFlow.value =
+                                        SettingsViewModel.InAppNotificationData.Warning(
+                                            message = "Task deleted!"
+                                        )
+                                }
+                            }
+                        },
+                        onDamageTaken = { damage, currentHealth ->
+                            // Only show notification if enabled and damage notifications enabled
+                            if (appSettings.inAppNotificationsEnabled &&
+                                appSettings.damageNotificationsEnabled &&
+                                notificationPermissionGranted) {
+                                settingsViewModel.activeNotificationFlow.value =
+                                    SettingsViewModel.InAppNotificationData.Warning(
+                                        message = "Damage taken! $damage HP lost! Health: $currentHealth"
+                                    )
+                            }
                         }
                     )
                 }
             }
         }
 
-        // This part is critical - display the notification at the top layer
+        // Display the notification at the top layer
         notification?.let { notif ->
             InAppNotification(
                 message = notif.message,

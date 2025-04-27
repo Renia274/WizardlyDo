@@ -39,18 +39,22 @@ import com.example.wizardlydo.screens.tasks.comps.PrioritySelector
 import com.example.wizardlydo.screens.tasks.comps.TaskDescriptionField
 import com.example.wizardlydo.screens.tasks.comps.TaskTitleField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
+import com.example.wizardlydo.viewmodel.SettingsViewModel
 import com.example.wizardlydo.viewmodel.TaskViewModel
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTaskScreen(
     onBack: () -> Unit,
-    viewModel: TaskViewModel = koinViewModel()
+    viewModel: TaskViewModel = koinViewModel(),
+    settingsViewModel: SettingsViewModel = koinViewModel()
 ) {
     val userId by viewModel.currentUserIdState.collectAsState()
+
 
     Scaffold(
         topBar = {
@@ -71,13 +75,24 @@ fun CreateTaskScreen(
             padding = paddingValues,
             onCreateTask = { task ->
                 viewModel.createTask(task)
-                onBack()
+                // Show notification immediately
+                settingsViewModel.showNotification(
+                    SettingsViewModel.InAppNotificationData.Info(
+                        message = "Task \"${task.title}\" created successfully!" +
+                                (task.dueDate?.let {
+                                    " (due on ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(
+                                        Date(it)
+                                    )})"
+                                } ?: ""),
+                        duration = 5000
+                    )
+                )
+                onBack() // Navigate back after showing notification
             },
-            userId = userId
+            userId = viewModel.currentUserIdState.value
         )
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTaskContent(

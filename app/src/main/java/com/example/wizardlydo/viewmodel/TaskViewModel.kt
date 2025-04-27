@@ -39,6 +39,12 @@ class TaskViewModel(
     private val mutableEditTaskState = MutableStateFlow(EditTaskState())
     val editTaskState = mutableEditTaskState.asStateFlow()
 
+    // Track if a task was recently created
+    private var taskRecentlyCreated = false
+    private var recentlyCreatedTaskId: Int? = null
+    private val recentTaskTimeThreshold = 40000 // 10 seconds in milliseconds
+    private var lastCreationTime = 0L
+
     companion object {
         private const val EXP_PER_LEVEL = 1000
     }
@@ -47,10 +53,31 @@ class TaskViewModel(
         loadData()
     }
 
+    fun getRecentlyCreatedTask(): Task? {
+        val taskId = recentlyCreatedTaskId ?: return null
+        val currentTime = System.currentTimeMillis()
+
+        // Only consider it "recent" if created within the threshold time
+        if (currentTime - lastCreationTime > recentTaskTimeThreshold) {
+            recentlyCreatedTaskId = null
+            return null
+        }
+
+        return uiState.value.tasks.find { it.id == taskId }
+    }
+
+    // Call this after successfully creating a task
+    fun markTaskAsRecentlyCreated() {
+        taskRecentlyCreated = true
+    }
+
+
+
     fun createTask(task: Task) {
         viewModelScope.launch {
             currentUserId.value?.let { userId ->
                 taskRepository.insertTask(task.copy(userId = userId))
+                markTaskAsRecentlyCreated() // Mark that a task was created
             }
         }
     }

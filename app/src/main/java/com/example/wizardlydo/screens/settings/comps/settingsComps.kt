@@ -1,8 +1,5 @@
 package com.example.wizardlydo.screens.settings.comps
 
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -42,10 +37,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.comps.NotificationType
 import com.example.wizardlydo.data.models.SettingsState
-import com.example.wizardlydo.viewmodel.SettingsViewModel
-import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SettingsSection(
@@ -350,134 +342,14 @@ fun PasswordChangeDialog(
 @Composable
 fun NotificationSettingsSection(
     state: SettingsState,
-    notificationPermissionGranted: Boolean,
-    onInAppNotificationsChange: (Boolean) -> Unit,
-    onDamageNotificationsChange: (Boolean) -> Unit,
     onEmailNotificationsChange: (Boolean) -> Unit,
     onPreviewDamageEmail: () -> Unit,
     onPreviewCriticalEmail: () -> Unit,
-    onRequestNotificationPermission: () -> Unit,
-    onShowTestNotification: (String, NotificationType, Long) -> Unit
 ) {
     val context = LocalContext.current
 
     SettingsSection(title = "Notifications") {
-        // In-App Notifications Toggle with permission handling
-        SettingsItem(
-            icon = Icons.Default.Notifications,
-            title = "In-App Notifications",
-            subtitle = if (notificationPermissionGranted) {
-                "Show notifications within the app"
-            } else {
-                "Requires notification permission"
-            },
-            action = {
-                Column {
-                    Switch(
-                        checked = state.inAppNotificationsEnabled && notificationPermissionGranted,
-                        onCheckedChange = { enabled ->
-                            if (enabled && !notificationPermissionGranted) {
-                                // Show a dialog asking the user to go to settings
-                                Toast.makeText(
-                                    context,
-                                    "Please allow notifications in app settings",
-                                    Toast.LENGTH_LONG
-                                ).show()
 
-                                // This would trigger the permission dialog in a real app
-                                onRequestNotificationPermission()
-
-                                // For debug purposes - directly open app notification settings
-                                try {
-                                    val intent = Intent().apply {
-                                        action = "android.settings.APP_NOTIFICATION_SETTINGS"
-                                        putExtra("android.provider.extra.APP_PACKAGE", context.packageName)
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    }
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    // Fallback to app info settings if the above doesn't work
-                                    val fallbackIntent = Intent().apply {
-                                        action = android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                                        data = Uri.fromParts("package", context.packageName, null)
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    }
-                                    context.startActivity(fallbackIntent)
-                                }
-                            } else {
-                                onInAppNotificationsChange(enabled)
-                            }
-                        },
-                        enabled = true // Always enabled so users can click to trigger permission request
-                    )
-                    if (!notificationPermissionGranted) {
-                        Text(
-                            text = "Tap to enable permission",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-            }
-        )
-
-        // Add test notification button
-        if (notificationPermissionGranted) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    onShowTestNotification(
-                        "Test notification working! 🔔",
-                        NotificationType.INFO,
-                        5000
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text("Test In-App Notification")
-                }
-            }
-
-            Text(
-                text = "Shows a test notification immediately",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // Damage notifications toggle (only if in-app notifications are enabled and permission granted)
-        if (state.inAppNotificationsEnabled && notificationPermissionGranted) {
-            SettingsItem(
-                title = "Character Damage Alerts",
-                subtitle = "Warns you when missing tasks damages your wizard",
-                action = {
-                    Switch(
-                        checked = state.damageNotificationsEnabled,
-                        onCheckedChange = onDamageNotificationsChange
-                    )
-                }
-            )
-        }
 
         // Email notifications toggle
         SettingsItem(

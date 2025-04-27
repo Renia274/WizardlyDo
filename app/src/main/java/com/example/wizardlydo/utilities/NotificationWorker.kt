@@ -17,6 +17,9 @@ import com.example.wizardlydo.repository.tasks.TaskRepository
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.random.Random
 
 
@@ -28,6 +31,7 @@ class NotificationWorker(
     private val repository: WizardRepository by inject()
     private val taskRepository: TaskRepository by inject()
     private val emailSender = EmailSender(applicationContext)
+    private val sharedPreferences = applicationContext.getSharedPreferences("task_notifications", Context.MODE_PRIVATE)
 
     override suspend fun doWork(): Result {
         val userId = repository.getCurrentUserId() ?: return Result.failure()
@@ -46,10 +50,7 @@ class NotificationWorker(
                 profile.copy(health = newHealth)
             ).getOrThrow()
 
-            // Send push notifications
-            if (profile.inAppNotificationsEnabled) {
-                sendPostNotifications(profile, damage, newHealth, tasks)
-            }
+           
 
             // Send email notifications if enabled
             if (profile.emailNotificationsEnabled) {
@@ -68,31 +69,6 @@ class NotificationWorker(
         }
     }
 
-    private fun sendPostNotifications(
-        profile: WizardProfile,
-        damage: Int,
-        newHealth: Int,
-        tasks: List<Task>
-    ) {
-        // Check permission first
-        if (!NotificationPermissionHandler.checkPermission(applicationContext)) {
-            return
-        }
-
-        if (!profile.inAppNotificationsEnabled || !profile.damageNotificationsEnabled) return
-
-        if (newHealth <= 0) {
-            sendNotification(
-                "Your wizard has perished! 💀",
-                "Revive now to continue your journey!"
-            )
-        } else if (damage > 0) {
-            sendNotification(
-                "Damage Taken! ⚠️",
-                "Your wizard lost $damage HP! Current health: $newHealth/${profile.maxHealth}"
-            )
-        }
-    }
 
     private fun sendEmailNotifications(
         profile: WizardProfile,
@@ -140,9 +116,13 @@ class NotificationWorker(
                 return
             }
 
-            // Send push notifications for each task
+            // Send push notifications for each task, but check if we've already sent one recently
             upcomingTasks.forEach { task ->
-                sendTaskReminderNotification(task)
+                // Only send notification if we haven't sent one for this task recently
+                if (!hasRecentlyNotifiedForTask(task.id)) {
+                    sendTaskReminderNotification(task)
+                    markTaskAsNotified(task.id)
+                }
             }
 
             // Send email if enabled
@@ -164,6 +144,20 @@ class NotificationWorker(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private fun hasRecentlyNotifiedForTask(taskId: Int): Boolean {
+        // Get the timestamp of the last notification for this task
+        val lastNotificationTime = sharedPreferences.getLong("task_notification_$taskId", 0)
+        val currentTime = System.currentTimeMillis()
+
+        // Consider 24 hours (86400000 ms) as the minimum time between notifications
+        return (currentTime - lastNotificationTime) < 86400000
+    }
+
+    private fun markTaskAsNotified(taskId: Int) {
+        // Store the current timestamp for this task notification
+        sharedPreferences.edit().putLong("task_notification_$taskId", System.currentTimeMillis()).apply()
     }
 
     private fun sendNotification(title: String, message: String) {
@@ -236,9 +230,15 @@ class NotificationWorker(
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Format due date if available
+        val dueDateMessage = task.dueDate?.let {
+            val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+            " (due on ${dateFormat.format(Date(it))})"
+        } ?: ""
+
         val notificationBuilder = NotificationCompat.Builder(applicationContext, "reminder_channel")
             .setContentTitle("Task Reminder: ${task.title}")
-            .setContentText("Due soon. Complete to prevent wizard damage!")
+            .setContentText("Due soon$dueDateMessage. Complete to prevent wizard damage!")
             .setSmallIcon(R.drawable.ic_alarm)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

@@ -87,26 +87,12 @@ fun SettingsScreen(
             },
             onReminderEnabledChange = viewModel::updateReminderEnabled,
             onReminderDaysChange = viewModel::updateReminderDays,
-            onInAppNotificationsChange = viewModel::updateInAppNotifications,
-            onDamageNotificationsChange = viewModel::updateDamageNotifications,
+
             onEmailNotificationsChange = viewModel::updateEmailNotifications,
             onPreviewDamageEmail = viewModel::sendDamagePreviewEmail,
-            onPreviewCriticalEmail = viewModel::sendCriticalPreviewEmail,
-            onRequestNotificationPermission = {
-                // This would typically launch the permission request
-                // After permission is granted, call checkNotificationPermission
-                viewModel.checkNotificationPermission()
-            },
-            onTestDueTasksNow = viewModel::checkDueTasksImmediately,
-            onShowTestNotification = { message, type, duration ->
-                // Create and show the notification
-                val notificationData = when(type) {
-                    NotificationType.INFO -> SettingsViewModel.InAppNotificationData.Info(message, duration)
-                    NotificationType.WARNING, NotificationType.DAMAGE, NotificationType.CRITICAL ->
-                        SettingsViewModel.InAppNotificationData.Warning(message, duration)
-                }
-                viewModel.activeNotificationFlow.value = notificationData
-            }
+            onPreviewCriticalEmail = viewModel::sendCriticalPreviewEmail
+
+
         )
 
         // Display notification on top of the settings screen
@@ -136,14 +122,10 @@ fun SettingsContent(
     onChangePassword: (String, String) -> Unit,
     onReminderEnabledChange: (Boolean) -> Unit,
     onReminderDaysChange: (Int) -> Unit,
-    onInAppNotificationsChange: (Boolean) -> Unit,
-    onDamageNotificationsChange: (Boolean) -> Unit,
     onEmailNotificationsChange: (Boolean) -> Unit,
     onPreviewDamageEmail: () -> Unit,
     onPreviewCriticalEmail: () -> Unit,
-    onRequestNotificationPermission: () -> Unit,
-    onTestDueTasksNow: () -> Unit,
-    onShowTestNotification: (String, NotificationType, Long) -> Unit // Added callback for test notifications
+
 ) {
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -241,40 +223,8 @@ fun SettingsContent(
                         onDaysChange = onReminderDaysChange
                     )
 
-                    // Add test button below the picker
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Button(
-                            onClick = { onTestDueTasksNow() },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondary,
-                                contentColor = MaterialTheme.colorScheme.onSecondary
-                            )
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_alarm),
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
-                                Text("Test Due Task Notifications Now")
-                            }
-                        }
 
-                        Text(
-                            text = "This will check for tasks due soon and show notifications immediately",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+
 
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 16.dp),
@@ -285,32 +235,10 @@ fun SettingsContent(
 
             NotificationSettingsSection(
                 state = state,
-                notificationPermissionGranted = notificationPermissionGranted,
-                onInAppNotificationsChange = { enabled ->
-                    onInAppNotificationsChange(enabled)
-                    if (enabled) {
-                        onShowTestNotification(
-                            "In-app notifications are now active! 🔔",
-                            NotificationType.INFO,
-                            5000
-                        )
-                    }
-                },
-                onDamageNotificationsChange = { enabled ->
-                    onDamageNotificationsChange(enabled)
-                    if (enabled) {
-                        onShowTestNotification(
-                            "Damage alerts enabled! Your wizard will notify you when taking damage.",
-                            NotificationType.WARNING,
-                            5000
-                        )
-                    }
-                },
                 onEmailNotificationsChange = onEmailNotificationsChange,
                 onPreviewDamageEmail = onPreviewDamageEmail,
                 onPreviewCriticalEmail = onPreviewCriticalEmail,
-                onRequestNotificationPermission = onRequestNotificationPermission,
-                onShowTestNotification = onShowTestNotification
+
             )
 
             SettingsSection(title = "About WizardlyDo") {
@@ -404,14 +332,10 @@ fun SettingsScreenPreview() {
             onChangePassword = { _, _ -> },
             onReminderEnabledChange = {},
             onReminderDaysChange = {},
-            onInAppNotificationsChange = {},
-            onDamageNotificationsChange = {},
             onEmailNotificationsChange = {},
             onPreviewDamageEmail = {},
             onPreviewCriticalEmail = {},
-            onRequestNotificationPermission = {},
-            onTestDueTasksNow = {},
-            onShowTestNotification = { _, _, _ -> },
+
         )
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -158,10 +159,18 @@ fun CreateTaskButton(
     onClick: () -> Unit
 ) {
     Button(
-        onClick = onClick,
+        onClick = {
+            if (enabled) {
+                onClick()
+            }
+        },
         modifier = Modifier.fillMaxWidth(),
-        enabled = enabled
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
     ) {
-        Text("Create Task")
+        Text("Create Task", style = MaterialTheme.typography.labelLarge)
     }
 }
