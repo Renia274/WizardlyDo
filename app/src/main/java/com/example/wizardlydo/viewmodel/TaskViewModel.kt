@@ -65,21 +65,29 @@ class TaskViewModel(
 
         return uiState.value.tasks.find { it.id == taskId }
     }
-
-    // Call this after successfully creating a task
-    fun markTaskAsRecentlyCreated() {
-        taskRecentlyCreated = true
-    }
-
-
-
     fun createTask(task: Task) {
         viewModelScope.launch {
             currentUserId.value?.let { userId ->
-                taskRepository.insertTask(task.copy(userId = userId))
-                markTaskAsRecentlyCreated() // Mark that a task was created
+                try {
+                    val createdTask = task.copy(userId = userId)
+                    taskRepository.insertTask(createdTask)
+                    // Update state with the newly created task
+                    mutableState.update {
+                        it.copy(recentlyCreatedTask = createdTask)
+                    }
+                    loadData() // Refresh the task list
+                } catch (e: Exception) {
+                    mutableState.update {
+                        it.copy(error = "Failed to create task: ${e.message}")
+                    }
+                }
             }
         }
+    }
+
+    // Add this to reset the recently created task state
+    fun resetRecentlyCreatedTask() {
+        mutableState.update { it.copy(recentlyCreatedTask = null) }
     }
 
     fun loadData() {

@@ -1,39 +1,38 @@
 package com.example.wizardlydo.screens.tasks
 
-import android.widget.Toast
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
-import com.example.wizardlydo.comps.InAppNotification
 import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
+import com.example.wizardlydo.getDaysRemaining
 import com.example.wizardlydo.screens.tasks.comps.CharacterStatsSection
 import com.example.wizardlydo.screens.tasks.comps.EmptyTaskList
 import com.example.wizardlydo.screens.tasks.comps.ErrorMessage
@@ -42,150 +41,128 @@ import com.example.wizardlydo.screens.tasks.comps.TaskBottomBar
 import com.example.wizardlydo.screens.tasks.comps.TaskFilterChips
 import com.example.wizardlydo.screens.tasks.comps.TaskListSection
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.SettingsViewModel
 import com.example.wizardlydo.viewmodel.TaskViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(
     viewModel: TaskViewModel = koinViewModel(),
-    settingsViewModel: SettingsViewModel = koinViewModel(),
-    onHome: () -> Unit,
+    onBack: () -> Unit,
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
     onEditMode: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-    val notification by settingsViewModel.activeNotification.collectAsState()
-    val notificationPermissionGranted by settingsViewModel.notificationPermissionGranted.collectAsState()
-    val appSettings by settingsViewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
-    // Remember the last created task info
-    val lastCreatedTask = remember { mutableStateOf<Task?>(null) }
+    LaunchedEffect(state.recentlyCreatedTask) {
+        state.recentlyCreatedTask?.let { newTask ->
+            // Show snackbar for the newly created task
+            newTask.getDaysRemaining()?.let { days ->
+                val message = if (days in 1..7) {
+                    "Added: ${newTask.title} (Due in $days day${if (days != 1) "s" else ""})"
+                } else {
+                    "Added: ${newTask.title}"
+                }
 
-    // Load data when screen is composed
-    LaunchedEffect(Unit) {
-        viewModel.loadData()
-    }
-
-    // Check if we need to show a task created notification
-    LaunchedEffect(state.tasks) {
-        if (state.tasks.isNotEmpty() &&
-            notificationPermissionGranted &&
-            appSettings.inAppNotificationsEnabled) {
-
-            viewModel.getRecentlyCreatedTask()?.let { task ->
-                settingsViewModel.showNotification(
-                    SettingsViewModel.InAppNotificationData.Info(
-                        message = "Task \"${task.title}\" created successfully!" +
-                                (task.dueDate?.let {
-                                    " (due on ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))})"
-                                } ?: ""),
-                        duration = 5000
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                        duration = SnackbarDuration.Short
                     )
-                )
-            }
-        }
-    }
-
-    LaunchedEffect(state.error) {
-        state.error?.let { error ->
-            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-            viewModel.clearError()
-        }
-    }
-
-    Box(Modifier.fillMaxSize()) {
-        Scaffold(
-            modifier = Modifier.matchParentSize(),
-            topBar = {
-                TopAppBar(
-                    title = { Text("Task Manager") }
-                )
-            },
-            bottomBar = {
-                TaskBottomBar(
-                    onHome = onHome,
-                    onEditMode = onEditMode,
-                    onSettings = onSettings
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = onCreateTask,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Create Task")
+                    // Reset the state after showing the snackbar
+                    viewModel.resetRecentlyCreatedTask()
+                }
+            } ?: run {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "Added: ${newTask.title}",
+                        duration = SnackbarDuration.Short
+                    )
+                    viewModel.resetRecentlyCreatedTask()
                 }
             }
-        ) { padding ->
-            Box(modifier = Modifier.padding(padding)) {
-                when {
-                    state.isLoading -> FullScreenLoading()
-                    else -> TaskContent(
-                        state = state,
-                        onEditTask = onEditTask,
-                        onCompleteTask = { taskId ->
-                            viewModel.completeTask(taskId)
-                            // Only show notification if enabled
-                            if (appSettings.inAppNotificationsEnabled && notificationPermissionGranted) {
-                                settingsViewModel.activeNotificationFlow.value =
-                                    SettingsViewModel.InAppNotificationData.Info(
-                                        message = "Task completed! +50 XP"
-                                    )
-                            }
-                        },
-                        onDeleteTask = { taskId ->
-                            viewModel.deleteTask(taskId) {
-                                // Only show notification if enabled
-                                if (appSettings.inAppNotificationsEnabled && notificationPermissionGranted) {
-                                    settingsViewModel.activeNotificationFlow.value =
-                                        SettingsViewModel.InAppNotificationData.Warning(
-                                            message = "Task deleted!"
-                                        )
-                                }
-                            }
-                        },
-                        onDamageTaken = { damage, currentHealth ->
-                            // Only show notification if enabled and damage notifications enabled
-                            if (appSettings.inAppNotificationsEnabled &&
-                                appSettings.damageNotificationsEnabled &&
-                                notificationPermissionGranted) {
-                                settingsViewModel.activeNotificationFlow.value =
-                                    SettingsViewModel.InAppNotificationData.Warning(
-                                        message = "Damage taken! $damage HP lost! Health: $currentHealth"
-                                    )
-                            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Task Manager") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            TaskBottomBar(
+                onHome = onBack,
+                onEditMode = onEditMode,
+                onSettings = onSettings
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onCreateTask) {
+                Icon(Icons.Default.Add, "Create Task")
+            }
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding)) {
+            CharacterStatsSection(
+                wizardResult = state.wizardProfile,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TaskFilterChips(
+                currentFilter = state.currentFilter,
+                onFilterChange = { filter ->
+                    viewModel.setFilter(filter)
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TaskListSection(
+                tasks = state.filteredTasks,
+                onCompleteTask = { taskId ->
+                    viewModel.completeTask(taskId)
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Task completed! +XP earned",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                },
+                onEditTask = onEditTask,
+                onDeleteTask = { taskId ->
+                    viewModel.deleteTask(taskId) {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Task deleted",
+                                duration = SnackbarDuration.Short
+                            )
                         }
-                    )
+                    }
                 }
-            }
-        }
-
-        // Display the notification at the top layer
-        notification?.let { notif ->
-            InAppNotification(
-                message = notif.message,
-                type = notif.type,
-                onDismiss = { settingsViewModel.clearNotification() },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 100.dp, start = 16.dp, end = 16.dp)
-                    .zIndex(10f) // Ensure it's on top of everything
             )
         }
     }
 }
 
+
 @Composable
 fun TaskContent(
+    modifier: Modifier = Modifier,
     state: TaskUiState,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
@@ -194,7 +171,7 @@ fun TaskContent(
 ) {
     val wizardProfile = state.wizardProfile?.getOrNull()
 
-    Column(Modifier.fillMaxSize()) {
+    Column(modifier.fillMaxSize()) {
         CharacterStatsSection(
             wizardResult = state.wizardProfile,
             modifier = Modifier.padding(vertical = 8.dp)
@@ -239,8 +216,6 @@ fun TaskContent(
     }
 }
 
-
-
 @Preview(showBackground = true)
 @Composable
 fun TaskContentPreview() {
@@ -263,7 +238,7 @@ fun TaskContentPreview() {
                         priority = Priority.HIGH,
                         userId = "",
                         isCompleted = false,
-                        createdAt = System.currentTimeMillis() - 86400000, // 1 day ago
+                        createdAt = System.currentTimeMillis() - 86400000,
                         isDaily = false,
                         category = "School"
                     ),
@@ -271,11 +246,11 @@ fun TaskContentPreview() {
                         id = 2,
                         title = "Go shopping",
                         description = "Buy groceries",
-                        dueDate = System.currentTimeMillis() + 86400000, // 1 day from now
+                        dueDate = System.currentTimeMillis() + 86400000,
                         priority = Priority.MEDIUM,
                         userId = "",
                         isCompleted = true,
-                        createdAt = System.currentTimeMillis() - 172800000, // 2 days ago
+                        createdAt = System.currentTimeMillis() - 172800000,
                         isDaily = true,
                         category = "Chores"
                     )

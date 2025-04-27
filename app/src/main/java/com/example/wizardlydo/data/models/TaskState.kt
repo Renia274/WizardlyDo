@@ -10,7 +10,9 @@ data class TaskUiState(
     val error: String? = null,
     val filteredTasks: List<Task> = emptyList(),
     val currentFilter: TaskFilter = TaskFilter.ALL,
-    val onFilterChange: ((TaskFilter) -> Unit)? = null
+    val onFilterChange: ((TaskFilter) -> Unit)? = null,
+    val recentlyCreatedTask: Task? = null,
+    val recentlyDeletedTask: Task? = null,
 )
 
 enum class TaskFilter { ALL, ACTIVE, COMPLETED, DAILY }

@@ -60,6 +60,7 @@ import com.example.wizardlydo.data.models.TaskFilter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 
 @Composable
@@ -362,6 +363,7 @@ fun TaskItem(
 ) {
     // State for completion confirmation dialog
     var showCompletionDialog by remember { mutableStateOf(false) }
+    val daysRemaining = taskEntity.getDaysRemaining()
 
     // Completion confirmation dialog
     if (showCompletionDialog) {
@@ -371,6 +373,18 @@ fun TaskItem(
             text = {
                 Column {
                     Text("Mark this task as completed?")
+                    daysRemaining?.let { days ->
+                        Text(
+                            text = if (days > 0) "Due in $days day${if (days > 1) "s" else ""}"
+                            else "This task is overdue!",
+                            color = when {
+                                days <= 0 -> MaterialTheme.colorScheme.error
+                                days <= 3 -> MaterialTheme.colorScheme.tertiary
+                                else -> MaterialTheme.colorScheme.primary
+                            },
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Completing tasks gives you XP and rewards!",
@@ -400,7 +414,7 @@ fun TaskItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onEdit) // Clicking the card will edit the task
+            .clickable(onClick = onEdit)
     ) {
         Row(
             modifier = Modifier
@@ -408,12 +422,10 @@ fun TaskItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Checkbox now shows completion dialog
             Checkbox(
                 checked = taskEntity.isCompleted,
                 onCheckedChange = { _ ->
                     if (!taskEntity.isCompleted) {
-                        // Show confirmation dialog before completing
                         showCompletionDialog = true
                     }
                 }
@@ -421,14 +433,33 @@ fun TaskItem(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = taskEntity.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    textDecoration = if (taskEntity.isCompleted) TextDecoration.LineThrough else null
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = taskEntity.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        textDecoration = if (taskEntity.isCompleted) TextDecoration.LineThrough else null,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Days remaining badge
+                    daysRemaining?.takeIf { it >= 0 }?.let { days ->
+                        Surface(
+                            shape = CircleShape,
+                            color = getDaysRemainingColor(days).copy(alpha = 0.2f),
+                            contentColor = getDaysRemainingColor(days),
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "$days",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
 
                 if (taskEntity.description.isNotBlank()) {
                     Text(
@@ -440,35 +471,56 @@ fun TaskItem(
                     )
                 }
 
-                taskEntity.dueDate?.let {
-                    val formattedDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(
-                        Date(it)
-                    )
-                    Text(
-                        text = "Due: $formattedDate",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                if (taskEntity.category != null) {
-                    Surface(
-                        modifier = Modifier.padding(top = 4.dp),
-                        onClick = { },
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = MaterialTheme.shapes.small
-                    ) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    taskEntity.dueDate?.let {
                         Text(
-                            text = taskEntity.category,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall
+                            text = SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(it)),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    if (taskEntity.category != null) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = taskEntity.category,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                     }
                 }
             }
 
             PriorityIndicator(priority = taskEntity.priority)
         }
+    }
+}
+
+@Composable
+private fun getDaysRemainingColor(days: Int): Color {
+    return when {
+        days <= 0 -> MaterialTheme.colorScheme.error // Overdue
+        days <= 1 -> MaterialTheme.colorScheme.error // Due today/tomorrow
+        days <= 3 -> MaterialTheme.colorScheme.tertiary // Due in 2-3 days
+        else -> MaterialTheme.colorScheme.primary // Due later
+    }
+}
+
+// Add this extension function to your codebase
+fun Task.getDaysRemaining(): Int? {
+    return dueDate?.let { dueDateMillis ->
+        val currentTime = System.currentTimeMillis()
+        val diff = dueDateMillis - currentTime
+        TimeUnit.MILLISECONDS.toDays(diff).toInt() + 1 // +1 to count current partial day
     }
 }
 
