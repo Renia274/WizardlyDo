@@ -30,7 +30,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import com.example.wizardlydo.utilities.TaskNotificationService
-
+import androidx.work.Configuration
 
 class MyApp : Application() {
     override fun onCreate() {
@@ -65,6 +65,8 @@ class MyApp : Application() {
             notificationManager.createNotificationChannel(taskChannel)
         }
     }
+
+
 }
 
 val appModule = module {

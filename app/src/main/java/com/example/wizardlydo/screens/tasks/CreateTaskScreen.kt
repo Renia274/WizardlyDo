@@ -34,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,6 +58,7 @@ import com.example.wizardlydo.viewmodel.TaskViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -67,12 +69,12 @@ import java.util.Locale
 @Composable
 fun CreateTaskScreen(
     onBack: () -> Unit,
-    viewModel: TaskViewModel = koinViewModel(),
-    settingsViewModel: SettingsViewModel = koinViewModel()
+    viewModel: TaskViewModel = koinViewModel()
 ) {
     val userId by viewModel.currentUserIdState.collectAsState()
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -92,25 +94,26 @@ fun CreateTaskScreen(
         CreateTaskContent(
             padding = paddingValues,
             onCreateTask = { task ->
-                viewModel.createTask(task)
+                coroutineScope.launch {
+                    // Create the task
+                    viewModel.createTask(task)
 
+                    // Show system notification with expandable content
+                    taskNotificationService.showTaskCreatedNotification(task)
 
+                    // If the task has a due date, schedule future reminder notifications
+                    if (task.dueDate != null) {
+                        taskNotificationService.scheduleTaskNotification(task)
+                    }
 
-                // Show system notification with expandable content
-                taskNotificationService.showTaskCreatedNotification(task)
-
-                // If the task has a due date, schedule future reminder notifications
-                if (task.dueDate != null) {
-                    taskNotificationService.scheduleTaskNotification(task)
+                    // Navigate back to task screen
+                    onBack()
                 }
-
-                onBack() // Navigate back after creating task
             },
             userId = viewModel.currentUserIdState.value
         )
     }
 }
-
 @SuppressLint("InlinedApi")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
