@@ -1,5 +1,6 @@
 [versions]
 accompanistPermissions = "0.34.0"
+accompanistPermissionsVersion = "0.30.1"
 agp = "8.8.0"
 bcrypt = "0.10.2"
 biometric = "1.2.0-alpha04"
@@ -41,6 +42,7 @@ toolsCore = "1.0.0-alpha13"
 [libraries]
 # AndroidX
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
+accompanist-permissions-v0301 = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissionsVersion" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

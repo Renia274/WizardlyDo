@@ -1,7 +1,6 @@
 package com.example.wizardlydo.screens.settings.comps
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,15 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,14 +26,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.data.models.SettingsState
 
 @Composable
 fun SettingsSection(
@@ -172,56 +166,7 @@ fun SettingsActionItem(
     )
 }
 
-@Composable
-fun ReminderDaysPicker(
-    days: Int,
-    onDaysChange: (Int) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Remind me before task due date:",
-            style = MaterialTheme.typography.bodyMedium
-        )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            for (day in 1..3) {
-                Button(
-                    onClick = { onDaysChange(day) },
-                    modifier = Modifier.weight(1f),
-                    enabled = day != days
-                ) {
-                    Text("$day ${if (day == 1) "day" else "days"}")
-                }
-
-                if (day < 3) {
-                    Spacer(modifier = Modifier.padding(4.dp))
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "You will be reminded $days ${if (days == 1) "day" else "days"} before the task is due.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    )
-}
 
 @Composable
 fun PasswordChangeDialog(
@@ -339,87 +284,7 @@ fun PasswordChangeDialog(
     )
 }
 
-@Composable
-fun NotificationSettingsSection(
-    state: SettingsState,
-    onEmailNotificationsChange: (Boolean) -> Unit,
-    onPreviewDamageEmail: () -> Unit,
-    onPreviewCriticalEmail: () -> Unit,
-) {
-    val context = LocalContext.current
 
-    SettingsSection(title = "Notifications") {
-
-
-        // Email notifications toggle
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_email),
-            title = "Email Notifications",
-            subtitle = "Get important alerts via email",
-            action = {
-                Switch(
-                    checked = state.emailNotificationsEnabled,
-                    onCheckedChange = onEmailNotificationsChange
-                )
-            }
-        )
-
-        // Email preview buttons (only if email notifications are enabled)
-        if (state.emailNotificationsEnabled && !state.email.isNullOrEmpty()) {
-            EmailPreviewButtons(
-                onPreviewDamageEmail = onPreviewDamageEmail,
-                onPreviewCriticalEmail = onPreviewCriticalEmail
-            )
-        }
-    }
-}
-
-@Composable
-fun EmailPreviewButtons(
-    onPreviewDamageEmail: () -> Unit,
-    onPreviewCriticalEmail: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Preview Email Notifications",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Button(
-            onClick = onPreviewDamageEmail,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer
-            )
-        ) {
-            Text("Preview Damage Alert")
-        }
-
-        Button(
-            onClick = onPreviewCriticalEmail,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError
-            )
-        ) {
-            Text("Preview Critical Alert")
-        }
-    }
-
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    )
-}
 
 
 

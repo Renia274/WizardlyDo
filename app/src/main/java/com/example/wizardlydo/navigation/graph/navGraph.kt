@@ -1,5 +1,6 @@
 package com.example.wizardlydo.navigation.graph
 
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
@@ -23,6 +24,7 @@ import com.example.wizardlydo.screens.tasks.CreateTaskScreen
 import com.example.wizardlydo.screens.tasks.EditTaskScreen
 import com.example.wizardlydo.screens.tasks.TaskScreen
 
+@SuppressLint("NewApi")
 @RequiresApi(Build.VERSION_CODES.R)
 @Composable
 fun NavigationGraph() {
@@ -131,7 +133,13 @@ fun NavigationGraph() {
         }
 
         composable(Screen.Tasks.route) {
+
             TaskScreen(
+                onBack = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                },
                 onHome = {
                     navController.popBackStack(Screen.Tasks.route, inclusive = false)
                 },
@@ -146,7 +154,7 @@ fun NavigationGraph() {
                 },
                 onSettings = {
                     navController.navigate(Screen.Tasks.Settings.route)
-                }
+                },
             )
         }
 

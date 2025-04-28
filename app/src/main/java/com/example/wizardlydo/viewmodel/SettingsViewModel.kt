@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import at.favre.lib.crypto.bcrypt.BCrypt
-import com.example.wizardlydo.comps.NotificationType
 import com.example.wizardlydo.data.models.SettingsState
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.google.firebase.auth.EmailAuthProvider
@@ -12,7 +11,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,34 +45,7 @@ class SettingsViewModel(
         loadSettings()
     }
 
-    val activeNotificationFlow = MutableStateFlow<InAppNotificationData?>(null)
-    val activeNotification: StateFlow<InAppNotificationData?> = activeNotificationFlow.asStateFlow()
 
-    open class InAppNotificationData(
-        val message: String,
-        val type: NotificationType,
-        val duration: Long = 3000
-    ) {
-        class Info(message: String, duration: Long = 3000) :
-            InAppNotificationData(message, NotificationType.INFO, duration)
-
-        class Warning(message: String, duration: Long = 4000) :
-            InAppNotificationData(message, NotificationType.WARNING, duration)
-    }
-
-    fun showNotification(notification: InAppNotificationData) {
-        if (state.value.inAppNotificationsEnabled) {
-            activeNotificationFlow.value = notification
-            viewModelScope.launch {
-                delay(notification.duration)
-                clearNotification()
-            }
-        }
-    }
-
-    fun clearNotification() {
-        activeNotificationFlow.value = null
-    }
 
 
 
@@ -96,36 +67,7 @@ class SettingsViewModel(
 
 
 
-    fun updateReminderDays(days: Int) {
-        viewModelScope.launch {
-            auth.currentUser?.uid?.let { userId ->
-                wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
-                    val updatedProfile = profile.copy(reminderDays = days)
-                    wizardRepository.updateWizardProfile(userId, updatedProfile).onSuccess {
-                        stateFlow.value = stateFlow.value.copy(reminderDays = days)
-                        showNotification(InAppNotificationData.Info("Reminder days set to $days"))
-                    }
-                }
-            }
-        }
-    }
 
-
-
-    fun updateEmailNotifications(enabled: Boolean) {
-        viewModelScope.launch {
-            auth.currentUser?.uid?.let { userId ->
-                wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
-                    val updatedProfile = profile.copy(emailNotificationsEnabled = enabled)
-                    wizardRepository.updateWizardProfile(userId, updatedProfile).onSuccess {
-                        stateFlow.value = stateFlow.value.copy(emailNotificationsEnabled = enabled)
-                        val message = if (enabled) "Email notifications enabled" else "Email notifications disabled"
-                        showNotification(InAppNotificationData.Info(message))
-                    }
-                }
-            }
-        }
-    }
 
     fun changePassword(
         newPassword: String,
@@ -161,7 +103,6 @@ class SettingsViewModel(
         user.updatePassword(newPassword).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 updatePasswordInRepository(newPassword)
-                showNotification(InAppNotificationData.Info("Password updated successfully"))
                 onSuccess()
             } else {
                 onError(task.exception?.message ?: "Password update failed")

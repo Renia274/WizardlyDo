@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,16 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -35,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -43,14 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.example.wizardlydo.R
-import com.example.wizardlydo.comps.InAppNotification
-import com.example.wizardlydo.comps.NotificationType
 import com.example.wizardlydo.data.models.SettingsState
-import com.example.wizardlydo.screens.settings.comps.NotificationSettingsSection
 import com.example.wizardlydo.screens.settings.comps.PasswordChangeDialog
-import com.example.wizardlydo.screens.settings.comps.ReminderDaysPicker
 import com.example.wizardlydo.screens.settings.comps.SettingsActionItem
 import com.example.wizardlydo.screens.settings.comps.SettingsItem
 import com.example.wizardlydo.screens.settings.comps.SettingsSection
@@ -65,13 +54,10 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    val notificationPermissionGranted by viewModel.notificationPermissionGranted.collectAsState()
-    val notification by viewModel.activeNotification.collectAsState()
 
     Box(Modifier.fillMaxSize()) {
         SettingsContent(
             state = state,
-            notificationPermissionGranted = notificationPermissionGranted,
             onBack = onBack,
             onLogoutConfirmed = {
                 viewModel.logout()
@@ -85,28 +71,15 @@ fun SettingsScreen(
                     onError = {}
                 )
             },
-            onReminderEnabledChange = viewModel::updateReminderEnabled,
-            onReminderDaysChange = viewModel::updateReminderDays,
 
-            onEmailNotificationsChange = viewModel::updateEmailNotifications,
-            onPreviewDamageEmail = viewModel::sendDamagePreviewEmail,
-            onPreviewCriticalEmail = viewModel::sendCriticalPreviewEmail
+
+
+
 
 
         )
 
-        // Display notification on top of the settings screen
-        notification?.let { notif ->
-            InAppNotification(
-                message = notif.message,
-                type = notif.type,
-                onDismiss = { viewModel.clearNotification() },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 100.dp, start = 16.dp, end = 16.dp)
-                    .zIndex(10f)
-            )
-        }
+
     }
 }
 
@@ -116,15 +89,12 @@ fun SettingsScreen(
 @Composable
 fun SettingsContent(
     state: SettingsState,
-    notificationPermissionGranted: Boolean,
+
     onBack: () -> Unit,
     onLogoutConfirmed: () -> Unit,
     onChangePassword: (String, String) -> Unit,
-    onReminderEnabledChange: (Boolean) -> Unit,
-    onReminderDaysChange: (Int) -> Unit,
-    onEmailNotificationsChange: (Boolean) -> Unit,
-    onPreviewDamageEmail: () -> Unit,
-    onPreviewCriticalEmail: () -> Unit,
+
+
 
 ) {
     var showPasswordDialog by remember { mutableStateOf(false) }
@@ -205,41 +175,12 @@ fun SettingsContent(
                 )
             }
 
-            SettingsSection(title = "Reminders") {
-                SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_alarm),
-                    title = "Enable Task Reminders",
-                    action = {
-                        Switch(
-                            checked = state.reminderEnabled,
-                            onCheckedChange = onReminderEnabledChange
-                        )
-                    }
-                )
-
-                if (state.reminderEnabled) {
-                    ReminderDaysPicker(
-                        days = state.reminderDays,
-                        onDaysChange = onReminderDaysChange
-                    )
 
 
 
-
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                }
             }
 
-            NotificationSettingsSection(
-                state = state,
-                onEmailNotificationsChange = onEmailNotificationsChange,
-                onPreviewDamageEmail = onPreviewDamageEmail,
-                onPreviewCriticalEmail = onPreviewCriticalEmail,
 
-            )
 
             SettingsSection(title = "About WizardlyDo") {
                 Card(
@@ -289,29 +230,7 @@ fun SettingsContent(
             }
         }
     }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun SettingsScreenNotificationPreview() {
-    WizardlyDoTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Text("Settings Preview", style = MaterialTheme.typography.headlineMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Preview a notification
-            InAppNotification(
-                message = "This is how notifications will appear",
-                type = NotificationType.INFO,
-                onDismiss = {}
-            )
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
@@ -326,15 +245,10 @@ fun SettingsScreenPreview() {
                 damageNotificationsEnabled = false,
                 emailNotificationsEnabled = true
             ),
-            notificationPermissionGranted = true,
             onBack = {},
             onLogoutConfirmed = {},
             onChangePassword = { _, _ -> },
-            onReminderEnabledChange = {},
-            onReminderDaysChange = {},
-            onEmailNotificationsChange = {},
-            onPreviewDamageEmail = {},
-            onPreviewCriticalEmail = {},
+
 
         )
     }

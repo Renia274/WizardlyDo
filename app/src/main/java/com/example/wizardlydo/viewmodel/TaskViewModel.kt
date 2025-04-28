@@ -364,4 +364,41 @@ class TaskViewModel(
         }
         return copy(level = newLevel, experience = remainingExp)
     }
+
+
+    // Add this method to your TaskViewModel class
+    fun loadUpcomingTasks(onResult: (List<Task>) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val tasks = getUpcomingTasksSync()
+                onResult(tasks)
+            } catch (e: Exception) {
+                mutableState.update { it.copy(error = "Failed to load upcoming tasks: ${e.message}") }
+                onResult(emptyList())
+            }
+        }
+    }
+
+    // Function to get upcoming tasks synchronously (for use with notification button)
+    suspend fun getUpcomingTasksSync(): List<Task> {
+        return try {
+            val userId = wizardRepository.getCurrentUserId() ?: return emptyList()
+
+            val currentTime = System.currentTimeMillis()
+            // Get tasks due in the next 3 days
+            val threeDaysFromNow = currentTime + (3 * 24 * 60 * 60 * 1000)
+
+            // Fetch upcoming tasks from repository
+            val upcomingTasks = taskRepository.getUpcomingTasks(userId, currentTime, threeDaysFromNow)
+
+            // Also get overdue tasks
+            val overdueTasks = taskRepository.getDueTasks(userId)
+
+            // Combine the lists (overdue first, then upcoming)
+            (overdueTasks + upcomingTasks).filter { !it.isCompleted }
+        } catch (e: Exception) {
+            mutableState.update { it.copy(error = "Failed to load upcoming tasks: ${e.message}") }
+            emptyList()
+        }
+    }
 }

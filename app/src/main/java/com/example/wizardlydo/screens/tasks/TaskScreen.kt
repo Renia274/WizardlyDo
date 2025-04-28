@@ -1,13 +1,21 @@
 package com.example.wizardlydo.screens.tasks
 
+import android.Manifest
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -22,9 +30,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.Priority
@@ -41,16 +54,22 @@ import com.example.wizardlydo.screens.tasks.comps.TaskBottomBar
 import com.example.wizardlydo.screens.tasks.comps.TaskFilterChips
 import com.example.wizardlydo.screens.tasks.comps.TaskListSection
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
+import com.example.wizardlydo.utilities.TaskNotificationService
 import com.example.wizardlydo.viewmodel.TaskViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun TaskScreen(
     viewModel: TaskViewModel = koinViewModel(),
     onBack: () -> Unit,
+    onHome: () -> Unit,  // Added back the onHome parameter
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
     onEditMode: () -> Unit,
@@ -59,9 +78,41 @@ fun TaskScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val taskNotificationService = remember { TaskNotificationService(context) }
+
+    // Track notification badge state
+    var showNotificationBadge by remember { mutableStateOf(false) }
+
+    // Request notification permission
+    val notificationPermission = rememberPermissionState(
+        permission = Manifest.permission.POST_NOTIFICATIONS
+    )
+
+    LaunchedEffect(Unit) {
+        if (!notificationPermission.status.isGranted) {
+            notificationPermission.launchPermissionRequest()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        // Check for upcoming/due tasks to determine if badge should be shown
+        coroutineScope.launch {
+            val tasks = viewModel.getUpcomingTasksSync()
+            showNotificationBadge = tasks.isNotEmpty()
+        }
+    }
 
     LaunchedEffect(state.recentlyCreatedTask) {
         state.recentlyCreatedTask?.let { newTask ->
+            // Show creation notification with expandable style
+            taskNotificationService.showTaskCreatedNotification(newTask)
+
+            // Also schedule future reminder notifications
+            if (newTask.dueDate != null && !newTask.isCompleted) {
+                taskNotificationService.scheduleTaskNotification(newTask)
+            }
+
             // Show snackbar for the newly created task
             newTask.getDaysRemaining()?.let { days ->
                 val message = if (days in 1..7) {
@@ -96,15 +147,52 @@ fun TaskScreen(
             TopAppBar(
                 title = { Text("Task Manager") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack) {  // This should navigate to SignIn.route
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    // Notification bell with optional badge
+                    Box {
+                        IconButton(
+                            onClick = {
+                                // Show all upcoming tasks as a notification group
+                                coroutineScope.launch {
+                                    val tasks = viewModel.getUpcomingTasksSync()
+                                    if (tasks.isNotEmpty()) {
+                                        taskNotificationService.showTaskSummaryNotification(tasks)
+                                        showNotificationBadge = false
+                                    } else {
+                                        snackbarHostState.showSnackbar(
+                                            message = "No upcoming tasks found",
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Filled.Notifications,
+                                contentDescription = "Notifications"
+                            )
+                        }
+
+                        // Show red notification badge if there are upcoming tasks
+                        if (showNotificationBadge) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(Color.Red, CircleShape)
+                                    .align(Alignment.TopEnd)
+                            )
+                        }
                     }
                 }
             )
         },
         bottomBar = {
             TaskBottomBar(
-                onHome = onBack,
+                onHome = onHome,  // Use the onHome param here, not onBack
                 onEditMode = onEditMode,
                 onSettings = onSettings
             )
@@ -142,6 +230,8 @@ fun TaskScreen(
                             duration = SnackbarDuration.Short
                         )
                     }
+                    // Cancel any notifications for this task since it's completed
+                    taskNotificationService.cancelTaskNotification(taskId)
                 },
                 onEditTask = onEditTask,
                 onDeleteTask = { taskId ->
@@ -152,6 +242,8 @@ fun TaskScreen(
                                 duration = SnackbarDuration.Short
                             )
                         }
+                        // Cancel any notifications for this task since it's deleted
+                        taskNotificationService.cancelTaskNotification(taskId)
                     }
                 }
             )

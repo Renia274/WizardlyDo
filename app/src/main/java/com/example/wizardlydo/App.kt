@@ -25,6 +25,11 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
+import com.example.wizardlydo.utilities.TaskNotificationService
 
 
 class MyApp : Application() {
@@ -32,9 +37,32 @@ class MyApp : Application() {
         super.onCreate()
         FirebaseApp.initializeApp(this)
 
+        // Create notification channels for tasks
+        createNotificationChannels()
+
         startKoin {
             androidContext(this@MyApp)
             modules(appModule)
+        }
+    }
+
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+            // Task reminder channel
+            val taskChannel = NotificationChannel(
+                "task_reminder",
+                "Task Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifications for task reminders and deadlines"
+                enableVibration(true)
+                enableLights(true)
+                setShowBadge(true)
+            }
+
+            notificationManager.createNotificationChannel(taskChannel)
         }
     }
 }
@@ -46,7 +74,8 @@ val appModule = module {
     // WorkManager - used for scheduling notifications
     single { WorkManager.getInstance(androidContext()) }
 
-
+    // Notification Service
+    factory { (context: Context) -> TaskNotificationService(context) }
 
     // Room Database
     single { WizardDatabase.getDatabase(androidContext()) }

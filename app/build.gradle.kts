@@ -140,5 +140,10 @@ dependencies {
 
 
 
+    // Permission handling with accompanist
+    implementation (libs.accompanist.permissions.v0301)
+
+
+
 
 }
