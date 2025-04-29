@@ -81,6 +81,10 @@ fun TaskScreen(
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadData()
+    }
+
     // Initialize notification service in ViewModel
     LaunchedEffect(taskNotificationService) {
         viewModel.setNotificationService(taskNotificationService)
@@ -188,7 +192,7 @@ fun TaskScreen(
                                 modifier = Modifier
                                     .size(10.dp)
                                     .background(Color.Red, CircleShape)
-                                    .align(Alignment.TopEnd)
+                                    .align(Alignment.TopStart)
                             )
                         }
                     }
