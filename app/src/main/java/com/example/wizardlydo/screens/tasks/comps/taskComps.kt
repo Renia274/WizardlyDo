@@ -84,7 +84,10 @@ fun WizardAvatar(
     ) {
         when {
             wizardProfile != null -> {
-                Box(modifier = Modifier.size(100.dp)) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     // Skin/Body
                     Image(
                         painter = painterResource(id = getSkinResourceId(wizardProfile.skinColor)),
@@ -92,6 +95,7 @@ fun WizardAvatar(
                         modifier = Modifier
                             .size(80.dp)
                             .align(Alignment.Center)
+                            .offset(x = (-10).dp,y = (-6).dp)
                     )
 
                     // Outfit
@@ -107,9 +111,10 @@ fun WizardAvatar(
                         modifier = Modifier
                             .size(80.dp)
                             .align(Alignment.Center)
+                            .offset(x = (-10).dp,y = (-6).dp)
                     )
 
-                    // Hair
+                    //Hair
                     Image(
                         painter = painterResource(
                             id = getHairResourceId(
@@ -122,7 +127,7 @@ fun WizardAvatar(
                         modifier = Modifier
                             .size(40.dp)
                             .align(Alignment.TopCenter)
-                            .offset(x = 10.dp, y = 14.dp)
+                            .offset(y = 10.dp)
                     )
                 }
             }
@@ -133,7 +138,6 @@ fun WizardAvatar(
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.size(40.dp)
                 )
-
             }
 
             else -> {
