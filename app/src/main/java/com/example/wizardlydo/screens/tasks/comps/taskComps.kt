@@ -122,7 +122,7 @@ fun WizardAvatar(
                         modifier = Modifier
                             .size(40.dp)
                             .align(Alignment.TopCenter)
-                            .offset(x = 10.dp, y = 24.dp)
+                            .offset(x = 10.dp, y = 14.dp)
                     )
                 }
             }
