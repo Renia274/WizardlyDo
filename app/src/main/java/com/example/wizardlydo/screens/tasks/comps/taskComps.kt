@@ -1,5 +1,6 @@
 package com.example.wizardlydo.screens.tasks.comps
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
@@ -29,6 +32,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -141,11 +145,12 @@ fun WizardAvatar(
         }
     }
 }
-
 @Composable
 fun CharacterStatsSection(
     wizardResult: Result<WizardProfile?>?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tasksToNextLevel: Int = 0,
+    totalTasksForLevel: Int = 0
 ) {
     val wizardProfile = wizardResult?.getOrNull()
     val error = wizardResult?.exceptionOrNull()
@@ -154,65 +159,81 @@ fun CharacterStatsSection(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        elevation = CardDefaults.cardElevation(8.dp),
+        elevation = CardDefaults.cardElevation(4.dp), // Reduced elevation
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(12.dp), // Reduced padding
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Avatar Section
-            WizardAvatar(
-                wizardResult = wizardResult,
-                modifier = Modifier.size(120.dp)
-            )
+            // Use row layout for more compact design
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Avatar on the left
+                WizardAvatar(
+                    wizardResult = wizardResult,
+                    modifier = Modifier.size(80.dp) // Smaller avatar
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-            // Name and Class
-            when {
-                error != null -> {
-                    Text(
-                        text = "Character Load Failed",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Text(
-                        text = error.message ?: "Unknown error",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                // Name, class and level on the right
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    when {
+                        error != null -> {
+                            Text(
+                                text = "Character Load Failed",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
 
-                wizardProfile != null -> {
-                    Text(
-                        text = wizardProfile.wizardName,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = wizardProfile.wizardClass.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                        wizardProfile != null -> {
+                            Text(
+                                text = wizardProfile.wizardName,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = wizardProfile.wizardClass.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
-                else -> {
-                    Text(
-                        text = "Loading Character...",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Level text
+                            Text(
+                                text = "Level ${wizardProfile.level}",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        else -> {
+                            Text(
+                                text = "Loading Character...",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Stats Section
             if (wizardProfile != null) {
+                // Health bar with max 150 cap
                 StatBar(
                     label = "HP",
                     value = wizardProfile.health,
@@ -221,8 +242,9 @@ fun CharacterStatsSection(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
 
+                // Stamina bar
                 StatBar(
                     label = "Stamina",
                     value = wizardProfile.stamina,
@@ -231,12 +253,22 @@ fun CharacterStatsSection(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
 
-                Text(
-                    text = "Level ${wizardProfile.level}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                // XP and tasks to level up - more compact
+                CompactLevelProgressSection(
+                    level = wizardProfile.level,
+                    experience = wizardProfile.experience,
+                    tasksToNextLevel = tasksToNextLevel,
+                    totalTasksForLevel = totalTasksForLevel
+                )
+
+                // Task progress section - very compact
+                Spacer(modifier = Modifier.height(8.dp))
+                TaskProgressSection(
+                    wizardProfile = wizardProfile,
+                    tasksToNextLevel = tasksToNextLevel,
+                    totalTasksForLevel = totalTasksForLevel
                 )
             } else if (error == null) {
                 // Loading placeholders
@@ -247,10 +279,52 @@ fun CharacterStatsSection(
                             .height(8.dp),
                         color = MaterialTheme.colorScheme.primaryContainer
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp)) // Reduced spacing
                 }
             }
         }
+    }
+}
+
+@Composable
+fun CompactLevelProgressSection(
+    level: Int,
+    experience: Int,
+    tasksToNextLevel: Int,
+    totalTasksForLevel: Int
+) {
+    val expPerLevel = 1000
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Combine XP and tasks in one row to save space
+            Text(
+                text = "$experience/$expPerLevel XP",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Text(
+                text = "$tasksToNextLevel of $totalTasksForLevel tasks",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // XP progress bar
+        LinearProgressIndicator(
+            progress = { experience.toFloat() / expPerLevel.toFloat() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp) // Smaller height
+                .padding(top = 2.dp),
+            color = Color(0xFFFFB300),
+            trackColor = Color(0xFFFFB300).copy(alpha = 0.2f)
+        )
     }
 }
 
@@ -279,7 +353,7 @@ private fun StatBar(
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp)) // Reduced spacing
 
         LinearProgressIndicator(
             progress = {
@@ -293,6 +367,368 @@ private fun StatBar(
         )
     }
 }
+
+@Composable
+fun TaskProgressSection(
+    wizardProfile: WizardProfile,
+    tasksToNextLevel: Int,
+    totalTasksForLevel: Int
+) {
+    val taskInfoColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 4.dp) // Reduced padding
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp) // Reduced padding from 12.dp to 8.dp
+        ) {
+            // Row for header with expansion toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Task Progression",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                // Right side - more compact stats
+                Text(
+                    text = "Completed: ${wizardProfile.totalTasksCompleted} | Streak: ${wizardProfile.consecutiveTasksCompleted}d",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = taskInfoColor
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp)) // Reduced spacing
+
+            // Level-specific task info - more compact
+            val taskInfo = when {
+                wizardProfile.level < 5 -> "Level ${wizardProfile.level}: Need 4 tasks to level up"
+                wizardProfile.level < 8 -> "Level ${wizardProfile.level}: Need 6 tasks to level up"
+                else -> "Level ${wizardProfile.level}: Need 10 tasks to level up"
+            }
+
+            // More compact task progress
+            TaskProgressBar(
+                completed = totalTasksForLevel - tasksToNextLevel,
+                total = totalTasksForLevel,
+                showPercentage = false // Don't show percentage to save space
+            )
+
+            // HP cap info as a hint
+            Text(
+                text = "HP Cap: 150",
+                style = MaterialTheme.typography.labelSmall,
+                color = taskInfoColor,
+                modifier = Modifier.align(Alignment.End)
+            )
+        }
+    }
+}
+
+@Composable
+fun TaskProgressBar(
+    completed: Int,
+    total: Int,
+    showPercentage: Boolean = true
+) {
+    val progress = (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (showPercentage) {
+                Text(
+                    text = "${(progress * 100).toInt()}% progress",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Text(
+                text = "$completed/$total completed",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(2.dp)) // Reduced spacing
+
+        // Segmented progress bar (more compact)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp) // Reduced spacing
+        ) {
+            for (i in 0 until total) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(6.dp) // Reduced height
+                        .clip(RoundedCornerShape(2.dp)) // Smaller corners
+                        .background(
+                            if (i < completed) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
+                )
+            }
+        }
+
+        // Removed the linear progress indicator to save space
+    }
+}
+
+@Composable
+fun LevelProgressSection(
+    level: Int,
+    experience: Int,
+    tasksToNextLevel: Int,
+    totalTasksForLevel: Int
+) {
+    val expPerLevel = 1000
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Level $level",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "$experience/$expPerLevel XP",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // XP progress bar
+        LinearProgressIndicator(
+            progress = { experience.toFloat() / expPerLevel.toFloat() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .padding(top = 4.dp),
+            color = Color(0xFFFFB300),
+            trackColor = Color(0xFFFFB300).copy(alpha = 0.2f)
+        )
+
+        // Tasks to level up text
+        if (tasksToNextLevel > 0) {
+            Text(
+                text = "$tasksToNextLevel of $totalTasksForLevel tasks to level up",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+//@Composable
+//fun TaskProgressSection(
+//    wizardProfile: WizardProfile,
+//    tasksToNextLevel: Int,
+//    totalTasksForLevel: Int
+//) {
+//    val taskInfoColor = MaterialTheme.colorScheme.onSurfaceVariant
+//
+//    Card(
+//        colors = CardDefaults.cardColors(
+//            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+//        ),
+//        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(bottom = 4.dp) // Reduced padding
+//    ) {
+//        Column(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(8.dp) // Reduced padding from 12.dp to 8.dp
+//        ) {
+//            // Row for header with expansion toggle
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.SpaceBetween,
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                Text(
+//                    text = "Task Progression",
+//                    style = MaterialTheme.typography.titleSmall,
+//                    fontWeight = FontWeight.Bold,
+//                    color = MaterialTheme.colorScheme.primary
+//                )
+//
+//                // Right side - more compact stats
+//                Text(
+//                    text = "Completed: ${wizardProfile.totalTasksCompleted} | Streak: ${wizardProfile.consecutiveTasksCompleted}d",
+//                    style = MaterialTheme.typography.labelSmall,
+//                    color = taskInfoColor
+//                )
+//            }
+//
+//            Spacer(modifier = Modifier.height(4.dp)) // Reduced spacing
+//
+//            // Level-specific task info - more compact
+//            val taskInfo = when {
+//                wizardProfile.level < 5 -> "Level ${wizardProfile.level}: Need 4 tasks to level up"
+//                wizardProfile.level < 8 -> "Level ${wizardProfile.level}: Need 6 tasks to level up"
+//                else -> "Level ${wizardProfile.level}: Need 10 tasks to level up"
+//            }
+//
+//            // More compact task progress
+//            TaskProgressBar(
+//                completed = totalTasksForLevel - tasksToNextLevel,
+//                total = totalTasksForLevel,
+//                showPercentage = false // Don't show percentage to save space
+//            )
+//
+//            // HP cap info as a hint
+//            Text(
+//                text = "HP Cap: 150",
+//                style = MaterialTheme.typography.labelSmall,
+//                color = taskInfoColor,
+//                modifier = Modifier.align(Alignment.End)
+//            )
+//        }
+//    }
+//}
+//
+//@Composable
+//fun TaskProgressBar(
+//    completed: Int,
+//    total: Int,
+//    showPercentage: Boolean = true
+//) {
+//    val progress = (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+//
+//    Column(modifier = Modifier.fillMaxWidth()) {
+//        Row(
+//            modifier = Modifier.fillMaxWidth(),
+//            horizontalArrangement = Arrangement.SpaceBetween,
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            if (showPercentage) {
+//                Text(
+//                    text = "${(progress * 100).toInt()}% progress",
+//                    style = MaterialTheme.typography.labelSmall,
+//                    color = MaterialTheme.colorScheme.primary
+//                )
+//            }
+//
+//            Text(
+//                text = "$completed/$total completed",
+//                style = MaterialTheme.typography.labelSmall,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
+//        }
+//
+//        Spacer(modifier = Modifier.height(2.dp)) // Reduced spacing
+//
+//        // Segmented progress bar (more compact)
+//        Row(
+//            modifier = Modifier.fillMaxWidth(),
+//            horizontalArrangement = Arrangement.spacedBy(2.dp) // Reduced spacing
+//        ) {
+//            for (i in 0 until total) {
+//                Box(
+//                    modifier = Modifier
+//                        .weight(1f)
+//                        .height(6.dp) // Reduced height
+//                        .clip(RoundedCornerShape(2.dp)) // Smaller corners
+//                        .background(
+//                            if (i < completed) MaterialTheme.colorScheme.primary
+//                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+//                        )
+//                )
+//            }
+//        }
+//
+//        // Removed the linear progress indicator to save space
+//    }
+//}
+
+@Composable
+fun TaskProgressBar(
+    completed: Int,
+    total: Int
+) {
+    val progress = (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "${(progress * 100).toInt()}% progress",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Text(
+                text = "$completed/$total completed",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Segmented progress bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            for (i in 0 until total) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(
+                            if (i < completed) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        )
+    }
+}
+
+
+
+
 
 @Composable
 fun TaskFilterChips(
@@ -321,27 +757,13 @@ fun TaskListSection(
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit
 ) {
+
     LazyColumn(
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (tasks.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No tasks found",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-            }
-        }
-
         items(tasks) { taskEntity ->
             TaskItem(
                 taskEntity = taskEntity,
@@ -349,6 +771,11 @@ fun TaskListSection(
                 onEdit = { onEditTask(taskEntity.id) },
                 onDelete = { onDeleteTask(taskEntity.id) }
             )
+        }
+
+
+        item {
+            Spacer(modifier = Modifier.height(70.dp))
         }
     }
 }

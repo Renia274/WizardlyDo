@@ -13,6 +13,7 @@ import com.example.wizardlydo.MainActivity
 import com.example.wizardlydo.R
 import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
+import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.getDaysRemaining
 import java.util.concurrent.TimeUnit
 
@@ -123,6 +124,83 @@ class TaskNotificationService(private val context: Context) {
             .build()
 
         notificationManager.notify(0, summaryNotification)
+    }
+
+    // New method to show task completion notification with HP reward
+    fun showTaskCompletionNotification(task: Task, wizardProfile: WizardProfile, hpGained: Int) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            task.id + 2000, // Use different request code
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Create progress level info
+        val levelInfo = calculateLevelProgressInfo(wizardProfile.level, wizardProfile.experience)
+
+        // Build notification style
+        val style = NotificationCompat.BigTextStyle()
+            .setBigContentTitle("Task Completed!")
+            .bigText("""
+                ${task.title} has been completed!
+                
+                HP gained: +$hpGained
+                Current HP: ${wizardProfile.health}/${wizardProfile.maxHealth}
+                Level: ${wizardProfile.level} (${levelInfo.tasksToNextLevel} tasks to next level)
+                
+                Keep up the good work!
+            """.trimIndent())
+
+        // Set notification color based on priority
+        val color = when (task.priority) {
+            Priority.HIGH -> R.color.high_priority
+            Priority.MEDIUM -> R.color.medium_priority
+            Priority.LOW -> R.color.low_priority
+        }
+
+        val builder = NotificationCompat.Builder(context, TASK_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_complete)
+            .setContentTitle("Task Completed!")
+            .setContentText("${task.title} completed! HP gained: +$hpGained")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setColorized(true)
+            .setColor(ContextCompat.getColor(context, color))
+            .setStyle(style)
+
+        notificationManager.notify(task.id + 200000, builder.build())
+    }
+
+    // Helper data class for level progress
+    private data class LevelProgressInfo(
+        val tasksToNextLevel: Int,
+        val totalTasksForLevel: Int
+    )
+
+    // Helper method to calculate level progression details
+    private fun calculateLevelProgressInfo(level: Int, experience: Int): LevelProgressInfo {
+        val expPerLevel = 1000
+        val tasksPerExp = when {
+            level < 5 -> 4
+            level < 8 -> 6
+            else -> 10
+        }
+
+        val expToNextLevel = expPerLevel - experience
+        val tasksToNextLevel = (expToNextLevel / (expPerLevel / tasksPerExp)).coerceAtLeast(1)
+        val totalTasksForLevel = when {
+            level < 5 -> 4
+            level < 8 -> 6
+            else -> 10
+        }
+
+        return LevelProgressInfo(tasksToNextLevel, totalTasksForLevel)
     }
 
     fun scheduleTaskNotification(task: Task) {

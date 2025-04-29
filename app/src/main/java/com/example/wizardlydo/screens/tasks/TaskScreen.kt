@@ -69,7 +69,7 @@ import org.koin.androidx.compose.koinViewModel
 fun TaskScreen(
     viewModel: TaskViewModel = koinViewModel(),
     onBack: () -> Unit,
-    onHome: () -> Unit,  // Added back the onHome parameter
+    onHome: () -> Unit,
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
     onEditMode: () -> Unit,
@@ -80,6 +80,11 @@ fun TaskScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
+
+    // Initialize notification service in ViewModel
+    LaunchedEffect(taskNotificationService) {
+        viewModel.setNotificationService(taskNotificationService)
+    }
 
     // Track notification badge state
     var showNotificationBadge by remember { mutableStateOf(false) }
@@ -147,7 +152,7 @@ fun TaskScreen(
             TopAppBar(
                 title = { Text("Task Manager") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {  // This should navigate to SignIn.route
+                    IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
@@ -192,7 +197,7 @@ fun TaskScreen(
         },
         bottomBar = {
             TaskBottomBar(
-                onHome = onHome,  // Use the onHome param here, not onBack
+                onHome = onHome,
                 onEditMode = onEditMode,
                 onSettings = onSettings
             )
@@ -203,54 +208,48 @@ fun TaskScreen(
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            CharacterStatsSection(
-                wizardResult = state.wizardProfile,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TaskFilterChips(
-                currentFilter = state.currentFilter,
-                onFilterChange = { filter ->
-                    viewModel.setFilter(filter)
+        // Use TaskContent for the main content area
+        TaskContent(
+            modifier = Modifier.padding(padding),
+            state = state,
+            onCompleteTask = { taskId ->
+                viewModel.completeTask(taskId, taskNotificationService)
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "Task completed! +XP earned",
+                        duration = SnackbarDuration.Short
+                    )
                 }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TaskListSection(
-                tasks = state.filteredTasks,
-                onCompleteTask = { taskId ->
-                    viewModel.completeTask(taskId)
+                // Cancel any notifications for this task since it's completed
+                taskNotificationService.cancelTaskNotification(taskId)
+            },
+            onEditTask = onEditTask,
+            onDeleteTask = { taskId ->
+                viewModel.deleteTask(taskId) {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
-                            message = "Task completed! +XP earned",
+                            message = "Task deleted",
                             duration = SnackbarDuration.Short
                         )
                     }
-                    // Cancel any notifications for this task since it's completed
+                    // Cancel any notifications for this task since it's deleted
                     taskNotificationService.cancelTaskNotification(taskId)
-                },
-                onEditTask = onEditTask,
-                onDeleteTask = { taskId ->
-                    viewModel.deleteTask(taskId) {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Task deleted",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                        // Cancel any notifications for this task since it's deleted
-                        taskNotificationService.cancelTaskNotification(taskId)
-                    }
                 }
-            )
-        }
+            },
+            onDamageTaken = { damage, currentHealth ->
+                // Handle damage taken events if needed
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "Lost $damage HP! Current HP: $currentHealth",
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            },
+            taskNotificationService = taskNotificationService,
+            viewModel = viewModel
+        )
     }
 }
-
 
 @Composable
 fun TaskContent(
@@ -260,17 +259,27 @@ fun TaskContent(
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
     onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> },
+    taskNotificationService: TaskNotificationService? = null,
+    viewModel: TaskViewModel? = null
 ) {
     val wizardProfile = state.wizardProfile?.getOrNull()
 
+    // Calculate tasks needed for level progression
+    val tasksToNextLevel = wizardProfile?.let { viewModel?.getTasksToNextLevel(it) } ?: 0
+    val totalTasksForLevel = wizardProfile?.level?.let { viewModel?.getTotalTasksForLevel(it) } ?: 0
+
     Column(modifier.fillMaxSize()) {
+        // Character stats section
         CharacterStatsSection(
             wizardResult = state.wizardProfile,
-            modifier = Modifier.padding(vertical = 8.dp)
+            modifier = Modifier.padding(vertical = 4.dp), // Reduced vertical padding
+            tasksToNextLevel = tasksToNextLevel,
+            totalTasksForLevel = totalTasksForLevel
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp)) // Reduced spacing
 
+        // Filter chips
         TaskFilterChips(
             currentFilter = state.currentFilter,
             onFilterChange = { filter ->
@@ -278,33 +287,56 @@ fun TaskContent(
             }
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp)) // Reduced spacing
 
-        when {
-            state.error != null -> ErrorMessage(error = state.error)
-            state.isLoading -> FullScreenLoading()
-            state.filteredTasks.isEmpty() -> EmptyTaskList()
-            else -> TaskListSection(
-                tasks = state.filteredTasks,
-                onCompleteTask = onCompleteTask,
-                onEditTask = onEditTask,
-                onDeleteTask = { taskId ->
-                    onDeleteTask(taskId)
-                    val deletedTask = state.filteredTasks.find { it.id == taskId }
-                    deletedTask?.let { task ->
-                        val damage = when (task.priority) {
-                            Priority.HIGH -> 20
-                            Priority.MEDIUM -> 10
-                            Priority.LOW -> 5
+        // Wrap task list in a weight modifier to ensure it takes remaining space
+        Box(modifier = Modifier.weight(1f)) {
+            when {
+                state.error != null -> ErrorMessage(error = state.error)
+                state.isLoading -> FullScreenLoading()
+                state.filteredTasks.isEmpty() -> EmptyTaskList()
+                else -> TaskListSection(
+                    tasks = state.filteredTasks,
+                    onCompleteTask = { taskId ->
+                        onCompleteTask(taskId)
+
+                        // Find the task and wizard to send notification
+                        val completedTask = state.filteredTasks.find { it.id == taskId }
+                        completedTask?.let { task ->
+                            wizardProfile?.let { profile ->
+                                // Calculate HP gain based on priority and level
+                                val hpGain = when (task.priority) {
+                                    Priority.HIGH -> if(profile.level < 5) 15 else if(profile.level < 8) 12 else 7
+                                    Priority.MEDIUM -> if(profile.level < 5) 10 else if(profile.level < 8) 8 else 5
+                                    Priority.LOW -> if(profile.level < 5) 5 else if(profile.level < 8) 4 else 2
+                                }
+
+                                // Show completion notification if service is available
+                                taskNotificationService?.showTaskCompletionNotification(
+                                    task = task,
+                                    wizardProfile = profile,
+                                    hpGained = hpGain
+                                )
+                            }
                         }
-                        val currentHealth = wizardProfile?.health ?: 100
-                        onDamageTaken(damage, currentHealth - damage)
+                    },
+                    onEditTask = onEditTask,
+                    onDeleteTask = { taskId ->
+                        onDeleteTask(taskId)
+                        val deletedTask = state.filteredTasks.find { it.id == taskId }
+                        deletedTask?.let { task ->
+                            val damage = when (task.priority) {
+                                Priority.HIGH -> 20
+                                Priority.MEDIUM -> 10
+                                Priority.LOW -> 5
+                            }
+                            val currentHealth = wizardProfile?.health ?: 100
+                            onDamageTaken(damage, currentHealth - damage)
+                        }
                     }
-                }
-            )
+                )
+            }
         }
-
-        Spacer(Modifier.weight(1f))
     }
 }
 
