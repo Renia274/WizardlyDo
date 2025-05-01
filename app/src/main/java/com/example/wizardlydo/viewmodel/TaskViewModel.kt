@@ -45,7 +45,6 @@ class TaskViewModel(
     // Track if a task was recently created
     private var taskRecentlyCreated = false
     private var recentlyCreatedTaskId: Int? = null
-    private val recentTaskTimeThreshold = 40000 // 10 seconds in milliseconds
     private var lastCreationTime = 0L
 
     // Task notification service might be needed
@@ -438,32 +437,7 @@ class TaskViewModel(
             }
         }
     }
-    private fun WizardProfile.checkLevelUp(): WizardProfile {
-        var newLevel = level
-        var remainingExp = experience
-        var newMaxHealth = maxHealth
-        var newHealth = health
 
-        while (remainingExp >= EXP_PER_LEVEL) {
-            remainingExp -= EXP_PER_LEVEL
-            newLevel++
-
-            // When leveling up, increase maxHealth if not at cap yet
-            if (newMaxHealth < MAX_WIZARD_HEALTH) {
-                // Don't exceed the maximum health cap
-                newMaxHealth = (newMaxHealth + 10).coerceAtMost(MAX_WIZARD_HEALTH)
-                // Full heal on level up
-                newHealth = newMaxHealth
-            }
-        }
-
-        return copy(
-            level = newLevel,
-            experience = remainingExp,
-            maxHealth = newMaxHealth,
-            health = newHealth
-        )
-    }
 
     fun getTasksToNextLevel(wizardProfile: WizardProfile?): Int {
         wizardProfile ?: return 0
@@ -535,13 +509,5 @@ class TaskViewModel(
         }
     }
 
-    fun calculateXpFromTasks(completedTaskCount: Int, level: Int): Int {
-        val xpPerTask = when {
-            level < 5 -> 250 // Levels 1-4: 250 XP per task (4 tasks per level)
-            level < 8 -> 167 // Levels 5-7: ~167 XP per task (6 tasks per level)
-            else -> 100      // Levels 8+: 100 XP per task (10 tasks per level)
-        }
 
-        return completedTaskCount * xpPerTask
-    }
 }

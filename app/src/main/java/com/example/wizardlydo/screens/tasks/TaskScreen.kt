@@ -97,24 +97,37 @@ fun TaskScreen(
         }
     } ?: 4
 
-    // Calculate derived states
+    // Calculate stats based on completion of sets of tasks
     val (completedTasks, health, maxHealth, stamina, experience) = remember(state) {
         derivedStateOf {
             wizardProfile?.let { profile ->
                 val tasksToNextLevel = viewModel.getTasksToNextLevel(profile)
-                val completed = (totalTasksForLevel - tasksToNextLevel).coerceAtLeast(0)
+                val completedTasks = (totalTasksForLevel - tasksToNextLevel).coerceAtLeast(0)
 
                 WizardStats(
-                    completed,
-                    profile.health,
-                    profile.maxHealth,
-                    profile.stamina,
-                    profile.experience
+                    completedTasks = completedTasks,
+                    health = viewModel.calculateHealthFromTasks(
+                        profile.health,
+                        profile.totalTasksCompleted,
+                        profile.level
+                    ),
+                    maxHealth = profile.maxHealth,
+                    stamina = viewModel.calculateStaminaFromTasks(
+                        profile.stamina,
+                        profile.totalTasksCompleted,
+                        profile.level
+                    ),
+                    experience = profile.experience
                 )
-            } ?: WizardStats(0, 100, 100, 50, 0)
+            } ?: WizardStats(
+                completedTasks = 0,
+                health = 100,
+                maxHealth = 100,
+                stamina = 50,
+                experience = 0
+            )
         }
     }.value
-
 
     LaunchedEffect(Unit) {
         viewModel.loadData()
