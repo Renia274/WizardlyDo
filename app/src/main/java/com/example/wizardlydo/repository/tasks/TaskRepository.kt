@@ -66,6 +66,8 @@ class TaskRepository(private val taskDao: TaskDao) {
         taskDao.updateCompletionStatus(taskId, isCompleted)
     }
 
+
+
     private fun Task.toEntity() = TaskEntity(
         id = id,
         userId = userId,

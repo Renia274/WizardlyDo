@@ -29,7 +29,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -42,7 +44,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
+import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.data.WizardStats
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
 import com.example.wizardlydo.getDaysRemaining
@@ -81,31 +85,52 @@ fun TaskScreen(
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
 
+    // Get current wizard profile
+    val wizardProfile = state.wizardProfile?.getOrNull()
+
+    // Calculate task requirements based on level
+    val totalTasksForLevel = wizardProfile?.level?.let { level ->
+        when {
+            level < 5 -> 4
+            level < 8 -> 6
+            else -> 10
+        }
+    } ?: 4
+
+    // Calculate derived states
+    val (completedTasks, health, maxHealth, stamina, experience) = remember(state) {
+        derivedStateOf {
+            wizardProfile?.let { profile ->
+                val tasksToNextLevel = viewModel.getTasksToNextLevel(profile)
+                val completed = (totalTasksForLevel - tasksToNextLevel).coerceAtLeast(0)
+
+                WizardStats(
+                    completed,
+                    profile.health,
+                    profile.maxHealth,
+                    profile.stamina,
+                    profile.experience
+                )
+            } ?: WizardStats(0, 100, 100, 50, 0)
+        }
+    }.value
+
+
     LaunchedEffect(Unit) {
         viewModel.loadData()
-    }
-
-    // Initialize notification service in ViewModel
-    LaunchedEffect(taskNotificationService) {
         viewModel.setNotificationService(taskNotificationService)
     }
 
-    // Track notification badge state
-    var showNotificationBadge by remember { mutableStateOf(false) }
-
-    // Request notification permission
+    // Notification permission and badge state
     val notificationPermission = rememberPermissionState(
         permission = Manifest.permission.POST_NOTIFICATIONS
     )
+    var showNotificationBadge by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         if (!notificationPermission.status.isGranted) {
             notificationPermission.launchPermissionRequest()
         }
-    }
-
-    LaunchedEffect(Unit) {
-        // Check for upcoming/due tasks to determine if badge should be shown
         coroutineScope.launch {
             val tasks = viewModel.getUpcomingTasksSync()
             showNotificationBadge = tasks.isNotEmpty()
@@ -114,15 +139,11 @@ fun TaskScreen(
 
     LaunchedEffect(state.recentlyCreatedTask) {
         state.recentlyCreatedTask?.let { newTask ->
-            // Show creation notification with expandable style
             taskNotificationService.showTaskCreatedNotification(newTask)
-
-            // Also schedule future reminder notifications
             if (newTask.dueDate != null && !newTask.isCompleted) {
                 taskNotificationService.scheduleTaskNotification(newTask)
             }
 
-            // Show snackbar for the newly created task
             newTask.getDaysRemaining()?.let { days ->
                 val message = if (days in 1..7) {
                     "Added: ${newTask.title} (Due in $days day${if (days != 1) "s" else ""})"
@@ -135,7 +156,6 @@ fun TaskScreen(
                         message = message,
                         duration = SnackbarDuration.Short
                     )
-                    // Reset the state after showing the snackbar
                     viewModel.resetRecentlyCreatedTask()
                 }
             } ?: run {
@@ -161,11 +181,9 @@ fun TaskScreen(
                     }
                 },
                 actions = {
-                    // Notification bell with optional badge
                     Box {
                         IconButton(
                             onClick = {
-                                // Show all upcoming tasks as a notification group
                                 coroutineScope.launch {
                                     val tasks = viewModel.getUpcomingTasksSync()
                                     if (tasks.isNotEmpty()) {
@@ -180,13 +198,8 @@ fun TaskScreen(
                                 }
                             }
                         ) {
-                            Icon(
-                                Icons.Filled.Notifications,
-                                contentDescription = "Notifications"
-                            )
+                            Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
                         }
-
-                        // Show red notification badge if there are upcoming tasks
                         if (showNotificationBadge) {
                             Box(
                                 modifier = Modifier
@@ -212,10 +225,18 @@ fun TaskScreen(
             }
         }
     ) { padding ->
-        // Use TaskContent for the main content area
         TaskContent(
             modifier = Modifier.padding(padding),
             state = state,
+            wizardProfile = wizardProfile,
+            health = health,
+            maxHealth = maxHealth,
+            stamina = stamina,
+            experience = experience,
+            tasksCompleted = completedTasks,
+            totalTasksForLevel = totalTasksForLevel,
+            totalTasksCompletedCount = wizardProfile?.totalTasksCompleted ?: 0,
+            taskStreakCount = wizardProfile?.consecutiveTasksCompleted ?: 0,
             onCompleteTask = { taskId ->
                 viewModel.completeTask(taskId, taskNotificationService)
                 coroutineScope.launch {
@@ -224,7 +245,6 @@ fun TaskScreen(
                         duration = SnackbarDuration.Short
                     )
                 }
-                // Cancel any notifications for this task since it's completed
                 taskNotificationService.cancelTaskNotification(taskId)
             },
             onEditTask = onEditTask,
@@ -236,21 +256,17 @@ fun TaskScreen(
                             duration = SnackbarDuration.Short
                         )
                     }
-                    // Cancel any notifications for this task since it's deleted
                     taskNotificationService.cancelTaskNotification(taskId)
                 }
             },
             onDamageTaken = { damage, currentHealth ->
-                // Handle damage taken events if needed
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(
                         message = "Lost $damage HP! Current HP: $currentHealth",
                         duration = SnackbarDuration.Short
                     )
                 }
-            },
-            taskNotificationService = taskNotificationService,
-            viewModel = viewModel
+            }
         )
     }
 }
@@ -259,31 +275,36 @@ fun TaskScreen(
 fun TaskContent(
     modifier: Modifier = Modifier,
     state: TaskUiState,
+    wizardProfile: WizardProfile?,
+    health: Int,
+    maxHealth: Int,
+    stamina: Int,
+    experience: Int,
+    tasksCompleted: Int,
+    totalTasksForLevel: Int,
+    totalTasksCompletedCount: Int,
+    taskStreakCount: Int,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
-    onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> },
-    taskNotificationService: TaskNotificationService? = null,
-    viewModel: TaskViewModel? = null
+    onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> }
 ) {
-    val wizardProfile = state.wizardProfile?.getOrNull()
-
-    // Calculate tasks needed for level progression
-    val tasksToNextLevel = wizardProfile?.let { viewModel?.getTasksToNextLevel(it) } ?: 0
-    val totalTasksForLevel = wizardProfile?.level?.let { viewModel?.getTotalTasksForLevel(it) } ?: 0
-
     Column(modifier.fillMaxSize()) {
-        // Character stats section
         CharacterStatsSection(
-            wizardResult = state.wizardProfile,
-            modifier = Modifier.padding(vertical = 4.dp), // Reduced vertical padding
-            tasksToNextLevel = tasksToNextLevel,
-            totalTasksForLevel = totalTasksForLevel
+            wizardResult = state.wizardProfile?.let { Result.success(wizardProfile) } ?: state.wizardProfile,
+            modifier = Modifier.padding(vertical = 4.dp),
+            health = health,
+            maxHealth = maxHealth,
+            stamina = stamina,
+            experience = experience,
+            tasksCompleted = tasksCompleted,
+            totalTasksForLevel = totalTasksForLevel,
+            totalTasksCompletedCount = totalTasksCompletedCount,
+            taskStreakCount = taskStreakCount
         )
 
-        Spacer(Modifier.height(8.dp)) // Reduced spacing
+        Spacer(Modifier.height(8.dp))
 
-        // Filter chips
         TaskFilterChips(
             currentFilter = state.currentFilter,
             onFilterChange = { filter ->
@@ -291,9 +312,8 @@ fun TaskContent(
             }
         )
 
-        Spacer(Modifier.height(4.dp)) // Reduced spacing
+        Spacer(Modifier.height(4.dp))
 
-        // Wrap task list in a weight modifier to ensure it takes remaining space
         Box(modifier = Modifier.weight(1f)) {
             when {
                 state.error != null -> ErrorMessage(error = state.error)
@@ -301,29 +321,7 @@ fun TaskContent(
                 state.filteredTasks.isEmpty() -> EmptyTaskList()
                 else -> TaskListSection(
                     tasks = state.filteredTasks,
-                    onCompleteTask = { taskId ->
-                        onCompleteTask(taskId)
-
-                        // Find the task and wizard to send notification
-                        val completedTask = state.filteredTasks.find { it.id == taskId }
-                        completedTask?.let { task ->
-                            wizardProfile?.let { profile ->
-                                // Calculate HP gain based on priority and level
-                                val hpGain = when (task.priority) {
-                                    Priority.HIGH -> if(profile.level < 5) 15 else if(profile.level < 8) 12 else 7
-                                    Priority.MEDIUM -> if(profile.level < 5) 10 else if(profile.level < 8) 8 else 5
-                                    Priority.LOW -> if(profile.level < 5) 5 else if(profile.level < 8) 4 else 2
-                                }
-
-                                // Show completion notification if service is available
-                                taskNotificationService?.showTaskCompletionNotification(
-                                    task = task,
-                                    wizardProfile = profile,
-                                    hpGained = hpGain
-                                )
-                            }
-                        }
-                    },
+                    onCompleteTask = onCompleteTask,
                     onEditTask = onEditTask,
                     onDeleteTask = { taskId ->
                         onDeleteTask(taskId)
@@ -347,16 +345,23 @@ fun TaskContent(
 @Preview(showBackground = true)
 @Composable
 fun TaskContentPreview() {
+    val wizardProfile = WizardProfile(
+        wizardName = "Taltooooonnn",
+        level = 5,
+        experience = 250,
+        health = 100,
+        maxHealth = 100,
+        stamina = 75,
+        totalTasksCompleted = 15,
+        consecutiveTasksCompleted = 3,
+        wizardClass = WizardClass.MYSTWEAVER
+    )
+
     WizardlyDoTheme {
         TaskContent(
             state = TaskUiState(
                 isLoading = false,
-                wizardProfile = Result.success(
-                    WizardProfile(
-                        level = 5,
-                        experience = 250
-                    )
-                ),
+                wizardProfile = Result.success(wizardProfile),
                 filteredTasks = listOf(
                     Task(
                         id = 1,
@@ -383,12 +388,23 @@ fun TaskContentPreview() {
                         category = "Chores"
                     )
                 ),
-                currentFilter = TaskFilter.ALL
+                currentFilter = TaskFilter.ALL,
+                onFilterChange = {}
             ),
+            wizardProfile = wizardProfile,
+            tasksCompleted = 2,
+            totalTasksForLevel = 6,
+            totalTasksCompletedCount = 15,
+            taskStreakCount = 3,
             onCompleteTask = {},
             onEditTask = {},
             onDeleteTask = {},
-            onDamageTaken = { _, _ -> }
+            onDamageTaken = { _, _ -> },
+            modifier = Modifier,
+            health = 100,
+            maxHealth = 150,
+            stamina = 75,
+            experience = 250
         )
     }
 }

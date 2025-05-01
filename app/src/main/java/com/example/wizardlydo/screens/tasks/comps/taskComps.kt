@@ -32,7 +32,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -69,8 +68,7 @@ import java.util.concurrent.TimeUnit
 
 @Composable
 fun WizardAvatar(
-    wizardResult: Result<WizardProfile?>?,
-    modifier: Modifier = Modifier
+    wizardResult: Result<WizardProfile?>?, modifier: Modifier = Modifier
 ) {
     val wizardProfile = wizardResult?.getOrNull()
     val error = wizardResult?.exceptionOrNull()
@@ -85,8 +83,7 @@ fun WizardAvatar(
         when {
             wizardProfile != null -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
                 ) {
                     // Skin/Body
                     Image(
@@ -95,7 +92,7 @@ fun WizardAvatar(
                         modifier = Modifier
                             .size(80.dp)
                             .align(Alignment.Center)
-                            .offset(x = (-10).dp,y = (-6).dp)
+                            .offset(x = (-10).dp, y = (-6).dp)
                     )
 
                     // Outfit
@@ -111,7 +108,7 @@ fun WizardAvatar(
                         modifier = Modifier
                             .size(80.dp)
                             .align(Alignment.Center)
-                            .offset(x = (-10).dp,y = (-6).dp)
+                            .offset(x = (-10).dp, y = (-6).dp)
                     )
 
                     //Hair
@@ -142,45 +139,49 @@ fun WizardAvatar(
 
             else -> {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(40.dp),
-                    color = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(40.dp), color = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
 }
+
 @Composable
 fun CharacterStatsSection(
     wizardResult: Result<WizardProfile?>?,
     modifier: Modifier = Modifier,
-    tasksToNextLevel: Int = 0,
-    totalTasksForLevel: Int = 0
+    health: Int,  // Direct health value
+    maxHealth: Int,  // Direct max health
+    stamina: Int,  // Direct stamina value
+    experience: Int,  // Direct experience value
+    tasksCompleted: Int,
+    totalTasksForLevel: Int,
+    totalTasksCompletedCount: Int,  // Added parameter
+    taskStreakCount: Int            // Added parameter
 ) {
     val wizardProfile = wizardResult?.getOrNull()
     val error = wizardResult?.exceptionOrNull()
+
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        elevation = CardDefaults.cardElevation(4.dp), // Reduced elevation
+        elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Column(
-            modifier = Modifier.padding(12.dp), // Reduced padding
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Use row layout for more compact design
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
             ) {
                 // Avatar on the left
                 WizardAvatar(
-                    wizardResult = wizardResult,
-                    modifier = Modifier.size(80.dp) // Smaller avatar
+                    wizardResult = wizardResult, modifier = Modifier.size(80.dp) // Smaller avatar
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -239,11 +240,9 @@ fun CharacterStatsSection(
             if (wizardProfile != null) {
                 // Health bar with max 150 cap
                 StatBar(
-                    label = "HP",
-                    value = wizardProfile.health,
-                    maxValue = wizardProfile.maxHealth,
-                    color = Color(0xFFE53935),
-                    modifier = Modifier.fillMaxWidth()
+                    label = "HP", value = health,  // Use direct health
+                    maxValue = maxHealth,  // Use direct max health
+                    color = Color(0xFFE53935), modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
@@ -251,7 +250,7 @@ fun CharacterStatsSection(
                 // Stamina bar
                 StatBar(
                     label = "Stamina",
-                    value = wizardProfile.stamina,
+                    value = stamina,  // Use direct stamina
                     maxValue = 100,
                     color = Color(0xFF43A047),
                     modifier = Modifier.fillMaxWidth()
@@ -259,20 +258,21 @@ fun CharacterStatsSection(
 
                 Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
 
-                // XP and tasks to level up - more compact
+                // XP and tasks to level up - pass the direct values
                 CompactLevelProgressSection(
                     level = wizardProfile.level,
-                    experience = wizardProfile.experience,
-                    tasksToNextLevel = tasksToNextLevel,
+                    experience = experience,  // Use direct experience
+                    tasksCompleted = tasksCompleted,
                     totalTasksForLevel = totalTasksForLevel
                 )
 
-                // Task progress section - very compact
+                // Task progress section - pass all values directly including completion stats
                 Spacer(modifier = Modifier.height(8.dp))
                 TaskProgressSection(
-                    wizardProfile = wizardProfile,
-                    tasksToNextLevel = tasksToNextLevel,
-                    totalTasksForLevel = totalTasksForLevel
+                    tasksCompleted = tasksCompleted,
+                    totalTasksForLevel = totalTasksForLevel,
+                    totalTasksCompletedCount = totalTasksCompletedCount,
+                    taskStreakCount = taskStreakCount
                 )
             } else if (error == null) {
                 // Loading placeholders
@@ -292,10 +292,7 @@ fun CharacterStatsSection(
 
 @Composable
 fun CompactLevelProgressSection(
-    level: Int,
-    experience: Int,
-    tasksToNextLevel: Int,
-    totalTasksForLevel: Int
+    level: Int, experience: Int, tasksCompleted: Int, totalTasksForLevel: Int
 ) {
     val expPerLevel = 1000
 
@@ -305,15 +302,16 @@ fun CompactLevelProgressSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Combine XP and tasks in one row to save space
+            // XP display
             Text(
                 text = "$experience/$expPerLevel XP",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            // Task progress display - use the passed direct value
             Text(
-                text = "$tasksToNextLevel of $totalTasksForLevel tasks",
+                text = "$tasksCompleted of $totalTasksForLevel tasks",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -324,7 +322,7 @@ fun CompactLevelProgressSection(
             progress = { experience.toFloat() / expPerLevel.toFloat() },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp) // Smaller height
+                .height(6.dp)
                 .padding(top = 2.dp),
             color = Color(0xFFFFB300),
             trackColor = Color(0xFFFFB300).copy(alpha = 0.2f)
@@ -334,16 +332,11 @@ fun CompactLevelProgressSection(
 
 @Composable
 private fun StatBar(
-    label: String,
-    value: Int,
-    maxValue: Int,
-    color: Color,
-    modifier: Modifier = Modifier
+    label: String, value: Int, maxValue: Int, color: Color, modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = label,
@@ -372,11 +365,13 @@ private fun StatBar(
     }
 }
 
+
 @Composable
 fun TaskProgressSection(
-    wizardProfile: WizardProfile,
-    tasksToNextLevel: Int,
-    totalTasksForLevel: Int
+    tasksCompleted: Int,
+    totalTasksForLevel: Int,
+    totalTasksCompletedCount: Int,  // Use these values directly
+    taskStreakCount: Int
 ) {
     val taskInfoColor = MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -387,14 +382,14 @@ fun TaskProgressSection(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 4.dp) // Reduced padding
+            .padding(bottom = 4.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp) // Reduced padding from 12.dp to 8.dp
+                .padding(8.dp)
         ) {
-            // Row for header with expansion toggle
+            // Header row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -407,31 +402,49 @@ fun TaskProgressSection(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Right side - more compact stats
+                // Stats display - use the passed values directly
                 Text(
-                    text = "Completed: ${wizardProfile.totalTasksCompleted} | Streak: ${wizardProfile.consecutiveTasksCompleted}d",
+                    text = "Completed: $totalTasksCompletedCount | Streak: ${taskStreakCount}d",
                     style = MaterialTheme.typography.labelSmall,
                     color = taskInfoColor
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp)) // Reduced spacing
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Level-specific task info - more compact
-            val taskInfo = when {
-                wizardProfile.level < 5 -> "Level ${wizardProfile.level}: Need 4 tasks to level up"
-                wizardProfile.level < 8 -> "Level ${wizardProfile.level}: Need 6 tasks to level up"
-                else -> "Level ${wizardProfile.level}: Need 10 tasks to level up"
+            // Task progression display - use direct values
+            Row(
+                modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "$tasksCompleted/$totalTasksForLevel completed",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            // More compact task progress
-            TaskProgressBar(
-                completed = totalTasksForLevel - tasksToNextLevel,
-                total = totalTasksForLevel,
-                showPercentage = false // Don't show percentage to save space
-            )
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // HP cap info as a hint
+            // Segmented progress bar with direct values
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                for (i in 0 until totalTasksForLevel) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(
+                                if (i < tasksCompleted) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            )
+                    )
+                }
+            }
+
+            // HP cap info
             Text(
                 text = "HP Cap: 150",
                 style = MaterialTheme.typography.labelSmall,
@@ -443,312 +456,17 @@ fun TaskProgressSection(
 }
 
 @Composable
-fun TaskProgressBar(
-    completed: Int,
-    total: Int,
-    showPercentage: Boolean = true
-) {
-    val progress = (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (showPercentage) {
-                Text(
-                    text = "${(progress * 100).toInt()}% progress",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Text(
-                text = "$completed/$total completed",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(modifier = Modifier.height(2.dp)) // Reduced spacing
-
-        // Segmented progress bar (more compact)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(2.dp) // Reduced spacing
-        ) {
-            for (i in 0 until total) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(6.dp) // Reduced height
-                        .clip(RoundedCornerShape(2.dp)) // Smaller corners
-                        .background(
-                            if (i < completed) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        )
-                )
-            }
-        }
-
-        // Removed the linear progress indicator to save space
-    }
-}
-
-@Composable
-fun LevelProgressSection(
-    level: Int,
-    experience: Int,
-    tasksToNextLevel: Int,
-    totalTasksForLevel: Int
-) {
-    val expPerLevel = 1000
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Level $level",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = "$experience/$expPerLevel XP",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        // XP progress bar
-        LinearProgressIndicator(
-            progress = { experience.toFloat() / expPerLevel.toFloat() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .padding(top = 4.dp),
-            color = Color(0xFFFFB300),
-            trackColor = Color(0xFFFFB300).copy(alpha = 0.2f)
-        )
-
-        // Tasks to level up text
-        if (tasksToNextLevel > 0) {
-            Text(
-                text = "$tasksToNextLevel of $totalTasksForLevel tasks to level up",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-    }
-}
-
-//@Composable
-//fun TaskProgressSection(
-//    wizardProfile: WizardProfile,
-//    tasksToNextLevel: Int,
-//    totalTasksForLevel: Int
-//) {
-//    val taskInfoColor = MaterialTheme.colorScheme.onSurfaceVariant
-//
-//    Card(
-//        colors = CardDefaults.cardColors(
-//            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-//        ),
-//        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(bottom = 4.dp) // Reduced padding
-//    ) {
-//        Column(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(8.dp) // Reduced padding from 12.dp to 8.dp
-//        ) {
-//            // Row for header with expansion toggle
-//            Row(
-//                modifier = Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.SpaceBetween,
-//                verticalAlignment = Alignment.CenterVertically
-//            ) {
-//                Text(
-//                    text = "Task Progression",
-//                    style = MaterialTheme.typography.titleSmall,
-//                    fontWeight = FontWeight.Bold,
-//                    color = MaterialTheme.colorScheme.primary
-//                )
-//
-//                // Right side - more compact stats
-//                Text(
-//                    text = "Completed: ${wizardProfile.totalTasksCompleted} | Streak: ${wizardProfile.consecutiveTasksCompleted}d",
-//                    style = MaterialTheme.typography.labelSmall,
-//                    color = taskInfoColor
-//                )
-//            }
-//
-//            Spacer(modifier = Modifier.height(4.dp)) // Reduced spacing
-//
-//            // Level-specific task info - more compact
-//            val taskInfo = when {
-//                wizardProfile.level < 5 -> "Level ${wizardProfile.level}: Need 4 tasks to level up"
-//                wizardProfile.level < 8 -> "Level ${wizardProfile.level}: Need 6 tasks to level up"
-//                else -> "Level ${wizardProfile.level}: Need 10 tasks to level up"
-//            }
-//
-//            // More compact task progress
-//            TaskProgressBar(
-//                completed = totalTasksForLevel - tasksToNextLevel,
-//                total = totalTasksForLevel,
-//                showPercentage = false // Don't show percentage to save space
-//            )
-//
-//            // HP cap info as a hint
-//            Text(
-//                text = "HP Cap: 150",
-//                style = MaterialTheme.typography.labelSmall,
-//                color = taskInfoColor,
-//                modifier = Modifier.align(Alignment.End)
-//            )
-//        }
-//    }
-//}
-//
-//@Composable
-//fun TaskProgressBar(
-//    completed: Int,
-//    total: Int,
-//    showPercentage: Boolean = true
-//) {
-//    val progress = (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-//
-//    Column(modifier = Modifier.fillMaxWidth()) {
-//        Row(
-//            modifier = Modifier.fillMaxWidth(),
-//            horizontalArrangement = Arrangement.SpaceBetween,
-//            verticalAlignment = Alignment.CenterVertically
-//        ) {
-//            if (showPercentage) {
-//                Text(
-//                    text = "${(progress * 100).toInt()}% progress",
-//                    style = MaterialTheme.typography.labelSmall,
-//                    color = MaterialTheme.colorScheme.primary
-//                )
-//            }
-//
-//            Text(
-//                text = "$completed/$total completed",
-//                style = MaterialTheme.typography.labelSmall,
-//                color = MaterialTheme.colorScheme.onSurfaceVariant
-//            )
-//        }
-//
-//        Spacer(modifier = Modifier.height(2.dp)) // Reduced spacing
-//
-//        // Segmented progress bar (more compact)
-//        Row(
-//            modifier = Modifier.fillMaxWidth(),
-//            horizontalArrangement = Arrangement.spacedBy(2.dp) // Reduced spacing
-//        ) {
-//            for (i in 0 until total) {
-//                Box(
-//                    modifier = Modifier
-//                        .weight(1f)
-//                        .height(6.dp) // Reduced height
-//                        .clip(RoundedCornerShape(2.dp)) // Smaller corners
-//                        .background(
-//                            if (i < completed) MaterialTheme.colorScheme.primary
-//                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-//                        )
-//                )
-//            }
-//        }
-//
-//        // Removed the linear progress indicator to save space
-//    }
-//}
-
-@Composable
-fun TaskProgressBar(
-    completed: Int,
-    total: Int
-) {
-    val progress = (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "${(progress * 100).toInt()}% progress",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Text(
-                text = "$completed/$total completed",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Segmented progress bar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            for (i in 0 until total) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(
-                            if (i < completed) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        )
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-        )
-    }
-}
-
-
-
-
-
-@Composable
 fun TaskFilterChips(
-    currentFilter: TaskFilter,
-    onFilterChange: (TaskFilter) -> Unit
+    currentFilter: TaskFilter, onFilterChange: (TaskFilter) -> Unit
 ) {
     Row(
         modifier = Modifier.padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         TaskFilter.entries.forEach { filter ->
-            FilterChip(
-                selected = currentFilter == filter,
+            FilterChip(selected = currentFilter == filter,
                 onClick = { onFilterChange(filter) },
-                label = { Text(filter.name) }
-            )
+                label = { Text(filter.name) })
         }
     }
 }
@@ -769,12 +487,10 @@ fun TaskListSection(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(tasks) { taskEntity ->
-            TaskItem(
-                taskEntity = taskEntity,
+            TaskItem(taskEntity = taskEntity,
                 onComplete = { onCompleteTask(taskEntity.id) },
                 onEdit = { onEditTask(taskEntity.id) },
-                onDelete = { onDeleteTask(taskEntity.id) }
-            )
+                onDelete = { onDeleteTask(taskEntity.id) })
         }
 
 
@@ -787,10 +503,7 @@ fun TaskListSection(
 
 @Composable
 fun TaskItem(
-    taskEntity: Task,
-    onComplete: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    taskEntity: Task, onComplete: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit
 ) {
     // State for completion confirmation dialog
     var showCompletionDialog by remember { mutableStateOf(false) }
@@ -798,8 +511,7 @@ fun TaskItem(
 
     // Completion confirmation dialog
     if (showCompletionDialog) {
-        AlertDialog(
-            onDismissRequest = { showCompletionDialog = false },
+        AlertDialog(onDismissRequest = { showCompletionDialog = false },
             title = { Text("Complete Task") },
             text = {
                 Column {
@@ -807,13 +519,11 @@ fun TaskItem(
                     daysRemaining?.let { days ->
                         Text(
                             text = if (days > 0) "Due in $days day${if (days > 1) "s" else ""}"
-                            else "This task is overdue!",
-                            color = when {
+                            else "This task is overdue!", color = when {
                                 days <= 0 -> MaterialTheme.colorScheme.error
                                 days <= 3 -> MaterialTheme.colorScheme.tertiary
                                 else -> MaterialTheme.colorScheme.primary
-                            },
-                            fontWeight = FontWeight.Bold
+                            }, fontWeight = FontWeight.Bold
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -825,12 +535,10 @@ fun TaskItem(
                 }
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        onComplete()
-                        showCompletionDialog = false
-                    }
-                ) {
+                TextButton(onClick = {
+                    onComplete()
+                    showCompletionDialog = false
+                }) {
                     Text("Complete", color = MaterialTheme.colorScheme.primary)
                 }
             },
@@ -838,8 +546,7 @@ fun TaskItem(
                 TextButton(onClick = { showCompletionDialog = false }) {
                     Text("Cancel")
                 }
-            }
-        )
+            })
     }
 
     Card(
@@ -853,14 +560,11 @@ fun TaskItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Checkbox(
-                checked = taskEntity.isCompleted,
-                onCheckedChange = { _ ->
-                    if (!taskEntity.isCompleted) {
-                        showCompletionDialog = true
-                    }
+            Checkbox(checked = taskEntity.isCompleted, onCheckedChange = { _ ->
+                if (!taskEntity.isCompleted) {
+                    showCompletionDialog = true
                 }
-            )
+            })
 
             Spacer(modifier = Modifier.width(8.dp))
 
@@ -973,9 +677,7 @@ fun PriorityIndicator(priority: Priority) {
 
 @Composable
 fun TaskBottomBar(
-    onHome: () -> Unit,
-    onEditMode: () -> Unit,
-    onSettings: () -> Unit
+    onHome: () -> Unit, onEditMode: () -> Unit, onSettings: () -> Unit
 ) {
     BottomAppBar {
         Row(
@@ -1001,8 +703,7 @@ fun TaskBottomBar(
 @Composable
 fun FullScreenLoading() {
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator()
     }
@@ -1014,8 +715,7 @@ fun ErrorMessage(error: String?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+            .padding(16.dp), contentAlignment = Alignment.Center
     ) {
         Text(
             text = error ?: "Unknown error occurred",
@@ -1030,8 +730,7 @@ fun EmptyTaskList() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+            .padding(16.dp), contentAlignment = Alignment.Center
     ) {
         Text(
             text = "No tasks found",
