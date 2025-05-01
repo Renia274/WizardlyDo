@@ -46,7 +46,6 @@ import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.WizardProfile
-import com.example.wizardlydo.data.WizardStats
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
 import com.example.wizardlydo.getDaysRemaining
@@ -54,6 +53,7 @@ import com.example.wizardlydo.screens.tasks.comps.CharacterStatsSection
 import com.example.wizardlydo.screens.tasks.comps.EmptyTaskList
 import com.example.wizardlydo.screens.tasks.comps.ErrorMessage
 import com.example.wizardlydo.screens.tasks.comps.FullScreenLoading
+import com.example.wizardlydo.screens.tasks.comps.LevelUpIndicator
 import com.example.wizardlydo.screens.tasks.comps.TaskBottomBar
 import com.example.wizardlydo.screens.tasks.comps.TaskFilterChips
 import com.example.wizardlydo.screens.tasks.comps.TaskListSection
@@ -88,46 +88,37 @@ fun TaskScreen(
     // Get current wizard profile
     val wizardProfile = state.wizardProfile?.getOrNull()
 
-    // Calculate task requirements based on level
-    val totalTasksForLevel = wizardProfile?.level?.let { level ->
-        when {
-            level < 5 -> 4
-            level < 8 -> 6
-            else -> 10
-        }
-    } ?: 4
+    var currentHealth by remember { mutableIntStateOf(wizardProfile?.health ?: 100) }
+    var currentMaxHealth by remember { mutableIntStateOf(wizardProfile?.maxHealth ?: 100) }
+    var currentStamina by remember { mutableIntStateOf(wizardProfile?.stamina ?: 50) }
+    var currentLevel by remember { mutableIntStateOf(wizardProfile?.level ?: 1) }
 
-    // Calculate stats based on completion of sets of tasks
-    val (completedTasks, health, maxHealth, stamina, experience) = remember(state) {
+    // Update when profile changes
+    LaunchedEffect(wizardProfile) {
+        wizardProfile?.let {
+            currentHealth = it.health
+            currentMaxHealth = it.maxHealth
+            currentStamina = it.stamina
+            currentLevel = it.level
+        }
+    }
+
+    // Calculate task progression
+    val (completedTasks, totalTasksForLevel) = remember(wizardProfile) {
         derivedStateOf {
             wizardProfile?.let { profile ->
-                val tasksToNextLevel = viewModel.getTasksToNextLevel(profile)
-                val completedTasks = (totalTasksForLevel - tasksToNextLevel).coerceAtLeast(0)
-
-                WizardStats(
-                    completedTasks = completedTasks,
-                    health = viewModel.calculateHealthFromTasks(
-                        profile.health,
-                        profile.totalTasksCompleted,
-                        profile.level
-                    ),
-                    maxHealth = profile.maxHealth,
-                    stamina = viewModel.calculateStaminaFromTasks(
-                        profile.stamina,
-                        profile.totalTasksCompleted,
-                        profile.level
-                    ),
-                    experience = profile.experience
-                )
-            } ?: WizardStats(
-                completedTasks = 0,
-                health = 100,
-                maxHealth = 100,
-                stamina = 50,
-                experience = 0
-            )
+                val totalNeeded = when {
+                    profile.level < 5 -> 4
+                    profile.level < 8 -> 6
+                    else -> 10
+                }
+                val remaining = viewModel.getTasksToNextLevel(profile)
+                Pair((totalNeeded - remaining).coerceAtLeast(0), totalNeeded)
+            } ?: Pair(0, 4)
         }
     }.value
+
+
 
     LaunchedEffect(Unit) {
         viewModel.loadData()
@@ -238,51 +229,58 @@ fun TaskScreen(
             }
         }
     ) { padding ->
+
+
         TaskContent(
             modifier = Modifier.padding(padding),
             state = state,
             wizardProfile = wizardProfile,
-            health = health,
-            maxHealth = maxHealth,
-            stamina = stamina,
-            experience = experience,
+            health = currentHealth,
+            maxHealth = currentMaxHealth,
+            stamina = currentStamina,
+            experience = wizardProfile?.experience ?: 0,
             tasksCompleted = completedTasks,
             totalTasksForLevel = totalTasksForLevel,
             totalTasksCompletedCount = wizardProfile?.totalTasksCompleted ?: 0,
             taskStreakCount = wizardProfile?.consecutiveTasksCompleted ?: 0,
             onCompleteTask = { taskId ->
                 viewModel.completeTask(taskId, taskNotificationService)
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "Task completed! +XP earned",
-                        duration = SnackbarDuration.Short
+                // Immediately update local state for responsiveness
+                val task = state.tasks.find { it.id == taskId }
+                task?.let {
+                    val (hpGain, staminaGain, _) = viewModel.calculateTaskEffects(
+                        it.priority,
+                        true,
+                        currentLevel
                     )
+                    currentHealth = (currentHealth + hpGain).coerceAtMost(currentMaxHealth)
+                    currentStamina = (currentStamina + staminaGain).coerceAtMost(100)
                 }
-                taskNotificationService.cancelTaskNotification(taskId)
             },
-            onEditTask = onEditTask,
-            onDeleteTask = { taskId ->
-                viewModel.deleteTask(taskId) {
+                onEditTask = onEditTask,
+                onDeleteTask = { taskId ->
+                    viewModel.deleteTask(taskId) {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Task deleted",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                        taskNotificationService.cancelTaskNotification(taskId)
+                    }
+                },
+                onDamageTaken = { damage, currentHealth ->
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
-                            message = "Task deleted",
+                            message = "Lost $damage HP! Current HP: $currentHealth",
                             duration = SnackbarDuration.Short
                         )
                     }
-                    taskNotificationService.cancelTaskNotification(taskId)
                 }
-            },
-            onDamageTaken = { damage, currentHealth ->
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "Lost $damage HP! Current HP: $currentHealth",
-                        duration = SnackbarDuration.Short
-                    )
-                }
-            }
-        )
+            )
+        }
     }
-}
+
 
 @Composable
 fun TaskContent(
@@ -315,6 +313,9 @@ fun TaskContent(
             totalTasksCompletedCount = totalTasksCompletedCount,
             taskStreakCount = taskStreakCount
         )
+
+        // Show level up indicator
+        wizardProfile?.let { LevelUpIndicator(it.level) }
 
         Spacer(Modifier.height(8.dp))
 
@@ -354,6 +355,7 @@ fun TaskContent(
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable

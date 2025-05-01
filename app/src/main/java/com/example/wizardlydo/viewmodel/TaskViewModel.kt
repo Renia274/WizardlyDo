@@ -297,35 +297,43 @@ class TaskViewModel(
                     return@launch
                 }
 
-                val wizardProfileResult = wizardRepository.getWizardProfile(userId)
-                val wizardProfile = wizardProfileResult.getOrNull() ?: run {
-                    mutableState.update {
-                        it.copy(
-                            error = "Failed to load wizard profile",
-                            isLoading = false
-                        )
-                    }
+                val wizardProfile = wizardRepository.getWizardProfile(userId).getOrNull() ?: run {
+                    mutableState.update { it.copy(error = "Wizard profile not found", isLoading = false) }
                     return@launch
                 }
 
-                val now = System.currentTimeMillis()
-                val isOnTime = task.dueDate?.let { dueDate -> now <= dueDate } ?: true
-
-                // Calculate rewards based on priority and timing
-                val (hpChange, staminaChange, expGain) = calculateTaskEffects(
+                // Calculate rewards
+                val (hpGain, staminaGain, expGain) = calculateTaskEffects(
                     priority = task.priority,
-                    isOnTime = isOnTime,
+                    isOnTime = task.dueDate?.let { System.currentTimeMillis() <= it } ?: true,
                     currentLevel = wizardProfile.level
                 )
 
-                // Calculate new stats with caps
-                val newHealth = (wizardProfile.health + hpChange).coerceIn(0, MAX_WIZARD_HEALTH)
-                val newStamina = (wizardProfile.stamina + staminaChange).coerceIn(0, 100)
-                val newExperience = wizardProfile.experience + expGain
+                // Calculate new stats
+                var newHealth = wizardProfile.health + hpGain
+                var newStamina = wizardProfile.stamina + staminaGain
+                var newExperience = wizardProfile.experience + expGain
+                var newLevel = wizardProfile.level
+                var newMaxHealth = wizardProfile.maxHealth
 
-                // Create updated profile (without level up check yet)
-                var updatedProfile = wizardProfile.copy(
+                // Check for level up
+                if (newExperience >= EXP_PER_LEVEL) {
+                    newLevel++
+                    newExperience -= EXP_PER_LEVEL
+                    newMaxHealth = (wizardProfile.maxHealth + 10).coerceAtMost(150)
+                    newHealth = newMaxHealth // Full heal on level up
+                    newStamina = (wizardProfile.stamina + 5).coerceAtMost(100)
+                } else {
+                    // Cap stats if not leveling up
+                    newHealth = newHealth.coerceAtMost(wizardProfile.maxHealth)
+                    newStamina = newStamina.coerceAtMost(100)
+                }
+
+                // Update profile
+                val updatedProfile = wizardProfile.copy(
+                    level = newLevel,
                     health = newHealth,
+                    maxHealth = newMaxHealth,
                     stamina = newStamina,
                     experience = newExperience,
                     totalTasksCompleted = wizardProfile.totalTasksCompleted + 1,
@@ -333,29 +341,19 @@ class TaskViewModel(
                     lastTaskCompleted = Timestamp.now()
                 )
 
-                // Check for level up
-                if (newExperience >= EXP_PER_LEVEL) {
-                    updatedProfile = updatedProfile.copy(
-                        level = updatedProfile.level + 1,
-                        experience = newExperience - EXP_PER_LEVEL,
-                        maxHealth = (updatedProfile.maxHealth + 10).coerceAtMost(MAX_WIZARD_HEALTH),
-                        health = (updatedProfile.maxHealth + 10).coerceAtMost(MAX_WIZARD_HEALTH) // Full heal
-                    )
-                }
-
-                // Save updated profile
+                // Save updates
                 wizardRepository.updateWizardProfile(userId, updatedProfile)
                 taskRepository.updateTaskCompletionStatus(taskId, true)
+
+                // Force UI update by reloading data
+                loadData()
 
                 // Show notification
                 notificationService?.showTaskCompletionNotification(
                     task = task,
                     wizardProfile = updatedProfile,
-                    hpGained = hpChange
+                    hpGained = hpGain
                 )
-
-                // Refresh data
-                loadData()
 
             } catch (e: Exception) {
                 mutableState.update {
@@ -364,6 +362,49 @@ class TaskViewModel(
                         isLoading = false
                     )
                 }
+            }
+        }
+    }
+
+    fun calculateTaskEffects(
+        priority: Priority,
+        isOnTime: Boolean,
+        currentLevel: Int
+    ): Triple<Int, Int, Int> {
+        // Base values
+        val baseHp = 10
+        val baseStamina = 15
+        val baseXp = 50
+
+        // Level scaling
+        val scale = when {
+            currentLevel < 5 -> 1.0f
+            currentLevel < 8 -> 0.8f
+            else -> 0.6f
+        }
+
+        return when {
+            isOnTime -> when (priority) {
+                Priority.HIGH -> Triple(
+                    (baseHp * 1.5 * scale).toInt(),
+                    (baseStamina * 1.3 * scale).toInt(),
+                    (baseXp * 1.5 * scale).toInt()
+                )
+                Priority.MEDIUM -> Triple(
+                    (baseHp * scale).toInt(),
+                    (baseStamina * scale).toInt(),
+                    (baseXp * scale).toInt()
+                )
+                Priority.LOW -> Triple(
+                    (baseHp * 0.5 * scale).toInt(),
+                    (baseStamina * 0.7 * scale).toInt(),
+                    (baseXp * 0.7 * scale).toInt()
+                )
+            }
+            else -> when (priority) { // Overdue penalties
+                Priority.HIGH -> Triple(-20, -10, 5)
+                Priority.MEDIUM -> Triple(-15, -5, 3)
+                Priority.LOW -> Triple(-10, 0, 1)
             }
         }
     }
@@ -398,45 +439,7 @@ class TaskViewModel(
         }
     }
 
-    // Updated to consider level progression in HP calculation
-    private fun calculateTaskEffects(priority: Priority, isOnTime: Boolean, currentLevel: Int): Triple<Int, Int, Int> {
-        // Base values
-        val baseHpGain = 10
-        val baseStaminaGain = 15
-        val baseXpGain = 50
 
-        // Adjust based on level
-        val levelMultiplier = when {
-            currentLevel < 5 -> 1.0f  // Levels 1-4: full rewards
-            currentLevel < 8 -> 0.8f  // Levels 5-7: slightly reduced
-            else -> 0.6f              // Levels 8+: more reduced
-        }
-
-        return when {
-            isOnTime -> when (priority) {
-                Priority.HIGH -> Triple(
-                    (baseHpGain * 1.5 * levelMultiplier).toInt(), // 15 HP
-                    (baseStaminaGain * 1.3 * levelMultiplier).toInt(), // ~20 Stamina
-                    (baseXpGain * 1.5 * levelMultiplier).toInt() // ~75 XP
-                )
-                Priority.MEDIUM -> Triple(
-                    (baseHpGain * levelMultiplier).toInt(), // 10 HP
-                    (baseStaminaGain * levelMultiplier).toInt(), // ~15 Stamina
-                    (baseXpGain * levelMultiplier).toInt() // ~50 XP
-                )
-                Priority.LOW -> Triple(
-                    (baseHpGain * 0.5 * levelMultiplier).toInt(), // 5 HP
-                    (baseStaminaGain * 0.7 * levelMultiplier).toInt(), // ~10 Stamina
-                    (baseXpGain * 0.7 * levelMultiplier).toInt() // ~35 XP
-                )
-            }
-            else -> when (priority) { // Overdue penalties
-                Priority.HIGH -> Triple(-20, -10, 5)
-                Priority.MEDIUM -> Triple(-15, -5, 3)
-                Priority.LOW -> Triple(-10, 0, 1)
-            }
-        }
-    }
 
 
     fun getTasksToNextLevel(wizardProfile: WizardProfile?): Int {
@@ -464,26 +467,26 @@ class TaskViewModel(
             }
         }
     }
-    // Calculate health based on completed tasks
-    fun calculateHealthFromTasks(baseHealth: Int, completedTaskCount: Int, level: Int): Int {
-        // Each task gives HP based on level
-        val hpPerTask = when {
-            level < 5 -> 10  // Levels 1-4: 10 HP per task
-            level < 8 -> 8   // Levels 5-7: 8 HP per task
-            else -> 5        // Levels 8+: 5 HP per task
-        }
-
-        val hpFromTasks = completedTaskCount * hpPerTask
-        return (baseHealth + hpFromTasks).coerceAtMost(MAX_WIZARD_HEALTH)
-    }
-
-    // Calculate stamina based on completed tasks
-    fun calculateStaminaFromTasks(baseStamina: Int, completedTaskCount: Int, level: Int): Int {
-        // Each task gives 5 stamina
-        val staminaPerTask = 5
-        val staminaFromTasks = completedTaskCount * staminaPerTask
-        return (baseStamina + staminaFromTasks).coerceIn(0, 100)
-    }
+//    // Calculate health based on completed tasks
+//    fun calculateHealthFromTasks(baseHealth: Int, completedTaskCount: Int, level: Int): Int {
+//        // Each task gives HP based on level
+//        val hpPerTask = when {
+//            level < 5 -> 10  // Levels 1-4: 10 HP per task
+//            level < 8 -> 8   // Levels 5-7: 8 HP per task
+//            else -> 5        // Levels 8+: 5 HP per task
+//        }
+//
+//        val hpFromTasks = completedTaskCount * hpPerTask
+//        return (baseHealth + hpFromTasks).coerceAtMost(MAX_WIZARD_HEALTH)
+//    }
+//
+//    // Calculate stamina based on completed tasks
+//    fun calculateStaminaFromTasks(baseStamina: Int, completedTaskCount: Int, level: Int): Int {
+//        // Each task gives 5 stamina
+//        val staminaPerTask = 5
+//        val staminaFromTasks = completedTaskCount * staminaPerTask
+//        return (baseStamina + staminaFromTasks).coerceIn(0, 100)
+//    }
 
 
     // Function to get upcoming tasks synchronously (for use with notification button)

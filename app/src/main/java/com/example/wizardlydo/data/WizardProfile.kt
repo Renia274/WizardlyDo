@@ -35,6 +35,11 @@ data class WizardProfile(
     val maxHealth: Int = 100,
     val achievements: List<String> = emptyList(),
 
+    val baseHealth: Int = 100,
+
+    val baseStamina: Int = 50,
+
+
     // Task System Integration
     val lastTaskCompleted: Timestamp? = null,
     val consecutiveTasksCompleted: Int = 0,
@@ -46,7 +51,7 @@ data class WizardProfile(
 
 
     val stamina: Int = 75,
-    val emailNotificationsEnabled:Boolean = true,
+    val emailNotificationsEnabled: Boolean = true,
     val reminderEnabled: Boolean = true,
     val reminderDays: Int = 1,
     val inAppNotificationsEnabled: Boolean = true,

@@ -1,5 +1,12 @@
 package com.example.wizardlydo.screens.tasks.comps
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,7 +47,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -60,6 +69,7 @@ import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.data.models.TaskFilter
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -162,6 +172,16 @@ fun CharacterStatsSection(
     val wizardProfile = wizardResult?.getOrNull()
     val error = wizardResult?.exceptionOrNull()
 
+    val animatedHealth by animateIntAsState(
+        targetValue = health,
+        animationSpec = tween(durationMillis = 500)
+    )
+
+    val animatedStamina by animateIntAsState(
+        targetValue = stamina,
+        animationSpec = tween(durationMillis = 500)
+    )
+
 
     Card(
         modifier = modifier
@@ -238,11 +258,12 @@ fun CharacterStatsSection(
 
             // Stats Section
             if (wizardProfile != null) {
-                // Health bar with max 150 cap
                 StatBar(
-                    label = "HP", value = health,  // Use direct health
-                    maxValue = maxHealth,  // Use direct max health
-                    color = Color(0xFFE53935), modifier = Modifier.fillMaxWidth()
+                    label = "HP",
+                    value = animatedHealth,
+                    maxValue = maxHealth,
+                    color = Color(0xFFE53935),
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
@@ -250,7 +271,7 @@ fun CharacterStatsSection(
                 // Stamina bar
                 StatBar(
                     label = "Stamina",
-                    value = stamina,  // Use direct stamina
+                    value = animatedStamina,
                     maxValue = 100,
                     color = Color(0xFF43A047),
                     modifier = Modifier.fillMaxWidth()
@@ -709,6 +730,33 @@ fun FullScreenLoading() {
     }
 }
 
+@Composable
+fun LevelUpIndicator(level: Int) {
+    var showLevelUp by remember { mutableStateOf(false) }
+    var currentLevel by remember { mutableIntStateOf(level) }
+
+    LaunchedEffect(level) {
+        if (level > currentLevel) {
+            showLevelUp = true
+            currentLevel = level
+            delay(2000) // Show for 2 seconds
+            showLevelUp = false
+        }
+    }
+
+    AnimatedVisibility(
+        visible = showLevelUp,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Text(
+            text = "Level Up!",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(8.dp)
+        )
+    }
+}
 
 @Composable
 fun ErrorMessage(error: String?) {
@@ -739,6 +787,4 @@ fun EmptyTaskList() {
         )
     }
 }
-
-
 
