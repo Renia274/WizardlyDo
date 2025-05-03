@@ -1,5 +1,6 @@
 package com.example.wizardlydo.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wizardlydo.data.Priority
@@ -63,8 +64,6 @@ class TaskViewModel(
         taskNotificationService = service
     }
 
-
-
     fun createTask(task: Task) {
         viewModelScope.launch {
             currentUserId.value?.let { userId ->
@@ -111,28 +110,42 @@ class TaskViewModel(
                     return@launch
                 }
 
-                val wizardResult = runCatching {
+                // Try-catch with better error handling for wizard profile
+                val wizardProfile = try {
                     wizardRepository.getWizardProfile(userId).getOrThrow()
+                } catch (e: Exception) {
+                    Log.e("TaskViewModel", "Failed to get wizard profile: ${e.message}")
+                    mutableState.update {
+                        it.copy(
+                            error = "Failed to load wizard profile: ${e.message}",
+                            isLoading = false
+                        )
+                    }
+                    return@launch
                 }
 
-                val tasks = runCatching {
+                // Log profile values for debugging
+                Log.d("TaskViewModel", "Loaded profile - Level: ${wizardProfile?.level}, " +
+                        "Health: ${wizardProfile?.health}/${wizardProfile?.maxHealth}, " +
+                        "Stamina: ${wizardProfile?.stamina}, " +
+                        "XP: ${wizardProfile?.experience}, " +
+                        "Tasks completed: ${wizardProfile?.totalTasksCompleted}")
+
+                // Tasks with better error handling
+                val tasks = try {
                     taskRepository.getAllTasks(userId)
-                }.fold(
-                    onSuccess = { it },
-                    onFailure = {
-                        mutableState.update { it.copy(error = "Failed to load tasks") }
-                        emptyList()
-                    }
-                )
+                } catch (e: Exception) {
+                    Log.e("TaskViewModel", "Failed to get tasks: ${e.message}")
+                    mutableState.update { it.copy(error = "Failed to load tasks: ${e.message}") }
+                    emptyList()
+                }
 
                 val filteredTasks = filterTasks(tasks, uiState.value.currentFilter)
 
-                mutableState.update { it ->
+                // Critical: Set the profile directly in the state update with null check
+                mutableState.update {
                     it.copy(
-                        wizardProfile = wizardResult.fold(
-                            onSuccess = { Result.success(it) },
-                            onFailure = { Result.failure(it) }
-                        ),
+                        wizardProfile = Result.success(wizardProfile),
                         tasks = tasks,
                         filteredTasks = filteredTasks,
                         isLoading = false,
@@ -141,13 +154,207 @@ class TaskViewModel(
                 }
 
             } catch (e: Exception) {
+                Log.e("TaskViewModel", "Failed to load data: ${e.message}", e)
                 mutableState.update {
                     it.copy(
                         error = "Failed to load: ${e.message}",
-                        isLoading = false,
-                        wizardProfile = Result.failure(e)
+                        isLoading = false
                     )
                 }
+            }
+        }
+    }
+
+    // Updated to properly handle HP and stamina changes after completion
+    fun completeTask(taskId: Int, notificationService: TaskNotificationService? = null) {
+        viewModelScope.launch {
+            try {
+                val userId = wizardRepository.getCurrentUserId() ?: run {
+                    mutableState.update { it.copy(error = "Not logged in") }
+                    return@launch
+                }
+
+                val task = taskRepository.getTaskById(taskId) ?: run {
+                    mutableState.update { it.copy(error = "Task not found") }
+                    return@launch
+                }
+
+                if (task.isCompleted) {
+                    return@launch
+                }
+
+                // Get latest profile to ensure we have the current values
+                val wizardProfile = wizardRepository.getWizardProfile(userId).getOrNull() ?: run {
+                    mutableState.update { it.copy(error = "Wizard profile not found") }
+                    return@launch
+                }
+
+                // Calculate rewards based on priority and on-time status
+                val (hpGain, staminaGain, expGain) = calculateTaskEffects(
+                    priority = task.priority,
+                    isOnTime = task.dueDate?.let { System.currentTimeMillis() <= it } ?: true,
+                    currentLevel = wizardProfile.level
+                )
+
+                Log.d("TaskViewModel", "Base rewards calculated - HP: $hpGain, Stamina: $staminaGain, XP: $expGain")
+
+                // Calculate new stats
+                var newHealth = wizardProfile.health + hpGain
+                var newStamina = wizardProfile.stamina + staminaGain
+                var newExperience = wizardProfile.experience + expGain
+                var newLevel = wizardProfile.level
+                var newMaxHealth = wizardProfile.maxHealth
+
+                // Store original values for notification
+                val actualHpGain: Int
+                val actualStaminaGain: Int
+
+                // Check for level up
+                val isLevelUp = newExperience >= EXP_PER_LEVEL
+                if (isLevelUp) {
+                    // Level up
+                    newLevel++
+                    newExperience -= EXP_PER_LEVEL
+                    newMaxHealth = (wizardProfile.maxHealth + 10).coerceAtMost(MAX_WIZARD_HEALTH)
+
+                    // Set to full health and stamina on level up
+                    actualHpGain = newMaxHealth - wizardProfile.health // Full heal on level up
+                    actualStaminaGain = 100 - wizardProfile.stamina // Full stamina on level up
+
+                    newHealth = newMaxHealth
+                    newStamina = 100
+
+                    Log.d("TaskViewModel", "Level up! New level: $newLevel, Health: $newHealth/$newMaxHealth, Stamina: $newStamina")
+                } else {
+                    // Cap stats if not leveling up
+                    newHealth = newHealth.coerceAtMost(wizardProfile.maxHealth)
+                    newStamina = (wizardProfile.stamina + staminaGain).coerceAtMost(100)
+
+                    // Calculate actual gain (may be limited by max values)
+                    actualHpGain = newHealth - wizardProfile.health
+                    actualStaminaGain = newStamina - wizardProfile.stamina
+
+                    Log.d("TaskViewModel", "Task completed. Health: $newHealth/$newMaxHealth, Stamina: $newStamina")
+                }
+
+                // Increment total tasks completed
+                val newTotalTasksCompleted = wizardProfile.totalTasksCompleted + 1
+
+                // Update profile with all new values
+                val updatedProfile = wizardProfile.copy(
+                    level = newLevel,
+                    health = newHealth,
+                    maxHealth = newMaxHealth,
+                    stamina = newStamina,
+                    experience = newExperience,
+                    totalTasksCompleted = newTotalTasksCompleted,
+                    consecutiveTasksCompleted = 0, // Set to 0 to remove streak functionality
+                    lastTaskCompleted = Timestamp.now()
+                )
+
+                // Log the updated profile values for verification
+                Log.d("TaskViewModel", "Updated profile - Level: ${updatedProfile.level}, " +
+                        "Health: ${updatedProfile.health}/${updatedProfile.maxHealth}, " +
+                        "Stamina: ${updatedProfile.stamina}, " +
+                        "XP: ${updatedProfile.experience}/${EXP_PER_LEVEL}, " +
+                        "Total tasks completed: ${updatedProfile.totalTasksCompleted}")
+
+                // Mark task as completed
+                taskRepository.updateTaskCompletionStatus(taskId, true)
+
+                // Save profile updates to database - MUST happen AFTER task completion
+                // to ensure proper ordering of state updates
+                wizardRepository.updateWizardProfile(userId, updatedProfile)
+
+                // Show notification with HP and stamina gains
+                notificationService?.showTaskCompletionNotification(
+                    task = task,
+                    wizardProfile = updatedProfile,
+                    hpGained = actualHpGain,
+                    staminaGained = actualStaminaGain
+                )
+
+                // CRITICAL: Update the UI state directly with the new profile
+                // This ensures UI updates even if database updates are slow
+                mutableState.update { currentState ->
+                    currentState.copy(
+                        wizardProfile = Result.success(updatedProfile),
+                        isLoading = false
+                    )
+                }
+
+                // Force reload other data like tasks
+                // Use a separate operation to refresh task list
+                loadTasksOnly(userId)
+
+            } catch (e: Exception) {
+                Log.e("TaskViewModel", "Completion failed: ${e.message}", e)
+                mutableState.update {
+                    it.copy(
+                        error = "Completion failed: ${e.message}",
+                        isLoading = false
+                    )
+                }
+            }
+        }
+    }
+
+    // Helper function to load only tasks without affecting profile state
+    private suspend fun loadTasksOnly(userId: String) {
+        try {
+            val tasks = taskRepository.getAllTasks(userId)
+            val filteredTasks = filterTasks(tasks, uiState.value.currentFilter)
+
+            mutableState.update { state ->
+                state.copy(
+                    tasks = tasks,
+                    filteredTasks = filteredTasks
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("TaskViewModel", "Failed to load tasks: ${e.message}", e)
+        }
+    }
+
+    fun calculateTaskEffects(
+        priority: Priority,
+        isOnTime: Boolean,
+        currentLevel: Int
+    ): Triple<Int, Int, Int> {
+        // Base values
+        val baseHp = 10
+        val baseStamina = 15
+        val baseXp = 50
+
+        // Level scaling
+        val scale = when {
+            currentLevel < 5 -> 1.0f
+            currentLevel < 8 -> 0.8f
+            else -> 0.6f
+        }
+
+        return when {
+            isOnTime -> when (priority) {
+                Priority.HIGH -> Triple(
+                    (baseHp * 1.5 * scale).toInt(),
+                    (baseStamina * 1.3 * scale).toInt(),
+                    (baseXp * 1.5 * scale).toInt()
+                )
+                Priority.MEDIUM -> Triple(
+                    (baseHp * scale).toInt(),
+                    (baseStamina * scale).toInt(),
+                    (baseXp * scale).toInt()
+                )
+                Priority.LOW -> Triple(
+                    (baseHp * 0.5 * scale).toInt(),
+                    (baseStamina * 0.7 * scale).toInt(),
+                    (baseXp * 0.7 * scale).toInt()
+                )
+            }
+            else -> when (priority) { // Overdue penalties
+                Priority.HIGH -> Triple(-20, -10, 5)
+                Priority.MEDIUM -> Triple(-15, -5, 3)
+                Priority.LOW -> Triple(-10, 0, 1)
             }
         }
     }
@@ -278,137 +485,6 @@ class TaskViewModel(
         }
     }
 
-    fun completeTask(taskId: Int, notificationService: TaskNotificationService? = null) {
-        viewModelScope.launch {
-            mutableState.update { it.copy(isLoading = true) }
-            try {
-                val userId = wizardRepository.getCurrentUserId() ?: run {
-                    mutableState.update { it.copy(error = "Not logged in", isLoading = false) }
-                    return@launch
-                }
-
-                val task = taskRepository.getTaskById(taskId) ?: run {
-                    mutableState.update { it.copy(error = "Task not found", isLoading = false) }
-                    return@launch
-                }
-
-                if (task.isCompleted) {
-                    mutableState.update { it.copy(isLoading = false) }
-                    return@launch
-                }
-
-                val wizardProfile = wizardRepository.getWizardProfile(userId).getOrNull() ?: run {
-                    mutableState.update { it.copy(error = "Wizard profile not found", isLoading = false) }
-                    return@launch
-                }
-
-                // Calculate rewards
-                val (hpGain, staminaGain, expGain) = calculateTaskEffects(
-                    priority = task.priority,
-                    isOnTime = task.dueDate?.let { System.currentTimeMillis() <= it } ?: true,
-                    currentLevel = wizardProfile.level
-                )
-
-                // Calculate new stats
-                var newHealth = wizardProfile.health + hpGain
-                var newStamina = wizardProfile.stamina + staminaGain
-                var newExperience = wizardProfile.experience + expGain
-                var newLevel = wizardProfile.level
-                var newMaxHealth = wizardProfile.maxHealth
-
-                // Check for level up
-                if (newExperience >= EXP_PER_LEVEL) {
-                    newLevel++
-                    newExperience -= EXP_PER_LEVEL
-                    newMaxHealth = (wizardProfile.maxHealth + 10).coerceAtMost(150)
-                    newHealth = newMaxHealth // Full heal on level up
-                    newStamina = (wizardProfile.stamina + 5).coerceAtMost(100)
-                } else {
-                    // Cap stats if not leveling up
-                    newHealth = newHealth.coerceAtMost(wizardProfile.maxHealth)
-                    newStamina = newStamina.coerceAtMost(100)
-                }
-
-                // Update profile
-                val updatedProfile = wizardProfile.copy(
-                    level = newLevel,
-                    health = newHealth,
-                    maxHealth = newMaxHealth,
-                    stamina = newStamina,
-                    experience = newExperience,
-                    totalTasksCompleted = wizardProfile.totalTasksCompleted + 1,
-                    consecutiveTasksCompleted = wizardProfile.consecutiveTasksCompleted + 1,
-                    lastTaskCompleted = Timestamp.now()
-                )
-
-                // Save updates
-                wizardRepository.updateWizardProfile(userId, updatedProfile)
-                taskRepository.updateTaskCompletionStatus(taskId, true)
-
-                // Force UI update by reloading data
-                loadData()
-
-                // Show notification
-                notificationService?.showTaskCompletionNotification(
-                    task = task,
-                    wizardProfile = updatedProfile,
-                    hpGained = hpGain
-                )
-
-            } catch (e: Exception) {
-                mutableState.update {
-                    it.copy(
-                        error = "Completion failed: ${e.message}",
-                        isLoading = false
-                    )
-                }
-            }
-        }
-    }
-
-    fun calculateTaskEffects(
-        priority: Priority,
-        isOnTime: Boolean,
-        currentLevel: Int
-    ): Triple<Int, Int, Int> {
-        // Base values
-        val baseHp = 10
-        val baseStamina = 15
-        val baseXp = 50
-
-        // Level scaling
-        val scale = when {
-            currentLevel < 5 -> 1.0f
-            currentLevel < 8 -> 0.8f
-            else -> 0.6f
-        }
-
-        return when {
-            isOnTime -> when (priority) {
-                Priority.HIGH -> Triple(
-                    (baseHp * 1.5 * scale).toInt(),
-                    (baseStamina * 1.3 * scale).toInt(),
-                    (baseXp * 1.5 * scale).toInt()
-                )
-                Priority.MEDIUM -> Triple(
-                    (baseHp * scale).toInt(),
-                    (baseStamina * scale).toInt(),
-                    (baseXp * scale).toInt()
-                )
-                Priority.LOW -> Triple(
-                    (baseHp * 0.5 * scale).toInt(),
-                    (baseStamina * 0.7 * scale).toInt(),
-                    (baseXp * 0.7 * scale).toInt()
-                )
-            }
-            else -> when (priority) { // Overdue penalties
-                Priority.HIGH -> Triple(-20, -10, 5)
-                Priority.MEDIUM -> Triple(-15, -5, 3)
-                Priority.LOW -> Triple(-10, 0, 1)
-            }
-        }
-    }
-
     fun setFilter(filter: TaskFilter) {
         mutableState.update { state ->
             state.copy(
@@ -439,9 +515,6 @@ class TaskViewModel(
         }
     }
 
-
-
-
     fun getTasksToNextLevel(wizardProfile: WizardProfile?): Int {
         wizardProfile ?: return 0
 
@@ -467,27 +540,6 @@ class TaskViewModel(
             }
         }
     }
-//    // Calculate health based on completed tasks
-//    fun calculateHealthFromTasks(baseHealth: Int, completedTaskCount: Int, level: Int): Int {
-//        // Each task gives HP based on level
-//        val hpPerTask = when {
-//            level < 5 -> 10  // Levels 1-4: 10 HP per task
-//            level < 8 -> 8   // Levels 5-7: 8 HP per task
-//            else -> 5        // Levels 8+: 5 HP per task
-//        }
-//
-//        val hpFromTasks = completedTaskCount * hpPerTask
-//        return (baseHealth + hpFromTasks).coerceAtMost(MAX_WIZARD_HEALTH)
-//    }
-//
-//    // Calculate stamina based on completed tasks
-//    fun calculateStaminaFromTasks(baseStamina: Int, completedTaskCount: Int, level: Int): Int {
-//        // Each task gives 5 stamina
-//        val staminaPerTask = 5
-//        val staminaFromTasks = completedTaskCount * staminaPerTask
-//        return (baseStamina + staminaFromTasks).coerceIn(0, 100)
-//    }
-
 
     // Function to get upcoming tasks synchronously (for use with notification button)
     suspend fun getUpcomingTasksSync(): List<Task> {
@@ -507,10 +559,9 @@ class TaskViewModel(
             // Combine the lists (overdue first, then upcoming)
             (overdueTasks + upcomingTasks).filter { !it.isCompleted }
         } catch (e: Exception) {
+            Log.e("TaskViewModel", "Failed to get upcoming tasks: ${e.message}", e)
             mutableState.update { it.copy(error = "Failed to load upcoming tasks: ${e.message}") }
             emptyList()
         }
     }
-
-
 }

@@ -2,6 +2,7 @@ package com.example.wizardlydo.screens.tasks
 
 import android.Manifest
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -63,6 +64,7 @@ import com.example.wizardlydo.viewmodel.TaskViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -85,21 +87,27 @@ fun TaskScreen(
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
 
-    // Get current wizard profile
+    // Get current wizard profile and guarantee it's not null for UI updates
     val wizardProfile = state.wizardProfile?.getOrNull()
 
-    var currentHealth by remember { mutableIntStateOf(wizardProfile?.health ?: 100) }
-    var currentMaxHealth by remember { mutableIntStateOf(wizardProfile?.maxHealth ?: 100) }
-    var currentStamina by remember { mutableIntStateOf(wizardProfile?.stamina ?: 50) }
-    var currentLevel by remember { mutableIntStateOf(wizardProfile?.level ?: 1) }
+    // These state values will be updated directly from the wizard profile
+    // Critical: Use mutableStateOf instead of remember + mutableIntStateOf
+    // to ensure they're updated when collected from state flow
+    val currentHealth = wizardProfile?.health ?: 100
+    val currentMaxHealth = wizardProfile?.maxHealth ?: 100
+    val currentStamina = wizardProfile?.stamina ?: 50
+    val currentLevel = wizardProfile?.level ?: 1
+    val currentExp = wizardProfile?.experience ?: 0
+    val totalTasksCompleted = wizardProfile?.totalTasksCompleted ?: 0
 
-    // Update when profile changes
+    // Log current profile state for debugging
     LaunchedEffect(wizardProfile) {
         wizardProfile?.let {
-            currentHealth = it.health
-            currentMaxHealth = it.maxHealth
-            currentStamina = it.stamina
-            currentLevel = it.level
+            Log.d("TaskScreen", "Profile updated: Level=${it.level}, " +
+                    "HP=${it.health}/${it.maxHealth}, " +
+                    "Stamina=${it.stamina}, " +
+                    "XP=${it.experience}, " +
+                    "Tasks completed=${it.totalTasksCompleted}")
         }
     }
 
@@ -118,9 +126,9 @@ fun TaskScreen(
         }
     }.value
 
-
-
+    // Ensure we load data when the screen starts
     LaunchedEffect(Unit) {
+        Log.d("TaskScreen", "Initial data load")
         viewModel.loadData()
         viewModel.setNotificationService(taskNotificationService)
     }
@@ -229,8 +237,6 @@ fun TaskScreen(
             }
         }
     ) { padding ->
-
-
         TaskContent(
             modifier = Modifier.padding(padding),
             state = state,
@@ -238,48 +244,40 @@ fun TaskScreen(
             health = currentHealth,
             maxHealth = currentMaxHealth,
             stamina = currentStamina,
-            experience = wizardProfile?.experience ?: 0,
+            experience = currentExp,
             tasksCompleted = completedTasks,
             totalTasksForLevel = totalTasksForLevel,
-            totalTasksCompletedCount = wizardProfile?.totalTasksCompleted ?: 0,
-            taskStreakCount = wizardProfile?.consecutiveTasksCompleted ?: 0,
+            totalTasksCompletedCount = totalTasksCompleted,
+            taskStreakCount = 0, // Set to 0 to remove streak functionality as requested
             onCompleteTask = { taskId ->
-                viewModel.completeTask(taskId, taskNotificationService)
-                // Immediately update local state for responsiveness
-                val task = state.tasks.find { it.id == taskId }
-                task?.let {
-                    val (hpGain, staminaGain, _) = viewModel.calculateTaskEffects(
-                        it.priority,
-                        true,
-                        currentLevel
-                    )
-                    currentHealth = (currentHealth + hpGain).coerceAtMost(currentMaxHealth)
-                    currentStamina = (currentStamina + staminaGain).coerceAtMost(100)
+                Log.d("TaskScreen", "Complete task clicked: $taskId")
+                coroutineScope.launch {
+                    viewModel.completeTask(taskId, taskNotificationService)
                 }
             },
-                onEditTask = onEditTask,
-                onDeleteTask = { taskId ->
-                    viewModel.deleteTask(taskId) {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Task deleted",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                        taskNotificationService.cancelTaskNotification(taskId)
-                    }
-                },
-                onDamageTaken = { damage, currentHealth ->
+            onEditTask = onEditTask,
+            onDeleteTask = { taskId ->
+                viewModel.deleteTask(taskId) {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
-                            message = "Lost $damage HP! Current HP: $currentHealth",
+                            message = "Task deleted",
                             duration = SnackbarDuration.Short
                         )
                     }
+                    taskNotificationService.cancelTaskNotification(taskId)
                 }
-            )
-        }
+            },
+            onDamageTaken = { damage, currentHealth ->
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "Lost $damage HP! Current HP: $currentHealth",
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+        )
     }
+}
 
 
 @Composable
@@ -294,15 +292,28 @@ fun TaskContent(
     tasksCompleted: Int,
     totalTasksForLevel: Int,
     totalTasksCompletedCount: Int,
-    taskStreakCount: Int,
+    taskStreakCount: Int = 0,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
     onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> }
 ) {
+    // Debug log to verify proper content values
+    LaunchedEffect(wizardProfile, health, stamina, experience) {
+        Log.d("TaskContent", "Content values - " +
+                "Health: $health/$maxHealth, " +
+                "Stamina: $stamina, " +
+                "XP: $experience, " +
+                "Tasks: $tasksCompleted/$totalTasksForLevel, " +
+                "Total Completed: $totalTasksCompletedCount, " +
+                "Wizard Profile null? ${wizardProfile == null}")
+    }
+
     Column(modifier.fillMaxSize()) {
+        // Pass the direct values to CharacterStatsSection
+        // If wizardProfile is null, we still want to show stats using the direct values
         CharacterStatsSection(
-            wizardResult = state.wizardProfile?.let { Result.success(wizardProfile) } ?: state.wizardProfile,
+            wizardResult = state.wizardProfile,  // Use the original state.wizardProfile directly
             modifier = Modifier.padding(vertical = 4.dp),
             health = health,
             maxHealth = maxHealth,
@@ -335,7 +346,10 @@ fun TaskContent(
                 state.filteredTasks.isEmpty() -> EmptyTaskList()
                 else -> TaskListSection(
                     tasks = state.filteredTasks,
-                    onCompleteTask = onCompleteTask,
+                    onCompleteTask = { taskId ->
+                        Log.d("TaskContent", "Completing task: $taskId")
+                        onCompleteTask(taskId)
+                    },
                     onEditTask = onEditTask,
                     onDeleteTask = { taskId ->
                         onDeleteTask(taskId)
@@ -355,7 +369,6 @@ fun TaskContent(
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

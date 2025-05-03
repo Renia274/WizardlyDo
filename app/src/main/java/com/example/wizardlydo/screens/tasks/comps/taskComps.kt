@@ -1,5 +1,6 @@
 package com.example.wizardlydo.screens.tasks.comps
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
@@ -166,22 +167,39 @@ fun CharacterStatsSection(
     experience: Int,  // Direct experience value
     tasksCompleted: Int,
     totalTasksForLevel: Int,
-    totalTasksCompletedCount: Int,  // Added parameter
-    taskStreakCount: Int            // Added parameter
+    totalTasksCompletedCount: Int,
+    taskStreakCount: Int
 ) {
     val wizardProfile = wizardResult?.getOrNull()
     val error = wizardResult?.exceptionOrNull()
 
+    // Debug log to verify the values being passed to the component
+    LaunchedEffect(health, maxHealth, stamina, experience) {
+        Log.d("CharacterStatsSection", "Displaying stats - HP: $health/$maxHealth, " +
+                "Stamina: $stamina, XP: $experience, " +
+                "Level: ${wizardProfile?.level ?: 0}, " +
+                "Tasks: $tasksCompleted/$totalTasksForLevel, " +
+                "Total completed: $totalTasksCompletedCount")
+    }
+
+    // Animate health and stamina changes for visual feedback
     val animatedHealth by animateIntAsState(
         targetValue = health,
-        animationSpec = tween(durationMillis = 500)
+        animationSpec = tween(durationMillis = 500),
+        label = "health"
     )
 
     val animatedStamina by animateIntAsState(
         targetValue = stamina,
-        animationSpec = tween(durationMillis = 500)
+        animationSpec = tween(durationMillis = 500),
+        label = "stamina"
     )
 
+    val animatedExp by animateIntAsState(
+        targetValue = experience,
+        animationSpec = tween(durationMillis = 500),
+        label = "experience"
+    )
 
     Card(
         modifier = modifier
@@ -256,58 +274,81 @@ fun CharacterStatsSection(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Stats Section
-            if (wizardProfile != null) {
-                StatBar(
-                    label = "HP",
-                    value = animatedHealth,
-                    maxValue = maxHealth,
-                    color = Color(0xFFE53935),
-                    modifier = Modifier.fillMaxWidth()
-                )
+            // Stats Section - Always show these stats regardless of wizard profile loading state
+            // Use the direct parameter values instead of the wizard profile
+            // HP bar - use animated values for smooth transitions
+            StatBar(
+                label = "HP",
+                value = animatedHealth,
+                maxValue = maxHealth,
+                color = Color(0xFFE53935),
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
+            Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
 
-                // Stamina bar
-                StatBar(
-                    label = "Stamina",
-                    value = animatedStamina,
-                    maxValue = 100,
-                    color = Color(0xFF43A047),
-                    modifier = Modifier.fillMaxWidth()
-                )
+            // Stamina bar - use animated values
+            StatBar(
+                label = "Stamina",
+                value = animatedStamina,
+                maxValue = 100,
+                color = Color(0xFF43A047),
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
+            Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
 
-                // XP and tasks to level up - pass the direct values
-                CompactLevelProgressSection(
-                    level = wizardProfile.level,
-                    experience = experience,  // Use direct experience
-                    tasksCompleted = tasksCompleted,
-                    totalTasksForLevel = totalTasksForLevel
-                )
+            // XP and tasks to level up - pass the direct values
+            CompactLevelProgressSection(
+                level = wizardProfile?.level ?: 1,
+                experience = animatedExp,  // Use animated experience
+                tasksCompleted = tasksCompleted,
+                totalTasksForLevel = totalTasksForLevel
+            )
 
-                // Task progress section - pass all values directly including completion stats
-                Spacer(modifier = Modifier.height(8.dp))
-                TaskProgressSection(
-                    tasksCompleted = tasksCompleted,
-                    totalTasksForLevel = totalTasksForLevel,
-                    totalTasksCompletedCount = totalTasksCompletedCount,
-                    taskStreakCount = taskStreakCount
-                )
-            } else if (error == null) {
-                // Loading placeholders
-                repeat(2) {
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(8.dp)) // Reduced spacing
-                }
-            }
+            // Task progress section - pass all values directly including completion stats
+            Spacer(modifier = Modifier.height(8.dp))
+            TaskProgressSection(
+                tasksCompleted = tasksCompleted,
+                totalTasksForLevel = totalTasksForLevel,
+                totalTasksCompletedCount = totalTasksCompletedCount,
+                taskStreakCount = taskStreakCount
+            )
         }
+    }
+}
+@Composable
+private fun StatBar(
+    label: String, value: Int, maxValue: Int, color: Color, modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "$value/$maxValue",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Spacer(modifier = Modifier.height(2.dp)) // Reduced spacing
+
+        LinearProgressIndicator(
+            progress = {
+                if (maxValue > 0) value.toFloat() / maxValue.toFloat() else 0f
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp),
+            color = color,
+            trackColor = color.copy(alpha = 0.2f)
+        )
     }
 }
 
@@ -351,50 +392,21 @@ fun CompactLevelProgressSection(
     }
 }
 
-@Composable
-private fun StatBar(
-    label: String, value: Int, maxValue: Int, color: Color, modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "$value/$maxValue",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        Spacer(modifier = Modifier.height(2.dp)) // Reduced spacing
-
-        LinearProgressIndicator(
-            progress = {
-                if (maxValue > 0) value.toFloat() / maxValue.toFloat() else 0f
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp),
-            color = color,
-            trackColor = color.copy(alpha = 0.2f)
-        )
-    }
-}
-
 
 @Composable
 fun TaskProgressSection(
     tasksCompleted: Int,
     totalTasksForLevel: Int,
-    totalTasksCompletedCount: Int,  // Use these values directly
-    taskStreakCount: Int
+    totalTasksCompletedCount: Int,  // Total completed tasks count
+    taskStreakCount: Int = 0        // Set to 0 to remove streak functionality
 ) {
     val taskInfoColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    // Log the values to verify they're being passed correctly
+    LaunchedEffect(tasksCompleted, totalTasksCompletedCount) {
+        Log.d("TaskProgressSection", "Progress: $tasksCompleted/$totalTasksForLevel, " +
+                "Total completed: $totalTasksCompletedCount")
+    }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -423,9 +435,9 @@ fun TaskProgressSection(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Stats display - use the passed values directly
+                // Display total tasks completed, hide streak since it's disabled
                 Text(
-                    text = "Completed: $totalTasksCompletedCount | Streak: ${taskStreakCount}d",
+                    text = "Completed: $totalTasksCompletedCount",
                     style = MaterialTheme.typography.labelSmall,
                     color = taskInfoColor
                 )
@@ -500,7 +512,6 @@ fun TaskListSection(
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit
 ) {
-
     LazyColumn(
         modifier = Modifier
             .fillMaxHeight()
@@ -514,13 +525,11 @@ fun TaskListSection(
                 onDelete = { onDeleteTask(taskEntity.id) })
         }
 
-
         item {
             Spacer(modifier = Modifier.height(70.dp))
         }
     }
 }
-
 
 @Composable
 fun TaskItem(

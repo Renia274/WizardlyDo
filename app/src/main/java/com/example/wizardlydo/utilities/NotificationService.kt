@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.OneTimeWorkRequestBuilder
@@ -19,7 +20,8 @@ import java.util.concurrent.TimeUnit
 
 class TaskNotificationService(private val context: Context) {
 
-    private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val notificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     companion object {
         private const val TASK_CHANNEL_ID = "task_reminder"
@@ -126,8 +128,13 @@ class TaskNotificationService(private val context: Context) {
         notificationManager.notify(0, summaryNotification)
     }
 
-    // New method to show task completion notification with HP reward
-    fun showTaskCompletionNotification(task: Task, wizardProfile: WizardProfile, hpGained: Int) {
+    // Updated method to show task completion notification with HP and stamina rewards
+    fun showTaskCompletionNotification(
+        task: Task,
+        wizardProfile: WizardProfile,
+        hpGained: Int,
+        staminaGained: Int = 0
+    ) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -139,21 +146,35 @@ class TaskNotificationService(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Log the values being sent to notification
+        Log.d(
+            "TaskNotificationService", "Showing completion notification: " +
+                    "HP Gained: $hpGained, Stamina Gained: $staminaGained, " +
+                    "Current HP: ${wizardProfile.health}/${wizardProfile.maxHealth}, " +
+                    "Current Stamina: ${wizardProfile.stamina}, " +
+                    "Level: ${wizardProfile.level}, " +
+                    "Total Tasks: ${wizardProfile.totalTasksCompleted}"
+        )
+
         // Create progress level info
         val levelInfo = calculateLevelProgressInfo(wizardProfile.level, wizardProfile.experience)
 
-        // Build notification style
+        // Build notification style with HP and stamina instead of XP
         val style = NotificationCompat.BigTextStyle()
             .setBigContentTitle("Task Completed!")
-            .bigText("""
+            .bigText(
+                """
                 ${task.title} has been completed!
                 
                 HP gained: +$hpGained
+                Stamina gained: +$staminaGained
                 Current HP: ${wizardProfile.health}/${wizardProfile.maxHealth}
+                Current Stamina: ${wizardProfile.stamina}/100
                 Level: ${wizardProfile.level} (${levelInfo.tasksToNextLevel} tasks to next level)
                 
                 Keep up the good work!
-            """.trimIndent())
+            """.trimIndent()
+            )
 
         // Set notification color based on priority
         val color = when (task.priority) {
@@ -165,7 +186,7 @@ class TaskNotificationService(private val context: Context) {
         val builder = NotificationCompat.Builder(context, TASK_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_complete)
             .setContentTitle("Task Completed!")
-            .setContentText("${task.title} completed! HP gained: +$hpGained")
+            .setContentText("${task.title} completed! HP +$hpGained, Stamina +$staminaGained")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setContentIntent(pendingIntent)
@@ -186,81 +207,17 @@ class TaskNotificationService(private val context: Context) {
     // Helper method to calculate level progression details
     private fun calculateLevelProgressInfo(level: Int, experience: Int): LevelProgressInfo {
         val expPerLevel = 1000
-        val tasksPerExp = when {
-            level < 5 -> 4
-            level < 8 -> 6
-            else -> 10
-        }
-
-        val expToNextLevel = expPerLevel - experience
-        val tasksToNextLevel = (expToNextLevel / (expPerLevel / tasksPerExp)).coerceAtLeast(1)
         val totalTasksForLevel = when {
             level < 5 -> 4
             level < 8 -> 6
             else -> 10
         }
 
+        val expPerTask = expPerLevel / totalTasksForLevel
+        val expToNextLevel = expPerLevel - experience
+        val tasksToNextLevel = (expToNextLevel / expPerTask.toFloat()).toInt().coerceAtLeast(1)
+
         return LevelProgressInfo(tasksToNextLevel, totalTasksForLevel)
-    }
-
-    fun scheduleTaskNotification(task: Task) {
-        task.dueDate?.let { dueDate ->
-            val currentTime = System.currentTimeMillis()
-
-            // Calculate the notification times
-            // 1. If due date is more than 3 days away, schedule for 3 days before
-            // 2. If due date is less than 3 days away but more than 1 day, schedule for 1 day before
-            // 3. If due date is less than 1 day away, schedule for 1 hour before
-            // 4. Also schedule for the exact due time
-
-            val threeDaysInMillis = 3 * 24 * 60 * 60 * 1000L
-            val oneDayInMillis = 24 * 60 * 60 * 1000L
-            val oneHourInMillis = 60 * 60 * 1000L
-
-            val timeUntilDue = dueDate - currentTime
-
-            if (timeUntilDue > 0) {
-                val scheduleTimes = mutableListOf<Long>()
-
-                // Add specific reminders based on how far away the due date is
-                if (timeUntilDue > threeDaysInMillis) {
-                    scheduleTimes.add(dueDate - threeDaysInMillis) // 3 days before
-                }
-
-                if (timeUntilDue > oneDayInMillis) {
-                    scheduleTimes.add(dueDate - oneDayInMillis) // 1 day before
-                }
-
-                if (timeUntilDue > oneHourInMillis) {
-                    scheduleTimes.add(dueDate - oneHourInMillis) // 1 hour before
-                }
-
-                // Add exact due time reminder
-                scheduleTimes.add(dueDate)
-
-                // Schedule each notification
-                scheduleTimes.forEachIndexed { index, scheduleTime ->
-                    val delayMillis = scheduleTime - currentTime
-                    if (delayMillis > 0) {
-                        val notificationWorkRequest = OneTimeWorkRequestBuilder<TaskNotificationWorker>()
-                            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-                            .setInputData(
-                                workDataOf(
-                                    "TASK_ID" to task.id,
-                                    "TASK_TITLE" to task.title,
-                                    "TASK_DESCRIPTION" to task.description,
-                                    "TASK_PRIORITY" to task.priority.name,
-                                    "TASK_DUE_DATE" to task.dueDate
-                                )
-                            )
-                            .build()
-
-                        WorkManager.getInstance(context)
-                            .enqueue(notificationWorkRequest)
-                    }
-                }
-            }
-        }
     }
 
     fun showTaskCreatedNotification(task: Task) {
@@ -314,10 +271,12 @@ class TaskNotificationService(private val context: Context) {
                 builder.setColorized(true)
                     .setColor(ContextCompat.getColor(context, R.color.high_priority))
             }
+
             Priority.MEDIUM -> {
                 builder.setColorized(true)
                     .setColor(ContextCompat.getColor(context, R.color.medium_priority))
             }
+
             Priority.LOW -> {
                 builder.setColorized(true)
                     .setColor(ContextCompat.getColor(context, R.color.low_priority))
@@ -326,6 +285,67 @@ class TaskNotificationService(private val context: Context) {
 
         // Show the notification
         notificationManager.notify(task.id + 100000, builder.build())
+    }
+
+    fun scheduleTaskNotification(task: Task) {
+        task.dueDate?.let { dueDate ->
+            val currentTime = System.currentTimeMillis()
+
+            // Calculate the notification times
+            // 1. If due date is more than 3 days away, schedule for 3 days before
+            // 2. If due date is less than 3 days away but more than 1 day, schedule for 1 day before
+            // 3. If due date is less than 1 day away, schedule for 1 hour before
+            // 4. Also schedule for the exact due time
+
+            val threeDaysInMillis = 3 * 24 * 60 * 60 * 1000L
+            val oneDayInMillis = 24 * 60 * 60 * 1000L
+            val oneHourInMillis = 60 * 60 * 1000L
+
+            val timeUntilDue = dueDate - currentTime
+
+            if (timeUntilDue > 0) {
+                val scheduleTimes = mutableListOf<Long>()
+
+                // Add specific reminders based on how far away the due date is
+                if (timeUntilDue > threeDaysInMillis) {
+                    scheduleTimes.add(dueDate - threeDaysInMillis) // 3 days before
+                }
+
+                if (timeUntilDue > oneDayInMillis) {
+                    scheduleTimes.add(dueDate - oneDayInMillis) // 1 day before
+                }
+
+                if (timeUntilDue > oneHourInMillis) {
+                    scheduleTimes.add(dueDate - oneHourInMillis) // 1 hour before
+                }
+
+                // Add exact due time reminder
+                scheduleTimes.add(dueDate)
+
+                // Schedule each notification
+                scheduleTimes.forEachIndexed { index, scheduleTime ->
+                    val delayMillis = scheduleTime - currentTime
+                    if (delayMillis > 0) {
+                        val notificationWorkRequest =
+                            OneTimeWorkRequestBuilder<TaskNotificationWorker>()
+                                .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+                                .setInputData(
+                                    workDataOf(
+                                        "TASK_ID" to task.id,
+                                        "TASK_TITLE" to task.title,
+                                        "TASK_DESCRIPTION" to task.description,
+                                        "TASK_PRIORITY" to task.priority.name,
+                                        "TASK_DUE_DATE" to task.dueDate
+                                    )
+                                )
+                                .build()
+
+                        WorkManager.getInstance(context)
+                            .enqueue(notificationWorkRequest)
+                    }
+                }
+            }
+        }
     }
 
     fun cancelTaskNotification(taskId: Int) {
