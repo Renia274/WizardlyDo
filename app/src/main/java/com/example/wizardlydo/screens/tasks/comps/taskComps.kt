@@ -32,20 +32,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,6 +77,7 @@ import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.data.models.TaskFilter
+import com.example.wizardlydo.viewmodel.TaskViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -754,7 +760,9 @@ fun PriorityIndicator(priority: Priority) {
 
 @Composable
 fun TaskBottomBar(
-    onHome: () -> Unit, onEditMode: () -> Unit, onSettings: () -> Unit
+    onHome: () -> Unit,
+    onSettings: () -> Unit,
+    onSearch: () -> Unit
 ) {
     BottomAppBar {
         Row(
@@ -767,9 +775,13 @@ fun TaskBottomBar(
             IconButton(onClick = onHome) {
                 Icon(Icons.Default.Home, contentDescription = "Home")
             }
-            IconButton(onClick = onEditMode) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit")
+
+            IconButton(onClick = onSearch) {
+                Icon(Icons.Default.Search, contentDescription = "Search")
             }
+
+
+            // Settings icon
             IconButton(onClick = onSettings) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings")
             }
@@ -844,3 +856,164 @@ fun EmptyTaskList() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TaskSearchBar(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onCloseSearch: () -> Unit,
+    selectedFilter: TaskFilter,
+    onFilterChange: (TaskFilter) -> Unit,
+    selectedPriority: Priority?,
+    onPriorityChange: (Priority?) -> Unit,
+    viewModel: TaskViewModel, // Added ViewModel parameter
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var inputText by remember { mutableStateOf(searchQuery) } // Local state for input field
+
+    // Effect to update local input state when searchQuery changes
+    LaunchedEffect(searchQuery) {
+        inputText = searchQuery
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        // Search bar
+        SearchBar(
+            query = inputText, // Use local state for input
+            onQueryChange = { newText ->
+                inputText = newText
+                onSearchQueryChange(newText)
+            },
+            onSearch = {
+                // Apply search on submit
+                viewModel.activateSearch()
+                expanded = false
+            },
+            active = expanded,
+            onActiveChange = { isActive ->
+                expanded = isActive
+                // When closing without search button, apply filters anyway
+                if (!isActive && inputText.isNotEmpty()) {
+                    viewModel.activateSearch()
+                }
+            },
+            placeholder = { Text("Search tasks...") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search"
+                )
+            },
+            trailingIcon = {
+                IconButton(onClick = {
+                    // Reset input and deactivate search
+                    inputText = ""
+                    onSearchQueryChange("")
+                    viewModel.deactivateSearch()
+                    onCloseSearch()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close Search"
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Filter options inside the expanded search bar
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+
+
+                // Priority filter
+                Text(
+                    text = "Priority",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // "Any" option
+                    FilterChip(
+                        selected = selectedPriority == null,
+                        onClick = { onPriorityChange(null) },
+                        label = { Text("Any") }
+                    )
+
+                    // Priority options
+                    Priority.entries.forEach { priority ->
+                        FilterChip(
+                            selected = selectedPriority == priority,
+                            onClick = { onPriorityChange(priority) },
+                            label = { Text(priority.name) },
+                            leadingIcon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(
+                                            color = when (priority) {
+                                                Priority.LOW -> Color.Green
+                                                Priority.MEDIUM -> Color.Yellow
+                                                Priority.HIGH -> Color.Red
+                                            },
+                                            shape = CircleShape
+                                        )
+                                )
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Task filter
+                Text(
+                    text = "Task Type",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TaskFilter.entries.forEach { filter ->
+                        FilterChip(
+                            selected = selectedFilter == filter,
+                            onClick = { onFilterChange(filter) },
+                            label = { Text(filter.name) }
+                        )
+                    }
+                }
+
+                // Apply button
+                Button(
+                    onClick = {
+                        viewModel.activateSearch()
+                        expanded = false
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                ) {
+                    Text("Apply Filters")
+                }
+            }
+        }
+    }
+}

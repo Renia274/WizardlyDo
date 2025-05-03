@@ -1,5 +1,6 @@
 package com.example.wizardlydo.data.models
 
+import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardProfile
 
@@ -15,7 +16,13 @@ data class TaskUiState(
 
     // Pagination support
     val currentPage: Int = 1,
-    val totalPages: Int = 1
+    val totalPages: Int = 1,
+
+    // Search parameters
+    val searchActive: Boolean = false,
+    val searchQuery: String = "",
+    val selectedPriority: Priority? = null,
+    val taskType: TaskFilter = TaskFilter.ALL
 )
 
 enum class TaskFilter { ALL, ACTIVE, COMPLETED, DAILY }

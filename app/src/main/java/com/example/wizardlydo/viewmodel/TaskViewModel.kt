@@ -43,6 +43,12 @@ class TaskViewModel(
     private val mutableEditTaskState = MutableStateFlow(EditTaskState())
     val editTaskState = mutableEditTaskState.asStateFlow()
 
+    // Search and filter state
+    private val searchQuery = MutableStateFlow("")
+    private val selectedPriority = MutableStateFlow<Priority?>(null)
+    private val taskType = MutableStateFlow(TaskFilter.ALL)
+    private val searchActive = MutableStateFlow(false)
+
     // Track if a task was recently created
     private var taskRecentlyCreated = false
     private var recentlyCreatedTaskId: Int? = null
@@ -53,8 +59,11 @@ class TaskViewModel(
 
     // Pagination settings
     private val pageSize = 10
-    private val _currentPage = MutableStateFlow(1)
-    val currentPage = _currentPage.asStateFlow()
+    private val currentPage = MutableStateFlow(1)
+    val currentPageState = currentPage.asStateFlow()
+
+    // Original unfiltered tasks list
+    private var allTasks = listOf<Task>()
 
     companion object {
         private const val EXP_PER_LEVEL = 1000
@@ -75,40 +84,119 @@ class TaskViewModel(
     }
 
     fun nextPage() {
-        _currentPage.value++
+        currentPage.value++
         updateFilteredTasks()
     }
 
     fun previousPage() {
-        if (_currentPage.value > 1) {
-            _currentPage.value--
+        if (currentPage.value > 1) {
+            currentPage.value--
             updateFilteredTasks()
         }
     }
 
+    fun activateSearch() {
+        searchActive.value = true
+        updateState()
+    }
+
+    fun deactivateSearch() {
+        searchActive.value = false
+        resetSearchFilters()
+        updateState()
+    }
+
+    fun applySearchFilters(query: String, priority: Priority?, type: TaskFilter) {
+        searchQuery.value = query
+        selectedPriority.value = priority
+        taskType.value = type
+        searchActive.value = true
+
+        currentPage.value = 1 // Reset to first page when applying new filters
+        updateFilteredTasks()
+    }
+
+    fun resetSearchFilters() {
+        searchQuery.value = ""
+        selectedPriority.value = null
+        taskType.value = TaskFilter.ALL
+
+        currentPage.value = 1 // Reset to first page
+        updateFilteredTasks()
+    }
+
+    private fun updateState() {
+        mutableState.update { state ->
+            state.copy(
+                searchActive = searchActive.value,
+                searchQuery = searchQuery.value,
+                selectedPriority = selectedPriority.value,
+                taskType = taskType.value
+            )
+        }
+    }
+
     private fun updateFilteredTasks() {
-        val currentTasks = uiState.value.tasks
-        val currentFilter = uiState.value.currentFilter
-        val filteredTasks = filterTasks(currentTasks, currentFilter)
+        val searchFilters = applySearchFiltersToTasks(allTasks)
+        val currentFilterTasks = filterTasks(searchFilters, uiState.value.currentFilter)
 
         // Apply pagination
-        val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
-        val currentPageValue = _currentPage.value.coerceIn(1, maxOf(1, totalPages))
+        val totalPages = (currentFilterTasks.size + pageSize - 1) / pageSize
+        val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
         val start = (currentPageValue - 1) * pageSize
-        val end = minOf(start + pageSize, filteredTasks.size)
+        val end = minOf(start + pageSize, currentFilterTasks.size)
 
-        val paginatedTasks = if (filteredTasks.isEmpty()) {
+        val paginatedTasks = if (currentFilterTasks.isEmpty()) {
             emptyList()
         } else {
-            filteredTasks.subList(start, end)
+            currentFilterTasks.subList(start, end)
         }
 
         mutableState.update { it.copy(
             filteredTasks = paginatedTasks,
             totalPages = totalPages,
-            currentPage = currentPageValue
+            currentPage = currentPageValue,
+            searchActive = searchActive.value,
+            searchQuery = searchQuery.value,
+            selectedPriority = selectedPriority.value,
+            taskType = taskType.value
         ) }
+    }
+
+    private fun applySearchFiltersToTasks(tasks: List<Task>): List<Task> {
+        // If search is not active, return all tasks
+        if (!searchActive.value) {
+            return tasks
+        }
+
+        var filteredTasks = tasks
+
+        // Apply text search if not empty
+        if (searchQuery.value.isNotBlank()) {
+            val searchTerms = searchQuery.value.lowercase().trim()
+            filteredTasks = filteredTasks.filter { task ->
+                task.title.lowercase().contains(searchTerms) ||
+                        task.description.lowercase().contains(searchTerms) ||
+                        task.category?.lowercase()?.contains(searchTerms) == true
+            }
+        }
+
+        // Apply priority filter if selected
+        selectedPriority.value?.let { priority ->
+            filteredTasks = filteredTasks.filter { it.priority == priority }
+        }
+
+        // Apply task type filter
+
+        filteredTasks = when (taskType.value) {
+            TaskFilter.ALL -> filteredTasks
+            TaskFilter.DAILY -> filteredTasks.filter { it.isDaily }
+            TaskFilter.ACTIVE -> filteredTasks.filter { !it.isCompleted }
+            TaskFilter.COMPLETED -> filteredTasks.filter { it.isCompleted }
+        }
+
+        return filteredTasks
     }
 
     fun createTask(task: Task) {
@@ -187,20 +275,24 @@ class TaskViewModel(
                     emptyList()
                 }
 
-                val currentFilter = uiState.value.currentFilter
-                val filteredTasks = filterTasks(tasks, currentFilter)
+                // Store all tasks for filtering
+                allTasks = tasks
+
+                // Apply search filters if active, otherwise use regular filtering
+                val searchFiltered = applySearchFiltersToTasks(tasks)
+                val currentFilterTasks = filterTasks(searchFiltered, uiState.value.currentFilter)
 
                 // Calculate pagination info
-                val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
-                val currentPageValue = _currentPage.value.coerceIn(1, maxOf(1, totalPages))
+                val totalPages = (currentFilterTasks.size + pageSize - 1) / pageSize
+                val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
                 val start = (currentPageValue - 1) * pageSize
-                val end = minOf(start + pageSize, filteredTasks.size)
+                val end = minOf(start + pageSize, currentFilterTasks.size)
 
-                val paginatedTasks = if (filteredTasks.isEmpty()) {
+                val paginatedTasks = if (currentFilterTasks.isEmpty()) {
                     emptyList()
                 } else {
-                    filteredTasks.subList(start, end)
+                    currentFilterTasks.subList(start, end)
                 }
 
                 // Set the profile directly in the state update with null check
@@ -212,7 +304,11 @@ class TaskViewModel(
                         totalPages = totalPages,
                         currentPage = currentPageValue,
                         isLoading = false,
-                        onFilterChange = { filter -> setFilter(filter) }
+                        onFilterChange = { filter -> setFilter(filter) },
+                        searchActive = searchActive.value,
+                        searchQuery = searchQuery.value,
+                        selectedPriority = selectedPriority.value,
+                        taskType = taskType.value
                     )
                 }
 
@@ -369,20 +465,25 @@ class TaskViewModel(
     private suspend fun loadTasksOnly(userId: String) {
         try {
             val tasks = taskRepository.getAllTasks(userId)
-            val currentFilter = uiState.value.currentFilter
-            val filteredTasks = filterTasks(tasks, currentFilter)
+
+            // Update the all tasks list
+            allTasks = tasks
+
+            // Apply search filters if active
+            val searchFiltered = applySearchFiltersToTasks(tasks)
+            val currentFilterTasks = filterTasks(searchFiltered, uiState.value.currentFilter)
 
             // Apply pagination
-            val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
-            val currentPageValue = _currentPage.value.coerceIn(1, maxOf(1, totalPages))
+            val totalPages = (currentFilterTasks.size + pageSize - 1) / pageSize
+            val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
             val start = (currentPageValue - 1) * pageSize
-            val end = minOf(start + pageSize, filteredTasks.size)
+            val end = minOf(start + pageSize, currentFilterTasks.size)
 
-            val paginatedTasks = if (filteredTasks.isEmpty()) {
+            val paginatedTasks = if (currentFilterTasks.isEmpty()) {
                 emptyList()
             } else {
-                filteredTasks.subList(start, end)
+                currentFilterTasks.subList(start, end)
             }
 
             mutableState.update { state ->
@@ -568,9 +669,11 @@ class TaskViewModel(
     }
 
     fun setFilter(filter: TaskFilter) {
-        _currentPage.value = 1 // Reset to first page when changing filter
+        currentPage.value = 1 // Reset to first page when changing filter
         mutableState.update { state ->
-            val filteredTasks = filterTasks(state.tasks, filter)
+            // Apply search filters if active
+            val searchFiltered = applySearchFiltersToTasks(allTasks)
+            val filteredTasks = filterTasks(searchFiltered, filter)
 
             // Apply pagination
             val totalPages = (filteredTasks.size + pageSize - 1) / pageSize

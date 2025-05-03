@@ -148,9 +148,6 @@ fun NavigationGraph() {
                 onEditTask = { taskId ->
                     navController.navigate(Screen.Tasks.EditTask.createRoute(taskId.toString()))
                 },
-                onEditMode = {
-                    navController.navigate(Screen.Tasks.EditMode.route)
-                },
                 onSettings = {
                     navController.navigate(Screen.Tasks.Settings.route)
                 },

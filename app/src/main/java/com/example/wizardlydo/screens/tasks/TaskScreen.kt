@@ -57,6 +57,7 @@ import com.example.wizardlydo.screens.tasks.comps.LevelUpIndicator
 import com.example.wizardlydo.screens.tasks.comps.TaskBottomBar
 import com.example.wizardlydo.screens.tasks.comps.TaskFilterChips
 import com.example.wizardlydo.screens.tasks.comps.TaskListSection
+import com.example.wizardlydo.screens.tasks.comps.TaskSearchBar
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.utilities.TaskNotificationService
 import com.example.wizardlydo.viewmodel.TaskViewModel
@@ -76,7 +77,6 @@ fun TaskScreen(
     onHome: () -> Unit,
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
-    onEditMode: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -84,6 +84,11 @@ fun TaskScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
+
+    // Search state
+    var isSearchVisible by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedPriority by remember { mutableStateOf<Priority?>(null) }
 
     // Get current wizard profile and guarantee it's not null for UI updates
     val wizardProfile = state.wizardProfile?.getOrNull()
@@ -94,16 +99,6 @@ fun TaskScreen(
     val currentStamina = wizardProfile?.stamina ?: 50
     val currentLevel = wizardProfile?.level ?: 1
     val currentExp = wizardProfile?.experience ?: 0
-
-    // Log current profile state for debugging
-    LaunchedEffect(wizardProfile) {
-        wizardProfile?.let {
-            Log.d("TaskScreen", "Profile updated: Level=${it.level}, " +
-                    "HP=${it.health}/${it.maxHealth}, " +
-                    "Stamina=${it.stamina}, " +
-                    "XP=${it.experience}")
-        }
-    }
 
     // Calculate task progression
     val (completedTasks, totalTasksForLevel) = remember(wizardProfile) {
@@ -124,6 +119,26 @@ fun TaskScreen(
     LaunchedEffect(Unit) {
         viewModel.loadData()
         viewModel.setNotificationService(taskNotificationService)
+    }
+
+    // Apply search filters when they change
+    LaunchedEffect(searchQuery, selectedPriority, state.currentFilter) {
+        if (isSearchVisible) {
+            viewModel.applySearchFilters(
+                query = searchQuery,
+                priority = selectedPriority,
+                type = state.currentFilter
+            )
+        }
+    }
+
+    // Track search visibility
+    LaunchedEffect(isSearchVisible) {
+        if (isSearchVisible) {
+            viewModel.activateSearch()
+        } else {
+            viewModel.deactivateSearch()
+        }
     }
 
     // Notification permission and badge state
@@ -178,49 +193,73 @@ fun TaskScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Task Manager") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    Box {
-                        IconButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    val tasks = viewModel.getUpcomingTasksSync()
-                                    if (tasks.isNotEmpty()) {
-                                        taskNotificationService.showTaskSummaryNotification(tasks)
-                                        showNotificationBadge = false
-                                    } else {
-                                        snackbarHostState.showSnackbar(
-                                            message = "No upcoming tasks found",
-                                            duration = SnackbarDuration.Short
-                                        )
+            if (isSearchVisible) {
+                // Show search bar when search is active
+                TaskSearchBar(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it },
+                    onCloseSearch = {
+                        isSearchVisible = false
+                        searchQuery = ""
+                        selectedPriority = null
+                        viewModel.deactivateSearch()
+                    },
+                    selectedFilter = state.currentFilter,
+                    onFilterChange = { viewModel.setFilter(it) },
+                    selectedPriority = selectedPriority,
+                    onPriorityChange = { selectedPriority = it },
+                    viewModel = viewModel
+                )
+            } else {
+                // Show regular top app bar when search is not active
+                TopAppBar(
+                    title = { Text("Task Manager") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                    },
+                    actions = {
+                        Box {
+                            IconButton(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        val tasks = viewModel.getUpcomingTasksSync()
+                                        if (tasks.isNotEmpty()) {
+                                            taskNotificationService.showTaskSummaryNotification(tasks)
+                                            showNotificationBadge = false
+                                        } else {
+                                            snackbarHostState.showSnackbar(
+                                                message = "No upcoming tasks found",
+                                                duration = SnackbarDuration.Short
+                                            )
+                                        }
                                     }
                                 }
+                            ) {
+                                Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
                             }
-                        ) {
-                            Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
-                        }
-                        if (showNotificationBadge) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .background(Color.Red, CircleShape)
-                                    .align(Alignment.TopStart)
-                            )
+                            if (showNotificationBadge) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .background(Color.Red, CircleShape)
+                                        .align(Alignment.TopStart)
+                                )
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         },
         bottomBar = {
             TaskBottomBar(
                 onHome = onHome,
-                onEditMode = onEditMode,
+                onSearch = {
+                    isSearchVisible = true
+                    viewModel.activateSearch()
+                },
+
                 onSettings = onSettings
             )
         },
@@ -302,10 +341,9 @@ fun TaskContent(
     }
 
     Column(modifier.fillMaxSize()) {
-        // Pass the direct values to CharacterStatsSection
-        // If wizardProfile is null, we still want to show stats using the direct values
+
         CharacterStatsSection(
-            wizardResult = state.wizardProfile,  // Use the original state.wizardProfile directly
+            wizardResult = state.wizardProfile,
             modifier = Modifier.padding(vertical = 4.dp),
             health = health,
             maxHealth = maxHealth,
@@ -313,7 +351,6 @@ fun TaskContent(
             experience = experience,
             tasksCompleted = tasksCompleted,
             totalTasksForLevel = totalTasksForLevel
-            // Removed totalTasksCompletedCount and taskStreakCount as requested
         )
 
         // Show level up indicator
