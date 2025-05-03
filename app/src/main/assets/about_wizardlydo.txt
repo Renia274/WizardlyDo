@@ -1,0 +1,4 @@
+WizardlyDo: A Gamified To-Do List App
+WizardlyDo turns your boring task list into an exciting adventure! Complete tasks to gain experience and level up your wizard character.
+⚠️ Task Warning System ⚠️
+Your wizard takes damage when tasks are overdue. If health reaches zero, you'll need to revive your character! Stay on top of your tasks to keep your wizard healthy and strong.

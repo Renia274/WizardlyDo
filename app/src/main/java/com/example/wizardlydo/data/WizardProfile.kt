@@ -55,7 +55,8 @@ data class WizardProfile(
     val reminderEnabled: Boolean = true,
     val reminderDays: Int = 1,
     val inAppNotificationsEnabled: Boolean = true,
-    val damageNotificationsEnabled: Boolean = true
+    val damageNotificationsEnabled: Boolean = true,
+    val darkModeEnabled: Boolean = false
 
 )
 

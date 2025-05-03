@@ -25,49 +25,113 @@ class SettingsViewModel(
 ) : ViewModel() {
     private val auth: FirebaseAuth = Firebase.auth
 
+    private val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    private val DARK_MODE_KEY = "dark_mode"
 
-    // State for settings
     private val stateFlow = MutableStateFlow(
         SettingsState(
             email = auth.currentUser?.email,
-            reminderEnabled = true,
-            reminderDays = 1,
-            inAppNotificationsEnabled = false,
-            damageNotificationsEnabled = false,
-            emailNotificationsEnabled = false
+            wizardName = "",
+            darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
         )
     )
     val state: StateFlow<SettingsState> = stateFlow.asStateFlow()
 
+    private val aboutTitleFlow = MutableStateFlow("")
+    val aboutTitle: StateFlow<String> = aboutTitleFlow.asStateFlow()
 
+    private val aboutDescriptionFlow = MutableStateFlow("")
+    val aboutDescription: StateFlow<String> = aboutDescriptionFlow.asStateFlow()
+
+    private val warningTitleFlow = MutableStateFlow("")
+    val warningTitle: StateFlow<String> = warningTitleFlow.asStateFlow()
+
+    private val warningDescriptionFlow = MutableStateFlow("")
+    val warningDescription: StateFlow<String> = warningDescriptionFlow.asStateFlow()
 
     init {
         loadSettings()
+        loadAboutText()
     }
-
-
-
-
 
     private fun loadSettings() {
         viewModelScope.launch {
             auth.currentUser?.uid?.let { userId ->
                 wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
+                    // Save dark mode from profile to shared preferences if it exists
+                    profile.darkModeEnabled.let { darkMode ->
+                        sharedPreferences.edit().putBoolean(DARK_MODE_KEY, darkMode).apply()
+                    }
+
                     stateFlow.value = stateFlow.value.copy(
                         email = auth.currentUser?.email,
-                        reminderEnabled = profile.reminderEnabled,
-                        reminderDays = profile.reminderDays,
-                        damageNotificationsEnabled = profile.damageNotificationsEnabled,
-                        emailNotificationsEnabled = profile.emailNotificationsEnabled
+                        wizardName = profile.wizardName,
+                        darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
                     )
                 }
             }
         }
     }
 
+    private fun loadAboutText() {
+        viewModelScope.launch {
+            try {
+                val inputStream = context.assets.open("about_wizardlydo.txt")
+                val size = inputStream.available()
+                val buffer = ByteArray(size)
+                inputStream.read(buffer)
+                inputStream.close()
 
+                val content = String(buffer, Charsets.UTF_8)
+                val lines = content.split("\n")
 
+                if (lines.size >= 4) {
+                    aboutTitleFlow.value = lines[0]
+                    aboutDescriptionFlow.value = lines[1]
+                    warningTitleFlow.value = lines[2]
+                    warningDescriptionFlow.value = lines[3]
+                }
+            } catch (e: Exception) {
+                // Set default values if the file can't be read
+                aboutTitleFlow.value = "WizardlyDo: A Gamified To-Do List App"
+                aboutDescriptionFlow.value = "WizardlyDo turns your boring task list into an exciting adventure! Complete tasks to gain experience and level up your wizard character."
+                warningTitleFlow.value = "⚠️ Task Warning System ⚠️"
+                warningDescriptionFlow.value = "Your wizard takes damage when tasks are overdue. If health reaches zero, you'll need to revive your character! Stay on top of your tasks to keep your wizard healthy and strong."
+            }
+        }
+    }
 
+    fun updateWizardName(name: String) {
+        viewModelScope.launch {
+            auth.currentUser?.uid?.let { userId ->
+                wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
+                    val updatedProfile = profile.copy(wizardName = name)
+                    wizardRepository.updateWizardProfile(userId, updatedProfile)
+                    stateFlow.value = stateFlow.value.copy(wizardName = name)
+                }
+            }
+        }
+    }
+
+    fun toggleDarkMode(enabled: Boolean) {
+        // Save to preferences
+        sharedPreferences.edit().putBoolean(DARK_MODE_KEY, enabled).apply()
+
+        // Update local state
+        stateFlow.value = stateFlow.value.copy(darkModeEnabled = enabled)
+
+        // Also update profile
+        viewModelScope.launch {
+            auth.currentUser?.uid?.let { userId ->
+                wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
+                    val updatedProfile = profile.copy(darkModeEnabled = enabled)
+                    wizardRepository.updateWizardProfile(userId, updatedProfile)
+                }
+            }
+        }
+
+        // No need to recreate activity here - the listener will handle it
+    }
 
     fun changePassword(
         newPassword: String,
@@ -121,10 +185,6 @@ class SettingsViewModel(
             }
         }
     }
-
-
-
-
 
     fun logout() {
         auth.signOut()
