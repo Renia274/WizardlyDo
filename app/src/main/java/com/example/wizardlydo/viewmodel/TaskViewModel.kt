@@ -51,9 +51,19 @@ class TaskViewModel(
     // Task notification service might be needed
     private var taskNotificationService: TaskNotificationService? = null
 
+    // Pagination settings
+    private val pageSize = 10
+    private val _currentPage = MutableStateFlow(1)
+    val currentPage = _currentPage.asStateFlow()
+
     companion object {
         private const val EXP_PER_LEVEL = 1000
         private const val MAX_WIZARD_HEALTH = 150 // Maximum health cap
+
+        // Define base stat increments
+        private const val BASE_XP_GAIN = 25 // Reduced from 50 for slower progression
+        private const val BASE_HP_GAIN = 5  // Reduced from 10 for slower progression
+        private const val BASE_STAMINA_GAIN = 7 // Reduced from 15 for slower progression
     }
 
     init {
@@ -62,6 +72,43 @@ class TaskViewModel(
 
     fun setNotificationService(service: TaskNotificationService) {
         taskNotificationService = service
+    }
+
+    fun nextPage() {
+        _currentPage.value++
+        updateFilteredTasks()
+    }
+
+    fun previousPage() {
+        if (_currentPage.value > 1) {
+            _currentPage.value--
+            updateFilteredTasks()
+        }
+    }
+
+    private fun updateFilteredTasks() {
+        val currentTasks = uiState.value.tasks
+        val currentFilter = uiState.value.currentFilter
+        val filteredTasks = filterTasks(currentTasks, currentFilter)
+
+        // Apply pagination
+        val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
+        val currentPageValue = _currentPage.value.coerceIn(1, maxOf(1, totalPages))
+
+        val start = (currentPageValue - 1) * pageSize
+        val end = minOf(start + pageSize, filteredTasks.size)
+
+        val paginatedTasks = if (filteredTasks.isEmpty()) {
+            emptyList()
+        } else {
+            filteredTasks.subList(start, end)
+        }
+
+        mutableState.update { it.copy(
+            filteredTasks = paginatedTasks,
+            totalPages = totalPages,
+            currentPage = currentPageValue
+        ) }
     }
 
     fun createTask(task: Task) {
@@ -140,14 +187,30 @@ class TaskViewModel(
                     emptyList()
                 }
 
-                val filteredTasks = filterTasks(tasks, uiState.value.currentFilter)
+                val currentFilter = uiState.value.currentFilter
+                val filteredTasks = filterTasks(tasks, currentFilter)
 
-                // Critical: Set the profile directly in the state update with null check
+                // Calculate pagination info
+                val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
+                val currentPageValue = _currentPage.value.coerceIn(1, maxOf(1, totalPages))
+
+                val start = (currentPageValue - 1) * pageSize
+                val end = minOf(start + pageSize, filteredTasks.size)
+
+                val paginatedTasks = if (filteredTasks.isEmpty()) {
+                    emptyList()
+                } else {
+                    filteredTasks.subList(start, end)
+                }
+
+                // Set the profile directly in the state update with null check
                 mutableState.update {
                     it.copy(
                         wizardProfile = Result.success(wizardProfile),
                         tasks = tasks,
-                        filteredTasks = filteredTasks,
+                        filteredTasks = paginatedTasks,
+                        totalPages = totalPages,
+                        currentPage = currentPageValue,
                         isLoading = false,
                         onFilterChange = { filter -> setFilter(filter) }
                     )
@@ -190,6 +253,7 @@ class TaskViewModel(
                 }
 
                 // Calculate rewards based on priority and on-time status
+                // Using reduced base values for slower progression
                 val (hpGain, staminaGain, expGain) = calculateTaskEffects(
                     priority = task.priority,
                     isOnTime = task.dueDate?.let { System.currentTimeMillis() <= it } ?: true,
@@ -215,24 +279,27 @@ class TaskViewModel(
                     // Level up
                     newLevel++
                     newExperience -= EXP_PER_LEVEL
+
+                    // Increase max health when leveling up
                     newMaxHealth = (wizardProfile.maxHealth + 10).coerceAtMost(MAX_WIZARD_HEALTH)
 
-                    // Set to full health and stamina on level up
-                    actualHpGain = newMaxHealth - wizardProfile.health // Full heal on level up
-                    actualStaminaGain = 100 - wizardProfile.stamina // Full stamina on level up
-
+                    // Set health to the new maximum on level up
+                    actualHpGain = newMaxHealth - wizardProfile.health
                     newHealth = newMaxHealth
-                    newStamina = 100
+
+                    // Increase stamina by 25 on level up (but don't fully restore)
+                    actualStaminaGain = 25
+                    newStamina = (wizardProfile.stamina + 25).coerceAtMost(100)
 
                     Log.d("TaskViewModel", "Level up! New level: $newLevel, Health: $newHealth/$newMaxHealth, Stamina: $newStamina")
                 } else {
                     // Cap stats if not leveling up
                     newHealth = newHealth.coerceAtMost(wizardProfile.maxHealth)
-                    newStamina = (wizardProfile.stamina + staminaGain).coerceAtMost(100)
+                    newStamina = newStamina.coerceAtMost(100)
 
-                    // Calculate actual gain (may be limited by max values)
-                    actualHpGain = newHealth - wizardProfile.health
-                    actualStaminaGain = newStamina - wizardProfile.stamina
+                    // Use the actual calculated gains
+                    actualHpGain = hpGain
+                    actualStaminaGain = staminaGain
 
                     Log.d("TaskViewModel", "Task completed. Health: $newHealth/$newMaxHealth, Stamina: $newStamina")
                 }
@@ -274,8 +341,7 @@ class TaskViewModel(
                     staminaGained = actualStaminaGain
                 )
 
-                // CRITICAL: Update the UI state directly with the new profile
-                // This ensures UI updates even if database updates are slow
+                // Update the UI state immediately with the new profile
                 mutableState.update { currentState ->
                     currentState.copy(
                         wizardProfile = Result.success(updatedProfile),
@@ -303,12 +369,28 @@ class TaskViewModel(
     private suspend fun loadTasksOnly(userId: String) {
         try {
             val tasks = taskRepository.getAllTasks(userId)
-            val filteredTasks = filterTasks(tasks, uiState.value.currentFilter)
+            val currentFilter = uiState.value.currentFilter
+            val filteredTasks = filterTasks(tasks, currentFilter)
+
+            // Apply pagination
+            val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
+            val currentPageValue = _currentPage.value.coerceIn(1, maxOf(1, totalPages))
+
+            val start = (currentPageValue - 1) * pageSize
+            val end = minOf(start + pageSize, filteredTasks.size)
+
+            val paginatedTasks = if (filteredTasks.isEmpty()) {
+                emptyList()
+            } else {
+                filteredTasks.subList(start, end)
+            }
 
             mutableState.update { state ->
                 state.copy(
                     tasks = tasks,
-                    filteredTasks = filteredTasks
+                    filteredTasks = paginatedTasks,
+                    totalPages = totalPages,
+                    currentPage = currentPageValue
                 )
             }
         } catch (e: Exception) {
@@ -321,16 +403,16 @@ class TaskViewModel(
         isOnTime: Boolean,
         currentLevel: Int
     ): Triple<Int, Int, Int> {
-        // Base values
-        val baseHp = 10
-        val baseStamina = 15
-        val baseXp = 50
+        // Use lower base values for slower progression
+        val baseHp = BASE_HP_GAIN
+        val baseStamina = BASE_STAMINA_GAIN
+        val baseXp = BASE_XP_GAIN
 
-        // Level scaling
+        // Level scaling - make it more gradual
         val scale = when {
             currentLevel < 5 -> 1.0f
-            currentLevel < 8 -> 0.8f
-            else -> 0.6f
+            currentLevel < 8 -> 0.85f  // Less penalty for higher levels
+            else -> 0.7f  // Less penalty for highest levels
         }
 
         return when {
@@ -352,9 +434,9 @@ class TaskViewModel(
                 )
             }
             else -> when (priority) { // Overdue penalties
-                Priority.HIGH -> Triple(-20, -10, 5)
-                Priority.MEDIUM -> Triple(-15, -5, 3)
-                Priority.LOW -> Triple(-10, 0, 1)
+                Priority.HIGH -> Triple(-10, -5, 3)  // Reduced penalties
+                Priority.MEDIUM -> Triple(-7, -3, 2)  // Reduced penalties
+                Priority.LOW -> Triple(-5, 0, 1)  // Reduced penalties
             }
         }
     }
@@ -486,10 +568,26 @@ class TaskViewModel(
     }
 
     fun setFilter(filter: TaskFilter) {
+        _currentPage.value = 1 // Reset to first page when changing filter
         mutableState.update { state ->
+            val filteredTasks = filterTasks(state.tasks, filter)
+
+            // Apply pagination
+            val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
+            val start = 0
+            val end = minOf(pageSize, filteredTasks.size)
+
+            val paginatedTasks = if (filteredTasks.isEmpty()) {
+                emptyList()
+            } else {
+                filteredTasks.subList(start, end)
+            }
+
             state.copy(
                 currentFilter = filter,
-                filteredTasks = filterTasks(state.tasks, filter)
+                filteredTasks = paginatedTasks,
+                totalPages = totalPages,
+                currentPage = 1
             )
         }
     }
@@ -506,9 +604,10 @@ class TaskViewModel(
         mutableEditTaskState.value = EditTaskState()
     }
 
+    // Updated to show all tasks in ALL tab (both completed and non-completed)
     private fun filterTasks(tasks: List<Task>, filter: TaskFilter): List<Task> {
         return when (filter) {
-            TaskFilter.ALL -> tasks
+            TaskFilter.ALL -> tasks  // Show all tasks regardless of completion status
             TaskFilter.ACTIVE -> tasks.filter { !it.isCompleted }
             TaskFilter.COMPLETED -> tasks.filter { it.isCompleted }
             TaskFilter.DAILY -> tasks.filter { it.isDaily }
@@ -522,20 +621,21 @@ class TaskViewModel(
         val expToNextLevel = expPerLevel - wizardProfile.experience
 
         // Calculate tasks needed based on level-specific experience per task
+        // This will take more tasks now due to reduced XP gain
         return when {
             wizardProfile.level < 5 -> {
-                // Levels 1-4: 4 tasks per level (250 XP per task)
-                val expPerTask = 250
+                // Levels 1-4: ~10 tasks per level
+                val expPerTask = BASE_XP_GAIN + 10 // ~35 XP per task
                 ceil(expToNextLevel / expPerTask.toFloat()).toInt().coerceAtLeast(1)
             }
             wizardProfile.level < 8 -> {
-                // Levels 5-7: 6 tasks per level (~167 XP per task)
-                val expPerTask = 167
+                // Levels 5-7: ~15 tasks per level
+                val expPerTask = BASE_XP_GAIN + 5 // ~30 XP per task
                 ceil(expToNextLevel / expPerTask.toFloat()).toInt().coerceAtLeast(1)
             }
             else -> {
-                // Levels 8+: 10 tasks per level (100 XP per task)
-                val expPerTask = 100
+                // Levels 8+: ~20 tasks per level
+                val expPerTask = BASE_XP_GAIN // 25 XP per task
                 ceil(expToNextLevel / expPerTask.toFloat()).toInt().coerceAtLeast(1)
             }
         }

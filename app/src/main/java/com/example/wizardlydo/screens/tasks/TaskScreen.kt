@@ -32,7 +32,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -64,7 +63,6 @@ import com.example.wizardlydo.viewmodel.TaskViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -91,14 +89,11 @@ fun TaskScreen(
     val wizardProfile = state.wizardProfile?.getOrNull()
 
     // These state values will be updated directly from the wizard profile
-    // Critical: Use mutableStateOf instead of remember + mutableIntStateOf
-    // to ensure they're updated when collected from state flow
     val currentHealth = wizardProfile?.health ?: 100
     val currentMaxHealth = wizardProfile?.maxHealth ?: 100
     val currentStamina = wizardProfile?.stamina ?: 50
     val currentLevel = wizardProfile?.level ?: 1
     val currentExp = wizardProfile?.experience ?: 0
-    val totalTasksCompleted = wizardProfile?.totalTasksCompleted ?: 0
 
     // Log current profile state for debugging
     LaunchedEffect(wizardProfile) {
@@ -106,8 +101,7 @@ fun TaskScreen(
             Log.d("TaskScreen", "Profile updated: Level=${it.level}, " +
                     "HP=${it.health}/${it.maxHealth}, " +
                     "Stamina=${it.stamina}, " +
-                    "XP=${it.experience}, " +
-                    "Tasks completed=${it.totalTasksCompleted}")
+                    "XP=${it.experience}")
         }
     }
 
@@ -116,19 +110,18 @@ fun TaskScreen(
         derivedStateOf {
             wizardProfile?.let { profile ->
                 val totalNeeded = when {
-                    profile.level < 5 -> 4
-                    profile.level < 8 -> 6
-                    else -> 10
+                    profile.level < 5 -> 10  // Increased from 4 to 10 for slower progression
+                    profile.level < 8 -> 15  // Increased from 6 to 15 for slower progression
+                    else -> 20  // Increased from 10 to 20 for slower progression
                 }
                 val remaining = viewModel.getTasksToNextLevel(profile)
                 Pair((totalNeeded - remaining).coerceAtLeast(0), totalNeeded)
-            } ?: Pair(0, 4)
+            } ?: Pair(0, 10)  // Default to 10 tasks for level 1
         }
     }.value
 
     // Ensure we load data when the screen starts
     LaunchedEffect(Unit) {
-        Log.d("TaskScreen", "Initial data load")
         viewModel.loadData()
         viewModel.setNotificationService(taskNotificationService)
     }
@@ -247,8 +240,6 @@ fun TaskScreen(
             experience = currentExp,
             tasksCompleted = completedTasks,
             totalTasksForLevel = totalTasksForLevel,
-            totalTasksCompletedCount = totalTasksCompleted,
-            taskStreakCount = 0, // Set to 0 to remove streak functionality as requested
             onCompleteTask = { taskId ->
                 Log.d("TaskScreen", "Complete task clicked: $taskId")
                 coroutineScope.launch {
@@ -267,6 +258,8 @@ fun TaskScreen(
                     taskNotificationService.cancelTaskNotification(taskId)
                 }
             },
+            onNextPage = { viewModel.nextPage() },
+            onPreviousPage = { viewModel.previousPage() },
             onDamageTaken = { damage, currentHealth ->
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(
@@ -279,7 +272,6 @@ fun TaskScreen(
     }
 }
 
-
 @Composable
 fun TaskContent(
     modifier: Modifier = Modifier,
@@ -291,11 +283,11 @@ fun TaskContent(
     experience: Int,
     tasksCompleted: Int,
     totalTasksForLevel: Int,
-    totalTasksCompletedCount: Int,
-    taskStreakCount: Int = 0,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
+    onNextPage: () -> Unit = {},
+    onPreviousPage: () -> Unit = {},
     onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> }
 ) {
     // Debug log to verify proper content values
@@ -305,7 +297,7 @@ fun TaskContent(
                 "Stamina: $stamina, " +
                 "XP: $experience, " +
                 "Tasks: $tasksCompleted/$totalTasksForLevel, " +
-                "Total Completed: $totalTasksCompletedCount, " +
+                "Current page: ${state.currentPage}/${state.totalPages}, " +
                 "Wizard Profile null? ${wizardProfile == null}")
     }
 
@@ -320,9 +312,8 @@ fun TaskContent(
             stamina = stamina,
             experience = experience,
             tasksCompleted = tasksCompleted,
-            totalTasksForLevel = totalTasksForLevel,
-            totalTasksCompletedCount = totalTasksCompletedCount,
-            taskStreakCount = taskStreakCount
+            totalTasksForLevel = totalTasksForLevel
+            // Removed totalTasksCompletedCount and taskStreakCount as requested
         )
 
         // Show level up indicator
@@ -346,6 +337,10 @@ fun TaskContent(
                 state.filteredTasks.isEmpty() -> EmptyTaskList()
                 else -> TaskListSection(
                     tasks = state.filteredTasks,
+                    currentPage = state.currentPage,
+                    totalPages = state.totalPages,
+                    onNextPage = onNextPage,
+                    onPreviousPage = onPreviousPage,
                     onCompleteTask = { taskId ->
                         Log.d("TaskContent", "Completing task: $taskId")
                         onCompleteTask(taskId)
@@ -381,52 +376,58 @@ fun TaskContentPreview() {
         maxHealth = 100,
         stamina = 75,
         totalTasksCompleted = 15,
-        consecutiveTasksCompleted = 3,
+        consecutiveTasksCompleted = 0, // Set to 0 as streak is not used
         wizardClass = WizardClass.MYSTWEAVER
     )
+
+    // Create a list of sample tasks for preview
+    val sampleTasks = (1..15).map { index ->
+        Task(
+            id = index,
+            title = "Task $index",
+            description = "Description for task $index",
+            dueDate = if (index % 3 == 0) null else System.currentTimeMillis() + (index * 24 * 60 * 60 * 1000),
+            priority = when (index % 3) {
+                0 -> Priority.LOW
+                1 -> Priority.MEDIUM
+                else -> Priority.HIGH
+            },
+            userId = "",
+            isCompleted = index % 4 == 0, // Every 4th task is completed
+            createdAt = System.currentTimeMillis() - (index * 24 * 60 * 60 * 1000),
+            isDaily = index % 5 == 0, // Every 5th task is daily
+            category = when (index % 4) {
+                0 -> "Work"
+                1 -> "Personal"
+                2 -> "School"
+                else -> "Chores"
+            }
+        )
+    }
+
+    // Sample filtered tasks for the current page (first 5)
+    val paginatedTasks = sampleTasks.take(5)
 
     WizardlyDoTheme {
         TaskContent(
             state = TaskUiState(
                 isLoading = false,
                 wizardProfile = Result.success(wizardProfile),
-                filteredTasks = listOf(
-                    Task(
-                        id = 1,
-                        title = "Complete homework",
-                        description = "Math and science homework",
-                        dueDate = System.currentTimeMillis(),
-                        priority = Priority.HIGH,
-                        userId = "",
-                        isCompleted = false,
-                        createdAt = System.currentTimeMillis() - 86400000,
-                        isDaily = false,
-                        category = "School"
-                    ),
-                    Task(
-                        id = 2,
-                        title = "Go shopping",
-                        description = "Buy groceries",
-                        dueDate = System.currentTimeMillis() + 86400000,
-                        priority = Priority.MEDIUM,
-                        userId = "",
-                        isCompleted = true,
-                        createdAt = System.currentTimeMillis() - 172800000,
-                        isDaily = true,
-                        category = "Chores"
-                    )
-                ),
+                tasks = sampleTasks,
+                filteredTasks = paginatedTasks,
                 currentFilter = TaskFilter.ALL,
-                onFilterChange = {}
+                onFilterChange = {},
+                currentPage = 1,
+                totalPages = 3
             ),
             wizardProfile = wizardProfile,
             tasksCompleted = 2,
-            totalTasksForLevel = 6,
-            totalTasksCompletedCount = 15,
-            taskStreakCount = 3,
+            totalTasksForLevel = 10, // Increased from 6 to 10
             onCompleteTask = {},
             onEditTask = {},
             onDeleteTask = {},
+            onNextPage = {},
+            onPreviousPage = {},
             onDamageTaken = { _, _ -> },
             modifier = Modifier,
             health = 100,

@@ -30,6 +30,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -166,9 +168,7 @@ fun CharacterStatsSection(
     stamina: Int,  // Direct stamina value
     experience: Int,  // Direct experience value
     tasksCompleted: Int,
-    totalTasksForLevel: Int,
-    totalTasksCompletedCount: Int,
-    taskStreakCount: Int
+    totalTasksForLevel: Int
 ) {
     val wizardProfile = wizardResult?.getOrNull()
     val error = wizardResult?.exceptionOrNull()
@@ -178,8 +178,7 @@ fun CharacterStatsSection(
         Log.d("CharacterStatsSection", "Displaying stats - HP: $health/$maxHealth, " +
                 "Stamina: $stamina, XP: $experience, " +
                 "Level: ${wizardProfile?.level ?: 0}, " +
-                "Tasks: $tasksCompleted/$totalTasksForLevel, " +
-                "Total completed: $totalTasksCompletedCount")
+                "Tasks: $tasksCompleted/$totalTasksForLevel")
     }
 
     // Animate health and stamina changes for visual feedback
@@ -306,17 +305,16 @@ fun CharacterStatsSection(
                 totalTasksForLevel = totalTasksForLevel
             )
 
-            // Task progress section - pass all values directly including completion stats
+            // Task progress section - pass all values directly
             Spacer(modifier = Modifier.height(8.dp))
             TaskProgressSection(
                 tasksCompleted = tasksCompleted,
-                totalTasksForLevel = totalTasksForLevel,
-                totalTasksCompletedCount = totalTasksCompletedCount,
-                taskStreakCount = taskStreakCount
+                totalTasksForLevel = totalTasksForLevel
             )
         }
     }
 }
+
 @Composable
 private fun StatBar(
     label: String, value: Int, maxValue: Int, color: Color, modifier: Modifier = Modifier
@@ -397,16 +395,9 @@ fun CompactLevelProgressSection(
 fun TaskProgressSection(
     tasksCompleted: Int,
     totalTasksForLevel: Int,
-    totalTasksCompletedCount: Int,  // Total completed tasks count
-    taskStreakCount: Int = 0        // Set to 0 to remove streak functionality
+
 ) {
     val taskInfoColor = MaterialTheme.colorScheme.onSurfaceVariant
-
-    // Log the values to verify they're being passed correctly
-    LaunchedEffect(tasksCompleted, totalTasksCompletedCount) {
-        Log.d("TaskProgressSection", "Progress: $tasksCompleted/$totalTasksForLevel, " +
-                "Total completed: $totalTasksCompletedCount")
-    }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -422,10 +413,10 @@ fun TaskProgressSection(
                 .fillMaxWidth()
                 .padding(8.dp)
         ) {
-            // Header row
+            // Header row - removed completion counter
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -433,13 +424,6 @@ fun TaskProgressSection(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
-                )
-
-                // Display total tasks completed, hide streak since it's disabled
-                Text(
-                    text = "Completed: $totalTasksCompletedCount",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = taskInfoColor
                 )
             }
 
@@ -508,26 +492,89 @@ fun TaskFilterChips(
 @Composable
 fun TaskListSection(
     tasks: List<Task>,
+    currentPage: Int,
+    totalPages: Int,
+    onNextPage: () -> Unit,
+    onPreviousPage: () -> Unit,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit
 ) {
-    LazyColumn(
+    Column(
         modifier = Modifier
             .fillMaxHeight()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 16.dp)
     ) {
-        items(tasks) { taskEntity ->
-            TaskItem(taskEntity = taskEntity,
-                onComplete = { onCompleteTask(taskEntity.id) },
-                onEdit = { onEditTask(taskEntity.id) },
-                onDelete = { onDeleteTask(taskEntity.id) })
+        // Task list
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(tasks) { taskEntity ->
+                TaskItem(
+                    taskEntity = taskEntity,
+                    onComplete = { onCompleteTask(taskEntity.id) },
+                    onEdit = { onEditTask(taskEntity.id) },
+                    onDelete = { onDeleteTask(taskEntity.id) }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
 
-        item {
-            Spacer(modifier = Modifier.height(70.dp))
+        // Pagination controls at the bottom
+        if (totalPages > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Previous page button
+                IconButton(
+                    onClick = onPreviousPage,
+                    enabled = currentPage > 1
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Previous page",
+                        tint = if (currentPage > 1)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                }
+
+                // Page indicator
+                Text(
+                    text = "Page $currentPage of $totalPages",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                // Next page button
+                IconButton(
+                    onClick = onNextPage,
+                    enabled = currentPage < totalPages
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Next page",
+                        tint = if (currentPage < totalPages)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                }
+            }
         }
+
+        // Spacer to prevent FAB overlap
+        Spacer(modifier = Modifier.height(70.dp))
     }
 }
 
