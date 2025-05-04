@@ -4,6 +4,12 @@ import android.Manifest
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,15 +18,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -99,6 +107,10 @@ fun TaskScreen(
     val currentStamina = wizardProfile?.stamina ?: 50
     val currentLevel = wizardProfile?.level ?: 1
     val currentExp = wizardProfile?.experience ?: 0
+
+    // Track FAB and BottomBar visibility
+    var isFabVisible by remember { mutableStateOf(true) }
+    var isBottomBarVisible by remember { mutableStateOf(true) }
 
     // Calculate task progression
     val (completedTasks, totalTasksForLevel) = remember(wizardProfile) {
@@ -253,19 +265,48 @@ fun TaskScreen(
             }
         },
         bottomBar = {
-            TaskBottomBar(
-                onHome = onHome,
-                onSearch = {
-                    isSearchVisible = true
-                    viewModel.activateSearch()
-                },
-
-                onSettings = onSettings
-            )
+            AnimatedVisibility(
+                visible = isBottomBarVisible,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                TaskBottomBar(
+                    onHome = onHome,
+                    onSearch = {
+                        isSearchVisible = true
+                        viewModel.activateSearch()
+                    },
+                    onSettings = onSettings
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onCreateTask) {
-                Icon(Icons.Default.Add, "Create Task")
+            AnimatedVisibility(
+                visible = isFabVisible,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                ExtendedFloatingActionButton(
+                    onClick = onCreateTask,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(Icons.Default.Add, "Create Task")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("New Task")
+                }
             }
         }
     ) { padding ->
@@ -306,6 +347,10 @@ fun TaskScreen(
                         duration = SnackbarDuration.Short
                     )
                 }
+            },
+            onNavigationBarVisibilityChange = { visible ->
+                isFabVisible = visible
+                isBottomBarVisible = visible
             }
         )
     }
@@ -327,7 +372,8 @@ fun TaskContent(
     onDeleteTask: (Int) -> Unit,
     onNextPage: () -> Unit = {},
     onPreviousPage: () -> Unit = {},
-    onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> }
+    onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> },
+    onNavigationBarVisibilityChange: (Boolean) -> Unit
 ) {
     // Debug log to verify proper content values
     LaunchedEffect(wizardProfile, health, stamina, experience) {
@@ -353,7 +399,6 @@ fun TaskContent(
             totalTasksForLevel = totalTasksForLevel
         )
 
-        // Show level up indicator
         wizardProfile?.let { LevelUpIndicator(it.level) }
 
         Spacer(Modifier.height(8.dp))
@@ -395,7 +440,8 @@ fun TaskContent(
                             val currentHealth = wizardProfile?.health ?: 100
                             onDamageTaken(damage, currentHealth - damage)
                         }
-                    }
+                    },
+                    onNavigationBarVisibilityChange = onNavigationBarVisibilityChange
                 )
             }
         }
@@ -413,11 +459,10 @@ fun TaskContentPreview() {
         maxHealth = 100,
         stamina = 75,
         totalTasksCompleted = 15,
-        consecutiveTasksCompleted = 0, // Set to 0 as streak is not used
+        consecutiveTasksCompleted = 0,
         wizardClass = WizardClass.MYSTWEAVER
     )
 
-    // Create a list of sample tasks for preview
     val sampleTasks = (1..15).map { index ->
         Task(
             id = index,
@@ -442,7 +487,6 @@ fun TaskContentPreview() {
         )
     }
 
-    // Sample filtered tasks for the current page (first 5)
     val paginatedTasks = sampleTasks.take(5)
 
     WizardlyDoTheme {
@@ -459,18 +503,20 @@ fun TaskContentPreview() {
             ),
             wizardProfile = wizardProfile,
             tasksCompleted = 2,
-            totalTasksForLevel = 10, // Increased from 6 to 10
+            totalTasksForLevel = 10,
             onCompleteTask = {},
             onEditTask = {},
             onDeleteTask = {},
             onNextPage = {},
-            onPreviousPage = {},
+
             onDamageTaken = { _, _ -> },
             modifier = Modifier,
             health = 100,
             maxHealth = 150,
             stamina = 75,
-            experience = 250
+            experience = 250,
+            onPreviousPage = {},
+            onNavigationBarVisibilityChange = { }
         )
     }
 }

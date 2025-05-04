@@ -2,6 +2,7 @@ package com.example.wizardlydo.screens.tasks.comps
 
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -15,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -27,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -49,7 +52,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -60,7 +62,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +83,8 @@ import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.viewmodel.TaskViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -181,10 +187,12 @@ fun CharacterStatsSection(
 
     // Debug log to verify the values being passed to the component
     LaunchedEffect(health, maxHealth, stamina, experience) {
-        Log.d("CharacterStatsSection", "Displaying stats - HP: $health/$maxHealth, " +
-                "Stamina: $stamina, XP: $experience, " +
-                "Level: ${wizardProfile?.level ?: 0}, " +
-                "Tasks: $tasksCompleted/$totalTasksForLevel")
+        Log.d(
+            "CharacterStatsSection", "Displaying stats - HP: $health/$maxHealth, " +
+                    "Stamina: $stamina, XP: $experience, " +
+                    "Level: ${wizardProfile?.level ?: 0}, " +
+                    "Tasks: $tasksCompleted/$totalTasksForLevel"
+        )
     }
 
     // Animate health and stamina changes for visual feedback
@@ -402,7 +410,7 @@ fun TaskProgressSection(
     tasksCompleted: Int,
     totalTasksForLevel: Int,
 
-) {
+    ) {
     val taskInfoColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Card(
@@ -504,83 +512,237 @@ fun TaskListSection(
     onPreviousPage: () -> Unit,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
-    onDeleteTask: (Int) -> Unit
+    onDeleteTask: (Int) -> Unit,
+    onNavigationBarVisibilityChange: (Boolean) -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val lazyListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = 0,
+        initialFirstVisibleItemScrollOffset = 0
+    )
+
+    // Track loading state for pagination
+    var isLoadingPage by remember { mutableStateOf(false) }
+
+    // Detect scroll position to show/hide FAB and BottomBar
+    val navigationVisibilityState = remember { mutableStateOf(true) }
+
+    LaunchedEffect(lazyListState) {
+        var previousPendingFirstIndex = 0
+        snapshotFlow { lazyListState.firstVisibleItemIndex }.collect { currentFirstIndex ->
+            when {
+                currentFirstIndex > previousPendingFirstIndex -> {
+                    // Scrolling down - hide FAB and BottomBar
+                    if (navigationVisibilityState.value) {
+                        navigationVisibilityState.value = false
+                        onNavigationBarVisibilityChange(false)
+                    }
+                }
+
+                currentFirstIndex < previousPendingFirstIndex -> {
+                    // Scrolling up - show FAB and BottomBar
+                    if (!navigationVisibilityState.value) {
+                        navigationVisibilityState.value = true
+                        onNavigationBarVisibilityChange(true)
+                    }
+                }
+            }
+            previousPendingFirstIndex = currentFirstIndex
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .padding(horizontal = 16.dp)
     ) {
-        // Task list
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        // Task list with swipe gestures for pagination
+        Box(
+            modifier = Modifier.weight(1f)
         ) {
-            items(tasks) { taskEntity ->
-                TaskItem(
-                    taskEntity = taskEntity,
-                    onComplete = { onCompleteTask(taskEntity.id) },
-                    onEdit = { onEditTask(taskEntity.id) },
-                    onDelete = { onDeleteTask(taskEntity.id) }
-                )
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = lazyListState,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 80.dp),
+                // Add swipe gestures
+                userScrollEnabled = true
+            ) {
+                items(tasks) { taskEntity ->
+                    TaskItem(
+                        taskEntity = taskEntity,
+                        onComplete = { onCompleteTask(taskEntity.id) },
+                        onEdit = { onEditTask(taskEntity.id) },
+                        onDelete = { onDeleteTask(taskEntity.id) }
+                    )
+                }
+
+                // Space for loading indicator
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
 
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
+            // Auto-load next page when reaching bottom
+            if (tasks.isNotEmpty()) {
+                LaunchedEffect(lazyListState) {
+                    snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+                        .distinctUntilChanged()
+                        .collect { lastVisibleIndex ->
+                            if (lastVisibleIndex == tasks.size - 1 && !isLoadingPage && currentPage < totalPages) {
+                                isLoadingPage = true
+                                onNextPage()
+                                delay(500) // Small delay for better UX
+                                isLoadingPage = false
+                            }
+                        }
+                }
+
+                // Show loading indicator when fetching next page
+                if (isLoadingPage && currentPage < totalPages) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = 40.dp),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 3.dp
+                        )
+                    }
+                }
             }
         }
 
-        // Pagination controls at the bottom
+        // Page controls with swipe indication - always visible even when navigation bars are hidden
         if (totalPages > 1) {
-            Row(
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                // Previous page button
-                IconButton(
-                    onClick = onPreviousPage,
-                    enabled = currentPage > 1
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Previous page",
-                        tint = if (currentPage > 1)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
-                }
+                    // Previous page button
+                    IconButton(
+                        onClick = {
+                            if (currentPage > 1) {
+                                coroutineScope.launch {
+                                    onPreviousPage()
+                                }
+                            }
+                        },
+                        enabled = currentPage > 1
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous page",
+                            tint = if (currentPage > 1)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    }
 
-                // Page indicator
-                Text(
-                    text = "Page $currentPage of $totalPages",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    // Page indicator with swipe hint
+                    PageIndicator(
+                        currentPage = currentPage,
+                        totalPages = totalPages,
+                        modifier = Modifier.weight(1f),
+                        showSwipeHint = true
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (currentPage < totalPages) {
+                                coroutineScope.launch {
+                                    onNextPage()
+                                }
+                            }
+                        },
+                        enabled = currentPage < totalPages
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Next page",
+                            tint = if (currentPage < totalPages)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PageIndicator(
+    currentPage: Int,
+    totalPages: Int,
+    modifier: Modifier = Modifier,
+    showSwipeHint: Boolean = false
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            repeat(totalPages) { page ->
+                Box(
+                    modifier = Modifier
+                        .size(if (page == currentPage - 1) 10.dp else 6.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (page == currentPage - 1) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            }
+                        )
+                        .animateContentSize(
+                            animationSpec = tween(300)
+                        )
                 )
 
-                // Next page button
-                IconButton(
-                    onClick = onNextPage,
-                    enabled = currentPage < totalPages
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Next page",
-                        tint = if (currentPage < totalPages)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
+                if (page < totalPages - 1) {
+                    Spacer(modifier = Modifier.width(4.dp))
                 }
             }
         }
 
-        // Spacer to prevent FAB overlap
-        Spacer(modifier = Modifier.height(70.dp))
+        // Current page text
+        Text(
+            text = "Page $currentPage of $totalPages",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+
+        // Swipe hint (only show if enabled)
+        if (showSwipeHint) {
+            Text(
+                text = "Scroll to auto-load next",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
     }
 }
 
