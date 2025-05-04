@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -36,22 +37,20 @@ import com.example.wizardlydo.comps.getHairResourceId
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
 
-
-// WizardPreview Customization component
+// WizardPreview Customization
 @Composable
-fun WizardPreview(state: CustomizationState) {
+fun WizardPreview(
+    state: CustomizationState,
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
-
         Box(
-            modifier = Modifier
-                .size(200.dp)
-                .align(Alignment.Center)
+            modifier = Modifier.size(200.dp)
         ) {
-            // 1. Skin/Body - centered as the base
+            // Skin/Body
             val skinResourceId = when (state.skinColor) {
                 "light" -> R.drawable.skin_f5a76e
                 "medium" -> R.drawable.skin_ea8349
@@ -69,30 +68,20 @@ fun WizardPreview(state: CustomizationState) {
                     .align(Alignment.Center)
             )
 
-            // 2. Outfit - on top of skin (centered)
-            val outfitType = if (state.gender == "Male") "broad" else "slim"
-            val outfitResId = when (state.wizardClass) {
-                WizardClass.CHRONOMANCER -> if (state.gender == "Male")
-                    R.drawable.broad_armor_special_snow else R.drawable.slim_armor_special_snow
-                WizardClass.LUMINARI -> if (state.gender == "Male")
-                    R.drawable.broad_armor_armoire_crystal_robe else R.drawable.slim_armor_armoire_crystal_robe
-                WizardClass.DRACONIST -> if (state.gender == "Male")
-                    R.drawable.broad_armor_armoire_barrister_robe else R.drawable.slim_armor_armoire_barrister_robe
-                WizardClass.MYSTWEAVER -> if (state.gender == "Male")
-                    R.drawable.broad_armor_special_pyromancer else R.drawable.slim_armor_special_pyromancer
+            // Outfit
+            val outfitResId = getOutfitResourceId(state.wizardClass, state.outfit, state.gender)
+            if (outfitResId != 0) {
+                Image(
+                    painter = painterResource(id = outfitResId),
+                    contentDescription = "Character Outfit",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .align(Alignment.Center)
+                )
             }
 
-            Image(
-                painter = painterResource(id = outfitResId),
-                contentDescription = "Character Outfit",
-                modifier = Modifier
-                    .size(80.dp)
-                    .align(Alignment.Center)
-            )
-
-            // 3. Hair - positioned correctly
+            // Hair
             val hairResId = getHairResourceId(state.gender, state.hairStyle, state.hairColor)
-
             Image(
                 painter = painterResource(id = hairResId),
                 contentDescription = "Character Hair",
@@ -240,7 +229,6 @@ fun HairStyleSelector(
                                 alignment = Alignment.Center
                             )
                         } else {
-                            // Fallback with debugging info
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -267,6 +255,7 @@ fun HairStyleSelector(
         }
     }
 }
+
 /**
  * Hair color selection component
  */
@@ -278,7 +267,6 @@ fun HairColorSelector(selectedColor: String, onHairColorSelected: (String) -> Un
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(vertical = 8.dp)
         ) {
-
             ColorChip(
                 color = Color(0xFFFBEC5D), // Blond
                 selected = selectedColor == "blond",
@@ -303,10 +291,8 @@ fun HairColorSelector(selectedColor: String, onHairColorSelected: (String) -> Un
     }
 }
 
-
-
 /**
- * Outfit selection component - based on wizard class
+ * Outfit selection component with expanded options for each class
  */
 @Composable
 fun OutfitSelector(
@@ -314,29 +300,35 @@ fun OutfitSelector(
     selectedOutfit: String,
     onOutfitSelected: (String) -> Unit
 ) {
-    // Class-specific outfits
+    // Expanded class-specific outfits
     val outfits = when (wizardClass) {
         WizardClass.CHRONOMANCER -> listOf(
-            "Astronomer Robe" to "broad_armor_special_snow"
+            "Astronomer Robe" to "broad_armor_special_snow",
+            "Thunder Cloak" to "broad_shirt_thunder"
         )
         WizardClass.LUMINARI -> listOf(
-            "Crystal Robe" to "broad_armor_armoire_crystal_robe"
+            "Crystal Robe" to "broad_armor_armoire_crystal_robe",
+            "Blue Shirt" to "broad_shirt_blue"
         )
         WizardClass.DRACONIST -> listOf(
-            "Flame Costume" to "broad_armor_armoire_barrister_robe"
+            "Flame Costume" to "broad_armor_armoire_barrister_robe",
+            "Ram Fleece" to "broad_armor_armoire_ram_fleece",
+            "Black Shirt" to "broad_shirt_black",
+            "Rainbow Shirt" to "broad_shirt_rainbow"
         )
         WizardClass.MYSTWEAVER -> listOf(
-            "Mystic Robe" to "broad_armor_special_pyromancer"
+            "Mystic Robe" to "broad_armor_special_pyromancer",
+            "Blue Shirt" to "broad_shirt_blue"
         )
     }
 
     Column {
         Text("Class Outfit", style = MaterialTheme.typography.titleMedium)
-        Row(
+        LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(vertical = 8.dp)
         ) {
-            outfits.forEachIndexed { index, (name, resourceName) ->
+            items(outfits) { (name, resourceName) ->
                 val resourceId = getDrawableResourceId(resourceName)
 
                 Column(
@@ -359,10 +351,27 @@ fun OutfitSelector(
                             contentDescription = name,
                             modifier = Modifier.size(60.dp)
                         )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(60.dp)
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Missing",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Black,
+                                textAlign = TextAlign.Center,
+                                fontSize = 8.sp
+                            )
+                        }
                     }
                     Text(
                         text = name,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2
                     )
                 }
             }
@@ -420,18 +429,80 @@ fun ColorChip(color: Color, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-
 /**
- * Get the appropriate outfit resource based on wizard class, selection, and gender
+ * Get outfit resource ID directly
  */
-private fun getOutfitResourceName(wizardClass: WizardClass, outfit: String, gender: String): String {
+fun getOutfitResourceId(wizardClass: WizardClass, outfit: String, gender: String): Int {
     val outfitType = if (gender == "Male") "broad" else "slim"
 
     return when (wizardClass) {
-        WizardClass.CHRONOMANCER -> "${outfitType}_armor_special_snow"
-        WizardClass.LUMINARI -> "${outfitType}_armor_armoire_crystal_robe"
-        WizardClass.DRACONIST -> "${outfitType}_armor_armoire_barrister_robe"
-        WizardClass.MYSTWEAVER -> "${outfitType}_armor_special_pyromancer"
+        WizardClass.CHRONOMANCER -> when (outfit) {
+            "Astronomer Robe" -> if (gender == "Male")
+                R.drawable.broad_armor_special_snow
+            else
+                R.drawable.slim_armor_special_snow
+            "Thunder Cloak" -> if (gender == "Male")
+                R.drawable.broad_shirt_thunder
+            else
+                R.drawable.slim_shirt_thunder
+            else -> if (gender == "Male")
+                R.drawable.broad_armor_special_snow
+            else
+                R.drawable.slim_armor_special_snow
+        }
+
+        WizardClass.LUMINARI -> when (outfit) {
+            "Crystal Robe" -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_crystal_robe
+            else
+                R.drawable.slim_armor_armoire_crystal_robe
+            "Blue Shirt" -> if (gender == "Male")
+                R.drawable.broad_shirt_blue
+            else
+                R.drawable.broad_shirt_blue
+            else -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_crystal_robe
+            else
+                R.drawable.slim_armor_armoire_crystal_robe
+        }
+
+        WizardClass.DRACONIST -> when (outfit) {
+            "Flame Costume" -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_barrister_robe
+            else
+                R.drawable.slim_armor_armoire_barrister_robe
+            "Ram Fleece" -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_ram_fleece
+            else
+                R.drawable.broad_armor_armoire_ram_fleece // Use male version for female
+            "Black Shirt" -> if (gender == "Male")
+                R.drawable.broad_shirt_black
+            else
+                R.drawable.broad_shirt_black // Use male version for female
+            "Rainbow Shirt" -> if (gender == "Male")
+                R.drawable.broad_shirt_rainbow
+            else
+                R.drawable.broad_shirt_rainbow // Use male version for female
+            else -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_barrister_robe
+            else
+                R.drawable.slim_armor_armoire_barrister_robe
+        }
+
+        WizardClass.MYSTWEAVER -> when (outfit) {
+            "Mystic Robe" -> if (gender == "Male")
+                R.drawable.broad_armor_special_pyromancer
+            else
+                R.drawable.slim_armor_special_pyromancer
+            "Blue Shirt" -> if (gender == "Male")
+                R.drawable.broad_shirt_blue
+            else
+                R.drawable.broad_shirt_blue // Use male version for female
+            else -> if (gender == "Male")
+                R.drawable.broad_armor_special_pyromancer
+            else
+                R.drawable.slim_armor_special_pyromancer
+        }
     }
 }
 
@@ -451,9 +522,6 @@ private fun getDrawableResourceId(name: String): Int {
         "broad_armor_special_snow" -> R.drawable.broad_armor_special_snow
         "broad_armor_special_pyromancer" -> R.drawable.broad_armor_special_pyromancer
 
-
-
-
         // Armor/Robes - Slim
         "slim_armor_armoire_spage_robe" -> R.drawable.slim_armor_armoire_spage_robe
         "slim_armor_special_pyromancer" -> R.drawable.slim_armor_special_pyromancer
@@ -461,7 +529,6 @@ private fun getDrawableResourceId(name: String): Int {
         "slim_armor_armoire_crystal_robe" -> R.drawable.slim_armor_armoire_crystal_robe
         "slim_armor_armoire_chrono" -> R.drawable.slim_armor_armoire_chrono
         "slim_armor_armoire_barrister_robe" -> R.drawable.slim_armor_armoire_barrister_robe
-
 
         // Shirts - Broad
         "broad_shirt_black" -> R.drawable.broad_shirt_black
@@ -487,8 +554,6 @@ private fun getDrawableResourceId(name: String): Int {
         "slim_shirt_thunder" -> R.drawable.slim_shirt_thunder
         "slim_shirt_zombie" -> R.drawable.slim_shirt_zombie
 
-
-
         // Hair - Bangs styles
         "creator_hair_bangs_1_black" -> R.drawable.creator_hair_bangs_1_black
         "creator_hair_bangs_1_blond" -> R.drawable.creator_hair_bangs_1_blond
@@ -504,7 +569,6 @@ private fun getDrawableResourceId(name: String): Int {
         "creator_hair_bangs_3_brown" -> R.drawable.creator_hair_bangs_3_brown
         "creator_hair_bangs_3_red" -> R.drawable.creator_hair_bangs_3_red
         "creator_hair_bangs_3_white" -> R.drawable.creator_hair_bangs_3_white
-
 
         // Skins - Regular
         "skin_ea8349" -> R.drawable.skin_ea8349

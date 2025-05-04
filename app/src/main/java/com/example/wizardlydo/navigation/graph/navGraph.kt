@@ -100,6 +100,9 @@ fun NavigationGraph() {
                 },
                 onForgotPasswordClick = {
                     navController.navigate(Screen.Recovery.route)
+                },
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }

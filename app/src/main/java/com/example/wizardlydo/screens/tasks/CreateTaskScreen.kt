@@ -1,7 +1,7 @@
 package com.example.wizardlydo.screens.tasks
 
 import android.Manifest
-import android.annotation.SuppressLint
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,28 +55,30 @@ import com.example.wizardlydo.screens.tasks.comps.TaskDescriptionField
 import com.example.wizardlydo.screens.tasks.comps.TaskTitleField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.utilities.TaskNotificationService
-import com.example.wizardlydo.viewmodel.SettingsViewModel
 import com.example.wizardlydo.viewmodel.TaskViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
-@SuppressLint("StateFlowValueCalledInComposition")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTaskScreen(
     onBack: () -> Unit,
     viewModel: TaskViewModel = koinViewModel()
 ) {
-    val userId by viewModel.currentUserIdState.collectAsState()
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
     val coroutineScope = rememberCoroutineScope()
+
+    // Collect userId as state instead of accessing .value directly
+    val userId by viewModel.currentUserIdState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -98,7 +102,6 @@ fun CreateTaskScreen(
                     // Create the task
                     viewModel.createTask(task)
 
-                    // Show system notification with expandable content
                     taskNotificationService.showTaskCreatedNotification(task)
 
                     // If the task has a due date, schedule future reminder notifications
@@ -110,11 +113,11 @@ fun CreateTaskScreen(
                     onBack()
                 }
             },
-            userId = viewModel.currentUserIdState.value
+            userId = userId
         )
     }
 }
-@SuppressLint("InlinedApi")
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun CreateTaskContent(
@@ -133,12 +136,25 @@ fun CreateTaskContent(
     val categories = listOf("School", "Chores", "Work", "Personal")
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
 
-    // Check notification permission at compose time
-    val notificationPermissionState = rememberPermissionState(
-        permission = Manifest.permission.POST_NOTIFICATIONS
-    )
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
 
-    // Request notification permission if needed
+    val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
+    val verticalSpacing = (screenHeight * 0.01f).coerceIn(4.dp, 8.dp)
+
+    val notificationPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        rememberPermissionState(
+            permission = Manifest.permission.POST_NOTIFICATIONS
+        )
+    } else {
+        object : PermissionState {
+            override val permission: String = Manifest.permission.POST_NOTIFICATIONS
+            override val status: PermissionStatus = PermissionStatus.Granted
+            override fun launchPermissionRequest() { }
+        }
+    }
+
     LaunchedEffect(Unit) {
         if (!notificationPermissionState.status.isGranted) {
             notificationPermissionState.launchPermissionRequest()
@@ -175,9 +191,11 @@ fun CreateTaskContent(
             .padding(padding)
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = horizontalPadding),
+        verticalArrangement = Arrangement.spacedBy(verticalSpacing * 2)
     ) {
+        Spacer(modifier = Modifier.height(verticalSpacing))
+
         TaskTitleField(title, onTitleChange = { title = it })
         TaskDescriptionField(description, onDescriptionChange = { description = it })
         DueDateSelector(
@@ -189,12 +207,11 @@ fun CreateTaskContent(
         CategorySelector(category, categories, onCategorySelected = { category = it })
         DailyTaskToggle(isDaily, onDailyChanged = { isDaily = it })
 
-        // Notification permission info (if not granted)
         if (!notificationPermissionState.status.isGranted) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = verticalSpacing),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -212,12 +229,14 @@ fun CreateTaskContent(
             }
         }
 
+        Spacer(modifier = Modifier.height(verticalSpacing * 2))
+
         CreateTaskButton(
             enabled = title.isNotBlank(),
             onClick = {
                 userId?.let { safeUserId ->
                     val task = Task(
-                        id = 0, // Will be generated by Room
+                        id = 0,
                         title = title,
                         description = description,
                         dueDate = dueDate,
@@ -232,6 +251,8 @@ fun CreateTaskContent(
                 }
             }
         )
+
+        Spacer(modifier = Modifier.height(verticalSpacing * 2))
     }
 }
 
@@ -239,10 +260,59 @@ fun CreateTaskContent(
 @Composable
 fun CreateTaskContentPreview() {
     WizardlyDoTheme {
-        CreateTaskContent(
-            padding = PaddingValues(0.dp),
-            onCreateTask = {},
-            userId = "test-user-123"
+        // Create a simplified version for preview without permissions
+        CreateTaskContentForPreview()
+    }
+}
+
+@Composable
+private fun CreateTaskContentForPreview() {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var dueDate by remember { mutableStateOf<Long?>(null) }
+    var priority by remember { mutableStateOf(Priority.MEDIUM) }
+    var category by remember { mutableStateOf("") }
+    var isDaily by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val categories = listOf("School", "Chores", "Work", "Personal")
+    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
+    val verticalSpacing = (screenHeight * 0.01f).coerceIn(4.dp, 8.dp)
+
+    Column(
+        modifier = Modifier
+            .padding(PaddingValues(16.dp))
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = horizontalPadding),
+        verticalArrangement = Arrangement.spacedBy(verticalSpacing * 2)
+    ) {
+        Spacer(modifier = Modifier.height(verticalSpacing))
+
+        TaskTitleField(title, onTitleChange = { title = it })
+        TaskDescriptionField(description, onDescriptionChange = { description = it })
+        DueDateSelector(
+            dueDate,
+            dateFormatter,
+            onDatePickerTrigger = { showDatePicker = true }
         )
+        PrioritySelector(priority, onPrioritySelected = { priority = it })
+        CategorySelector(category, categories, onCategorySelected = { category = it })
+        DailyTaskToggle(isDaily, onDailyChanged = { isDaily = it })
+
+        Spacer(modifier = Modifier.height(verticalSpacing * 2))
+
+        CreateTaskButton(
+            enabled = title.isNotBlank(),
+            onClick = {}
+        )
+
+        Spacer(modifier = Modifier.height(verticalSpacing * 2))
     }
 }

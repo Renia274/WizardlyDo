@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,11 +36,9 @@ fun RecoveryScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Box(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -89,15 +88,28 @@ fun RecoveryContent(
     isEmailValid: Boolean,
     isLoading: Boolean
 ) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    // Responsive values
+    val padding = (screenWidth * 0.06f).coerceIn(24.dp, 40.dp)
+    val spacing = (screenHeight * 0.04f).coerceIn(16.dp, 32.dp)
+    val maxWidth = if (screenWidth > 600.dp) 450.dp else screenWidth
+
     Column(
         modifier = Modifier
-            .padding(horizontal = 24.dp)
-            .widthIn(max = 450.dp),
+            .fillMaxWidth()
+            .padding(horizontal = padding)
+            .widthIn(max = maxWidth),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Top spacer
+        Spacer(modifier = Modifier.height((screenHeight * 0.1f).coerceIn(40.dp, 100.dp)))
+
         RecoveryHeader()
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(spacing))
 
         RecoveryEmailField(
             email = email,
@@ -106,7 +118,7 @@ fun RecoveryContent(
             enabled = !isLoading
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(spacing * 0.75f))
 
         RecoverySubmitButton(
             onClick = onSubmitClick,
@@ -114,12 +126,14 @@ fun RecoveryContent(
             enabled = !isLoading
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(spacing * 0.5f))
 
         BackToLoginButton(
             onClick = onBackToLoginClick,
             enabled = !isLoading
         )
+
+        Spacer(modifier = Modifier.height((screenHeight * 0.1f).coerceIn(40.dp, 100.dp)))
     }
 }
 

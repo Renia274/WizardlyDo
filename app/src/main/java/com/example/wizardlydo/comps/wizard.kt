@@ -14,22 +14,81 @@ fun getSkinResourceId(skinColor: String): Int {
     }
 }
 
- fun getOutfitResourceId(wizardClass: WizardClass, outfit: String, gender: String): Int {
+fun getOutfitResourceId(wizardClass: WizardClass, outfit: String, gender: String): Int {
     val outfitType = if (gender == "Male") "broad" else "slim"
 
     return when (wizardClass) {
-        WizardClass.CHRONOMANCER -> if (gender == "Male")
-            R.drawable.broad_armor_special_snow else R.drawable.slim_armor_special_snow
-        WizardClass.LUMINARI -> if (gender == "Male")
-            R.drawable.broad_armor_armoire_crystal_robe else R.drawable.slim_armor_armoire_crystal_robe
-        WizardClass.DRACONIST -> if (gender == "Male")
-            R.drawable.broad_armor_armoire_barrister_robe else R.drawable.slim_armor_armoire_barrister_robe
-        WizardClass.MYSTWEAVER -> if (gender == "Male")
-            R.drawable.broad_armor_special_pyromancer else R.drawable.slim_armor_special_pyromancer
+        WizardClass.CHRONOMANCER -> when (outfit) {
+            "Astronomer Robe" -> if (gender == "Male")
+                R.drawable.broad_armor_special_snow
+            else
+                R.drawable.slim_armor_special_snow
+            "Thunder Cloak" -> if (gender == "Male")
+                R.drawable.broad_shirt_thunder
+            else
+                R.drawable.slim_shirt_thunder
+            else -> if (gender == "Male")
+                R.drawable.broad_armor_special_snow
+            else
+                R.drawable.slim_armor_special_snow
+        }
+
+        WizardClass.LUMINARI -> when (outfit) {
+            "Crystal Robe" -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_crystal_robe
+            else
+                R.drawable.slim_armor_armoire_crystal_robe
+            "Blue Shirt" -> if (gender == "Male")
+                R.drawable.broad_shirt_blue
+            else
+                R.drawable.broad_shirt_blue
+            else -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_crystal_robe
+            else
+                R.drawable.slim_armor_armoire_crystal_robe
+        }
+
+        WizardClass.DRACONIST -> when (outfit) {
+            "Flame Costume" -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_barrister_robe
+            else
+                R.drawable.slim_armor_armoire_barrister_robe
+            "Ram Fleece" -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_ram_fleece
+            else
+                R.drawable.broad_armor_armoire_ram_fleece // Use male version for female
+            "Black Shirt" -> if (gender == "Male")
+                R.drawable.broad_shirt_black
+            else
+                R.drawable.broad_shirt_black // Use male version for female
+            "Rainbow Shirt" -> if (gender == "Male")
+                R.drawable.broad_shirt_rainbow
+            else
+                R.drawable.broad_shirt_rainbow // Use male version for female
+            else -> if (gender == "Male")
+                R.drawable.broad_armor_armoire_barrister_robe
+            else
+                R.drawable.slim_armor_armoire_barrister_robe
+        }
+
+        WizardClass.MYSTWEAVER -> when (outfit) {
+            "Mystic Robe" -> if (gender == "Male")
+                R.drawable.broad_armor_special_pyromancer
+            else
+                R.drawable.slim_armor_special_pyromancer
+            "Blue Shirt" -> if (gender == "Male")
+                R.drawable.broad_shirt_blue
+            else
+                R.drawable.broad_shirt_blue // Use male version for female
+            else -> if (gender == "Male")
+                R.drawable.broad_armor_special_pyromancer
+            else
+                R.drawable.slim_armor_special_pyromancer
+        }
     }
 }
 
- fun getHairResourceId(gender: String, hairStyle: Int, hairColor: String): Int {
+fun getHairResourceId(gender: String, hairStyle: Int, hairColor: String): Int {
     val colorSuffix = when (hairColor) {
         "black" -> "black"
         "blond" -> "blond"

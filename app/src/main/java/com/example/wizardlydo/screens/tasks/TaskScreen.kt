@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -375,6 +376,14 @@ fun TaskContent(
     onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> },
     onNavigationBarVisibilityChange: (Boolean) -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    // Responsive values
+    val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
+    val verticalSpacing = (screenHeight * 0.01f).coerceIn(4.dp, 8.dp)
+
     // Debug log to verify proper content values
     LaunchedEffect(wizardProfile, health, stamina, experience) {
         Log.d("TaskContent", "Content values - " +
@@ -387,10 +396,9 @@ fun TaskContent(
     }
 
     Column(modifier.fillMaxSize()) {
-
         CharacterStatsSection(
             wizardResult = state.wizardProfile,
-            modifier = Modifier.padding(vertical = 4.dp),
+            modifier = Modifier.padding(vertical = verticalSpacing),
             health = health,
             maxHealth = maxHealth,
             stamina = stamina,
@@ -401,7 +409,7 @@ fun TaskContent(
 
         wizardProfile?.let { LevelUpIndicator(it.level) }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(verticalSpacing))
 
         TaskFilterChips(
             currentFilter = state.currentFilter,
@@ -410,7 +418,7 @@ fun TaskContent(
             }
         )
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(verticalSpacing / 2))
 
         Box(modifier = Modifier.weight(1f)) {
             when {

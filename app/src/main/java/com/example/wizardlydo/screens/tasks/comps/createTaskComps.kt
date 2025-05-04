@@ -1,20 +1,21 @@
 package com.example.wizardlydo.screens.tasks.comps
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.Priority
 import java.text.DateFormat
@@ -37,8 +40,13 @@ fun TaskTitleField(
     OutlinedTextField(
         value = title,
         onValueChange = onTitleChange,
-        label = { Text("Title") },
-        modifier = Modifier.fillMaxWidth()
+        label = { Text("Task Title") },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+            imeAction = ImeAction.Next
+        )
     )
 }
 
@@ -50,9 +58,14 @@ fun TaskDescriptionField(
     OutlinedTextField(
         value = description,
         onValueChange = onDescriptionChange,
-        label = { Text("Description") },
+        label = { Text("Description (optional)") },
         modifier = Modifier.fillMaxWidth(),
-        maxLines = 3
+        minLines = 3,
+        maxLines = 5,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+            imeAction = ImeAction.Done
+        )
     )
 }
 
@@ -64,7 +77,8 @@ fun DueDateSelector(
 ) {
     OutlinedButton(
         onClick = onDatePickerTrigger,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(4.dp)
     ) {
         Text(dueDate?.let { "Due: ${dateFormatter.format(Date(it))}" } ?: "Select Due Date")
     }
@@ -72,24 +86,37 @@ fun DueDateSelector(
 
 @Composable
 fun PrioritySelector(
-    currentPriority: Priority,
+    priority: Priority,
     onPrioritySelected: (Priority) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Priority", style = MaterialTheme.typography.labelMedium)
-        Priority.entries.forEach { priority ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onPrioritySelected(priority) }
-            ) {
-                RadioButton(
-                    selected = currentPriority == priority,
-                    onClick = { onPrioritySelected(priority) }
+    Text(
+        "Priority",
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        Priority.entries.forEach { priorityOption ->
+            FilterChip(
+                selected = priority == priorityOption,
+                onClick = { onPrioritySelected(priorityOption) },
+                label = { Text(priorityOption.name) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = when (priorityOption) {
+                        Priority.HIGH -> MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
+                        Priority.MEDIUM -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        Priority.LOW -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                    },
+                    selectedLabelColor = when (priorityOption) {
+                        Priority.HIGH -> MaterialTheme.colorScheme.error
+                        Priority.MEDIUM -> MaterialTheme.colorScheme.primary
+                        Priority.LOW -> MaterialTheme.colorScheme.tertiary
+                    }
                 )
-                Text(priority.name, style = MaterialTheme.typography.bodyMedium)
-            }
+            )
         }
     }
 }
@@ -97,7 +124,7 @@ fun PrioritySelector(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategorySelector(
-    selectedCategory: String,
+    category: String,
     categories: List<String>,
     onCategorySelected: (String) -> Unit
 ) {
@@ -108,25 +135,25 @@ fun CategorySelector(
         onExpandedChange = { expanded = it }
     ) {
         OutlinedTextField(
-            value = selectedCategory,
+            value = category,
             onValueChange = {},
-            label = { Text("Category") },
+            readOnly = true,
+            label = { Text("Category (optional)") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(),
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            readOnly = true
+                .menuAnchor()
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            categories.forEach { category ->
+            categories.forEach { categoryOption ->
                 DropdownMenuItem(
-                    text = { Text(category) },
+                    text = { Text(categoryOption) },
                     onClick = {
-                        onCategorySelected(category)
+                        onCategorySelected(categoryOption)
                         expanded = false
                     }
                 )
@@ -141,11 +168,15 @@ fun DailyTaskToggle(
     onDailyChanged: (Boolean) -> Unit
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth()
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Daily Task", style = MaterialTheme.typography.bodyMedium)
+        Text(
+            "Make this a daily task",
+            style = MaterialTheme.typography.bodyLarge
+        )
+
         Switch(
             checked = isDaily,
             onCheckedChange = onDailyChanged
@@ -159,18 +190,16 @@ fun CreateTaskButton(
     onClick: () -> Unit
 ) {
     Button(
-        onClick = {
-            if (enabled) {
-                onClick()
-            }
-        },
-        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
         enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        )
+        shape = RoundedCornerShape(8.dp)
     ) {
-        Text("Create Task", style = MaterialTheme.typography.labelLarge)
+        Text(
+            "Create Task",
+            style = MaterialTheme.typography.titleMedium
+        )
     }
 }

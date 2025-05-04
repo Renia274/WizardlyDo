@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -128,15 +129,26 @@ fun SignupContent(
     isPasswordVisible: Boolean,
     onTogglePasswordVisibility: () -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    // Simple responsive values
+    val padding = (screenWidth * 0.06f).coerceIn(24.dp, 40.dp)
+    val spacing = (screenHeight * 0.02f).coerceIn(16.dp, 32.dp)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp)
+            .padding(horizontal = padding)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Top spacer
+        Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
+
         SignupHeader()
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(spacing))
 
         WizardNameField(
             name = wizardName,
@@ -145,7 +157,7 @@ fun SignupContent(
             enabled = !isLoading
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
         WizardClassSelector(
             selectedClass = wizardClass,
@@ -153,7 +165,7 @@ fun SignupContent(
             enabled = !isLoading
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
         EmailField(
             email = email,
@@ -162,7 +174,7 @@ fun SignupContent(
             enabled = !isLoading
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
         PasswordField(
             password = password,
@@ -173,7 +185,7 @@ fun SignupContent(
             onTogglePasswordVisibility = onTogglePasswordVisibility
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(spacing))
 
         SignupButton(
             onClick = onSignupClick,
@@ -181,19 +193,22 @@ fun SignupContent(
             enabled = !isLoading // Always enabled
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
         GoogleSignInButton(
             onClick = onGoogleSignIn,
             enabled = !isLoading // Always enabled
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
         LoginRedirectButton(
             onClick = onLoginClick,
             enabled = !isLoading
         )
+
+        // Bottom spacer to ensure content isn't cut off
+        Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
     }
 }
 

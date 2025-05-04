@@ -1,5 +1,12 @@
 package com.example.wizardlydo.screens.customization
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +22,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.WizardClass
@@ -30,6 +43,8 @@ import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.CustomizationViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
+
+
 
 @Composable
 fun CustomizationScreen(
@@ -71,77 +86,112 @@ fun CustomizationContent(
     onOutfitSelected: (String) -> Unit,
     onSave: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Character preview with updated state
-        WizardPreview(state = state)
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
 
-        Spacer(modifier = Modifier.height(16.dp))
+    // Simple responsive values
+    val padding = (screenWidth * 0.04f).coerceIn(16.dp, 32.dp)
+    val spacing = (screenHeight * 0.02f).coerceIn(12.dp, 24.dp)
+    val buttonHeight = (screenHeight * 0.07f).coerceIn(50.dp, 70.dp)
 
-        // Customization options
+    val scrollState = rememberScrollState()
+    var isSaveButtonVisible by remember { mutableStateOf(true) }
+
+    // Track scroll to hide/show save button
+    LaunchedEffect(scrollState) {
+        var previousScrollPosition = 0
+        snapshotFlow { scrollState.value }.collect { currentScrollPosition ->
+            isSaveButtonVisible = currentScrollPosition < previousScrollPosition
+            previousScrollPosition = currentScrollPosition
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = padding)
         ) {
-            // Gender selection
-            GenderSelector(
-                selectedGender = state.gender,
-                onGenderSelected = onGenderSelected
+            // Character preview with adaptive height
+            WizardPreview(
+                state = state,
+                modifier = Modifier.height((screenHeight * 0.35f).coerceIn(200.dp, 300.dp))
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Customization options
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(scrollState)
+            ) {
+                Spacer(modifier = Modifier.height(spacing))
 
-            // Skin selection
-            SkinSelector(
-                selectedSkin = state.skinColor,
-                onSkinSelected = onSkinSelected
-            )
+                GenderSelector(
+                    selectedGender = state.gender,
+                    onGenderSelected = onGenderSelected
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing))
 
-            // Hair style selection
-            HairStyleSelector(
-                gender = state.gender,
-                selectedStyle = state.hairStyle,
-                onHairStyleSelected = onHairStyleSelected
-            )
+                SkinSelector(
+                    selectedSkin = state.skinColor,
+                    onSkinSelected = onSkinSelected
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing))
 
-            // Hair color selection
-            HairColorSelector(
-                selectedColor = state.hairColor,
-                onHairColorSelected = onHairColorSelected
-            )
+                HairStyleSelector(
+                    gender = state.gender,
+                    selectedStyle = state.hairStyle,
+                    onHairStyleSelected = onHairStyleSelected
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing))
 
-            // Outfit selection based on wizard class
-            OutfitSelector(
-                wizardClass = state.wizardClass,
-                selectedOutfit = state.outfit,
-                onOutfitSelected = onOutfitSelected
-            )
+                HairColorSelector(
+                    selectedColor = state.hairColor,
+                    onHairColorSelected = onHairColorSelected
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(spacing))
 
+                OutfitSelector(
+                    wizardClass = state.wizardClass,
+                    selectedOutfit = state.outfit,
+                    onOutfitSelected = onOutfitSelected
+                )
 
+                // Extra space at bottom for save button
+                Spacer(modifier = Modifier.height(buttonHeight + spacing))
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Save button
-        Button(
-            onClick = onSave,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
+        // Sticky save button at the bottom
+        AnimatedVisibility(
+            visible = isSaveButtonVisible,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(300)
+            ) + fadeIn(animationSpec = tween(300)),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(300)
+            ) + fadeOut(animationSpec = tween(300))
         ) {
-            Text("Save Customization", style = MaterialTheme.typography.titleMedium)
+            Button(
+                onClick = onSave,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(buttonHeight)
+                    .padding(horizontal = padding, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "Save Customization",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
         }
     }
 }

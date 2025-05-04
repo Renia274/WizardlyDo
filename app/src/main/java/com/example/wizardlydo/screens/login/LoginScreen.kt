@@ -10,6 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -17,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,7 +41,8 @@ import org.koin.androidx.compose.koinViewModel
 fun LoginScreen(
     viewModel: LoginViewModel = koinViewModel(),
     onLoginSuccess: () -> Unit,
-    onForgotPasswordClick: () -> Unit
+    onForgotPasswordClick: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -60,10 +67,11 @@ fun LoginScreen(
             emailError = state.emailError,
             passwordError = state.passwordError,
             isPasswordVisible = state.isPasswordVisible,
-            onTogglePasswordVisibility = viewModel::togglePasswordVisibility
+            onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+            onBackClick = onBackClick
         )
 
-        // Error Dialog
+
         state.error?.let { error ->
             LoginErrorDialog(
                 error = error,
@@ -87,69 +95,98 @@ fun LoginContent(
     emailError: String? = null,
     passwordError: String? = null,
     isPasswordVisible: Boolean,
-    onTogglePasswordVisibility: () -> Unit
+    onTogglePasswordVisibility: () -> Unit,
+    onBackClick: () -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+
+    val padding = (screenWidth * 0.06f).coerceIn(24.dp, 40.dp)
+    val spacing = (screenHeight * 0.02f).coerceIn(8.dp, 24.dp)
+    val maxWidth = if (screenWidth > 600.dp) 450.dp else screenWidth
+
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize()
     ) {
-        Column(
+
+        IconButton(
+            onClick = onBackClick,
             modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 450.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .align(Alignment.TopStart)
+                .padding(top = 48.dp),
+            enabled = !isLoading
         ) {
-            LoginHeader()
-
-            EmailField(
-                email = email,
-                onEmailChange = onEmailChange,
-                isError = hasError,
-                errorMessage = emailError,
-                enabled = !isLoading
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back to Signup",
+                tint = MaterialTheme.colorScheme.onBackground
             )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            PasswordField(
-                password = password,
-                onPasswordChange = onPasswordChange,
-                isError = hasError,
-                errorMessage = passwordError,
-                enabled = !isLoading,
-                isPasswordVisible = isPasswordVisible,
-                onTogglePasswordVisibility = onTogglePasswordVisibility
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Forgot Password Button aligned to end
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.CenterEnd
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = padding),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = maxWidth)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextButton(
-                    onClick = onForgotPasswordClick,
+                LoginHeader()
+
+                Spacer(modifier = Modifier.height(spacing * 2))
+
+                EmailField(
+                    email = email,
+                    onEmailChange = onEmailChange,
+                    isError = hasError,
+                    errorMessage = emailError,
                     enabled = !isLoading
+                )
+
+                Spacer(modifier = Modifier.height(spacing))
+
+                PasswordField(
+                    password = password,
+                    onPasswordChange = onPasswordChange,
+                    isError = hasError,
+                    errorMessage = passwordError,
+                    enabled = !isLoading,
+                    isPasswordVisible = isPasswordVisible,
+                    onTogglePasswordVisibility = onTogglePasswordVisibility
+                )
+
+                Spacer(modifier = Modifier.height(spacing * 0.5f))
+
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd
                 ) {
-                    Text("Forgot Password?")
+                    TextButton(
+                        onClick = onForgotPasswordClick,
+                        enabled = !isLoading
+                    ) {
+                        Text("Forgot Password?")
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(spacing * 1.5f))
+
+                LoginButton(
+                    onClick = onLoginClick,
+                    isLoading = isLoading,
+                    enabled = !isLoading
+                )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            LoginButton(
-                onClick = onLoginClick,
-                isLoading = isLoading,
-                enabled = !isLoading
-            )
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
@@ -168,7 +205,8 @@ fun LoginContentPreview() {
             emailError = null,
             passwordError = null,
             isPasswordVisible = false,
-            onTogglePasswordVisibility = {}
+            onTogglePasswordVisibility = {},
+            onBackClick = {}
         )
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -62,7 +64,6 @@ import org.koin.androidx.compose.koinViewModel
 
 
 
-// Updated EditTaskScreen with delete confirmation
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskScreen(
@@ -73,22 +74,18 @@ fun EditTaskScreen(
     val editState by viewModel.editTaskState.collectAsState()
     val context = LocalContext.current
 
-    // State for delete confirmation dialog
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Initial task loading
     LaunchedEffect(taskId) {
         viewModel.loadTaskForEditing(taskId)
     }
 
-    // Reset state when leaving screen
     DisposableEffect(Unit) {
         onDispose {
             viewModel.resetEditTaskState()
         }
     }
 
-    // Handle errors with Toast
     LaunchedEffect(editState.error) {
         editState.error?.let { error ->
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
@@ -96,7 +93,6 @@ fun EditTaskScreen(
         }
     }
 
-    // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -133,7 +129,6 @@ fun EditTaskScreen(
         )
     }
 
-    // Date picker state
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
@@ -178,7 +173,6 @@ fun EditTaskScreen(
                     }
                 },
                 actions = {
-                    // Delete button in app bar
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -254,43 +248,62 @@ fun EditTaskScreenContent(
     onSaveClick: () -> Unit,
     padding: PaddingValues
 ) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    val horizontalPadding = (screenWidth * 0.04f).coerceIn(16.dp, 32.dp)
+    val verticalSpacing = (screenHeight * 0.02f).coerceIn(16.dp, 24.dp)
+    val maxContentWidth = if (screenWidth > 600.dp) 600.dp else screenWidth
+
     val categories = listOf("School", "Chores", "Work", "Personal")
     val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
-    Column(
+    Box(
         modifier = Modifier
-            .padding(padding)
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(padding),
+        contentAlignment = Alignment.TopCenter
     ) {
-        TaskTitleField(title, onTitleChange)
-        TaskDescriptionField(description, onDescriptionChange)
-        DueDateSelector(
-            dueDate,
-            dateFormatter,
-            onDatePickerTrigger = onDueDateSelect
-        )
-        PrioritySelector(priority, onPrioritySelect)
-        CategorySelector(category, categories, onCategorySelect)
-        DailyTaskToggle(isDaily, onDailyChange)
-
-        // Save button
-        Button(
-            onClick = onSaveClick,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = title.isNotBlank() && !isSaving
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = maxContentWidth)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = horizontalPadding)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(verticalSpacing)
         ) {
-            if (isSaving) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.height(verticalSpacing * 0.5f))
+
+            TaskTitleField(title, onTitleChange)
+            TaskDescriptionField(description, onDescriptionChange)
+            DueDateSelector(
+                dueDate,
+                dateFormatter,
+                onDatePickerTrigger = onDueDateSelect
+            )
+            PrioritySelector(priority, onPrioritySelect)
+            CategorySelector(category, categories, onCategorySelect)
+            DailyTaskToggle(isDaily, onDailyChange)
+
+            Spacer(modifier = Modifier.height(verticalSpacing * 0.5f))
+
+            Button(
+                onClick = onSaveClick,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = title.isNotBlank() && !isSaving
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text("Save Changes")
             }
-            Text("Save Changes")
         }
     }
 }

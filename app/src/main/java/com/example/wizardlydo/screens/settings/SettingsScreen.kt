@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -110,8 +111,13 @@ fun SettingsContent(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showWizardNameDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
 
-    // Wizard Name Dialog
+    val padding = (screenWidth * 0.04f).coerceIn(16.dp, 32.dp)
+    val spacing = (screenHeight * 0.015f).coerceIn(12.dp, 20.dp)
+
     if (showWizardNameDialog) {
         var wizardName by remember { mutableStateOf(state.wizardName) }
 
@@ -144,7 +150,6 @@ fun SettingsContent(
         )
     }
 
-    // Password Dialog
     if (showPasswordDialog) {
         PasswordChangeDialog(
             onDismiss = { showPasswordDialog = false },
@@ -156,7 +161,6 @@ fun SettingsContent(
         )
     }
 
-    // Logout Dialog
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -192,14 +196,14 @@ fun SettingsContent(
                 }
             )
         }
-    ) { padding ->
+    ) { paddingValues ->
         Column(
             modifier = Modifier
-                .padding(padding)
+                .padding(paddingValues)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = padding, vertical = padding * 0.5f),
+            verticalArrangement = Arrangement.spacedBy(spacing)
         ) {
             SettingsSection(title = "Account") {
                 SettingsItem(
@@ -253,8 +257,8 @@ fun SettingsContent(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.padding(padding),
+                        verticalArrangement = Arrangement.spacedBy(padding * 0.5f)
                     ) {
                         Text(
                             aboutTitle,
@@ -267,7 +271,7 @@ fun SettingsContent(
                             style = MaterialTheme.typography.bodyMedium
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(padding * 0.5f))
 
                         Text(
                             warningTitle,
@@ -280,7 +284,7 @@ fun SettingsContent(
                             style = MaterialTheme.typography.bodyMedium
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(padding * 0.75f))
 
                         Text(
                             "Version 1.0.0",

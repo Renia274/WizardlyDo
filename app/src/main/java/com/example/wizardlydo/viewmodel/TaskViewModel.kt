@@ -43,7 +43,6 @@ class TaskViewModel(
     private val mutableEditTaskState = MutableStateFlow(EditTaskState())
     val editTaskState = mutableEditTaskState.asStateFlow()
 
-    // Search and filter state
     private val searchQuery = MutableStateFlow("")
     private val selectedPriority = MutableStateFlow<Priority?>(null)
     private val taskType = MutableStateFlow(TaskFilter.ALL)
@@ -54,25 +53,22 @@ class TaskViewModel(
     private var recentlyCreatedTaskId: Int? = null
     private var lastCreationTime = 0L
 
-    // Task notification service might be needed
     private var taskNotificationService: TaskNotificationService? = null
 
-    // Pagination settings
     private val pageSize = 10
     private val currentPage = MutableStateFlow(1)
     val currentPageState = currentPage.asStateFlow()
 
-    // Original unfiltered tasks list
     private var allTasks = listOf<Task>()
 
     companion object {
         private const val EXP_PER_LEVEL = 1000
-        private const val MAX_WIZARD_HEALTH = 150 // Maximum health cap
+        private const val MAX_WIZARD_HEALTH = 150
 
-        // Define base stat increments
-        private const val BASE_XP_GAIN = 25 // Reduced from 50 for slower progression
-        private const val BASE_HP_GAIN = 5  // Reduced from 10 for slower progression
-        private const val BASE_STAMINA_GAIN = 7 // Reduced from 15 for slower progression
+
+        private const val BASE_XP_GAIN = 25
+        private const val BASE_HP_GAIN = 5
+        private const val BASE_STAMINA_GAIN = 7
     }
 
     init {
@@ -230,7 +226,6 @@ class TaskViewModel(
         }
     }
 
-    // Add this to reset the recently created task state
     fun resetRecentlyCreatedTask() {
         mutableState.update { it.copy(recentlyCreatedTask = null) }
     }
@@ -245,7 +240,6 @@ class TaskViewModel(
                     return@launch
                 }
 
-                // Try-catch with better error handling for wizard profile
                 val wizardProfile = try {
                     wizardRepository.getWizardProfile(userId).getOrThrow()
                 } catch (e: Exception) {
@@ -259,14 +253,12 @@ class TaskViewModel(
                     return@launch
                 }
 
-                // Log profile values for debugging
                 Log.d("TaskViewModel", "Loaded profile - Level: ${wizardProfile?.level}, " +
                         "Health: ${wizardProfile?.health}/${wizardProfile?.maxHealth}, " +
                         "Stamina: ${wizardProfile?.stamina}, " +
                         "XP: ${wizardProfile?.experience}, " +
                         "Tasks completed: ${wizardProfile?.totalTasksCompleted}")
 
-                // Tasks with better error handling
                 val tasks = try {
                     taskRepository.getAllTasks(userId)
                 } catch (e: Exception) {
@@ -724,7 +716,6 @@ class TaskViewModel(
         val expToNextLevel = expPerLevel - wizardProfile.experience
 
         // Calculate tasks needed based on level-specific experience per task
-        // This will take more tasks now due to reduced XP gain
         return when {
             wizardProfile.level < 5 -> {
                 // Levels 1-4: ~10 tasks per level
