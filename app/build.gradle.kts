@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.play.services.fido)
     implementation(libs.play.services.fido)
     implementation(libs.androidx.tools.core)
+    implementation(libs.androidx.emoji2.emojipicker)
 
 
     // Testing

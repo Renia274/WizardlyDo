@@ -24,13 +24,15 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.core.context.startKoin
+
 import org.koin.dsl.module
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import com.example.wizardlydo.utilities.TaskNotificationService
-import androidx.work.Configuration
+import com.example.wizardlydo.viewmodel.InventoryViewModel
+import com.example.wizardlydo.repository.inventory.InventoryRepository
 
 class MyApp : Application() {
     override fun onCreate() {
@@ -65,8 +67,6 @@ class MyApp : Application() {
             notificationManager.createNotificationChannel(taskChannel)
         }
     }
-
-
 }
 
 val appModule = module {
@@ -84,6 +84,7 @@ val appModule = module {
     single { get<WizardDatabase>().wizardDao() }
     single { get<WizardDatabase>().pinDao() }
     single { get<WizardDatabase>().taskDao() }
+    single { get<WizardDatabase>().inventoryDao() }
 
     single<WizardRepository> {
         object : WizardRepository {
@@ -93,6 +94,7 @@ val appModule = module {
     }
     single { PinRepository(get(), get()) }
     single { TaskRepository(get()) }
+    single { InventoryRepository(get()) }
 
     // Utilities
     single { WizardTypeConverters() }
@@ -105,6 +107,9 @@ val appModule = module {
     viewModel { TaskViewModel(get(), get(), get()) }
     viewModelOf(::PinViewModel)
     viewModelOf(::SettingsViewModel)
+
+    // Add inventory viewmodel
+    viewModel { InventoryViewModel(get(), get()) }
 
     viewModel { params ->
         CustomizationViewModel(

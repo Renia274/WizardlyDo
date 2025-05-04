@@ -5,12 +5,14 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.example.wizardlydo.room.inventory.InventoryDao
+import com.example.wizardlydo.room.inventory.InventoryItemEntity
 import com.example.wizardlydo.room.tasks.TaskDao
 import com.example.wizardlydo.room.tasks.TaskEntity
 
 @Database(
-    entities = [WizardEntity::class,PinEntity::class,TaskEntity::class],
-    version = 9,
+    entities = [WizardEntity::class,PinEntity::class,TaskEntity::class, InventoryItemEntity::class],
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(WizardTypeConverters::class)
@@ -18,6 +20,7 @@ abstract class WizardDatabase : RoomDatabase() {
     abstract fun wizardDao(): WizardDao
     abstract fun pinDao(): PinDao
     abstract fun taskDao(): TaskDao
+    abstract fun inventoryDao(): InventoryDao
 
 
     companion object {

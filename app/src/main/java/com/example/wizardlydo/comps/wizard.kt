@@ -79,7 +79,7 @@ fun getOutfitResourceId(wizardClass: WizardClass, outfit: String, gender: String
             "Blue Shirt" -> if (gender == "Male")
                 R.drawable.broad_shirt_blue
             else
-                R.drawable.broad_shirt_blue // Use male version for female
+                R.drawable.broad_shirt_blue
             else -> if (gender == "Male")
                 R.drawable.broad_armor_special_pyromancer
             else

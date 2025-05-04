@@ -1,0 +1,68 @@
+<!-- res/drawable/background_space.xml -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Space background -->
+    <path
+        android:fillColor="#0A0A2A"
+        android:pathData="M0,0h200v200H0z" />
+
+    <!-- Planet (converted from circle to path) -->
+    <path
+        android:fillColor="#9575CD"
+        android:pathData="M60,60 m-20,0 a20,20 0,1,1 40,0 a20,20 0,1,1 -40,0" />
+
+    <!-- Stars (converted from circle to path) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,20 m-1,0 a1,1 0,1,1 2,0 a1,1 0,1,1 -2,0" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,30 m-1.5,0 a1.5,1.5 0,1,1 3,0 a1.5,1.5 0,1,1 -3,0" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M80,15 m-1,0 a1,1 0,1,1 2,0 a1,1 0,1,1 -2,0" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M120,40 m-1.5,0 a1.5,1.5 0,1,1 3,0 a1.5,1.5 0,1,1 -3,0" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M170,60 m-1,0 a1,1 0,1,1 2,0 a1,1 0,1,1 -2,0" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M150,90 m-1.5,0 a1.5,1.5 0,1,1 3,0 a1.5,1.5 0,1,1 -3,0" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,140 m-1,0 a1,1 0,1,1 2,0 a1,1 0,1,1 -2,0" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M90,170 m-1.5,0 a1.5,1.5 0,1,1 3,0 a1.5,1.5 0,1,1 -3,0" />
+
+    <!-- Nebula -->
+    <path
+        android:fillType="evenOdd"
+        android:alpha="0.3"
+        android:pathData="M90,90 C110,90 130,110 130,130 C130,150 110,170 90,170 C70,170 50,150 50,130 C50,110 70,90 90,90 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="140"
+                android:centerY="140"
+                android:gradientRadius="50"
+                android:type="radial">
+                <item android:offset="0" android:color="#FF4081" />
+                <item android:offset="1" android:color="#00FF4081" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

@@ -1,6 +1,5 @@
 package com.example.wizardlydo.screens.tasks.comps
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateIntAsState
@@ -37,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -68,7 +68,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -77,6 +79,7 @@ import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.comps.getHairResourceId
 import com.example.wizardlydo.comps.getOutfitResourceId
 import com.example.wizardlydo.comps.getSkinResourceId
+import com.example.wizardlydo.comps.items.EquippedItems
 import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardProfile
@@ -93,7 +96,9 @@ import java.util.concurrent.TimeUnit
 
 @Composable
 fun WizardAvatar(
-    wizardResult: Result<WizardProfile?>?, modifier: Modifier = Modifier
+    wizardResult: Result<WizardProfile?>?,
+    equippedItems: EquippedItems?,
+    modifier: Modifier = Modifier
 ) {
     val wizardProfile = wizardResult?.getOrNull()
     val error = wizardResult?.exceptionOrNull()
@@ -108,8 +113,22 @@ fun WizardAvatar(
         when {
             wizardProfile != null -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
+                    // Background layer
+                    equippedItems?.background?.let { background ->
+                        Image(
+                            painter = painterResource(id = background.resourceId),
+                            contentDescription = "Background",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                            alpha = 0.7f
+                        )
+                    }
+
                     // Skin/Body
                     Image(
                         painter = painterResource(id = getSkinResourceId(wizardProfile.skinColor)),
@@ -120,23 +139,34 @@ fun WizardAvatar(
                             .offset(x = (-10).dp, y = (-6).dp)
                     )
 
-                    // Outfit
-                    Image(
-                        painter = painterResource(
-                            id = getOutfitResourceId(
-                                wizardProfile.wizardClass,
-                                wizardProfile.outfit,
-                                wizardProfile.gender
-                            )
-                        ),
-                        contentDescription = "Character Outfit",
-                        modifier = Modifier
-                            .size(80.dp)
-                            .align(Alignment.Center)
-                            .offset(x = (-10).dp, y = (-6).dp)
-                    )
+                    // Outfit (equipped from inventory or default)
+                    if (equippedItems?.outfit != null) {
+                        Image(
+                            painter = painterResource(id = equippedItems.outfit.resourceId),
+                            contentDescription = "Character Outfit",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .align(Alignment.Center)
+                                .offset(x = (-10).dp, y = (-6).dp)
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(
+                                id = getOutfitResourceId(
+                                    wizardProfile.wizardClass,
+                                    wizardProfile.outfit,
+                                    wizardProfile.gender
+                                )
+                            ),
+                            contentDescription = "Character Outfit",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .align(Alignment.Center)
+                                .offset(x = (-10).dp, y = (-6).dp)
+                        )
+                    }
 
-                    //Hair
+                    // Hair
                     Image(
                         painter = painterResource(
                             id = getHairResourceId(
@@ -164,38 +194,30 @@ fun WizardAvatar(
 
             else -> {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(40.dp), color = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(40.dp),
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
 }
 
+
 @Composable
 fun CharacterStatsSection(
     wizardResult: Result<WizardProfile?>?,
     modifier: Modifier = Modifier,
-    health: Int,  // Direct health value
-    maxHealth: Int,  // Direct max health
-    stamina: Int,  // Direct stamina value
-    experience: Int,  // Direct experience value
+    health: Int,
+    maxHealth: Int,
+    stamina: Int,
+    experience: Int,
     tasksCompleted: Int,
-    totalTasksForLevel: Int
+    totalTasksForLevel: Int,
+    equippedItems: EquippedItems? = null
 ) {
     val wizardProfile = wizardResult?.getOrNull()
-    val error = wizardResult?.exceptionOrNull()
 
-    // Debug log to verify the values being passed to the component
-    LaunchedEffect(health, maxHealth, stamina, experience) {
-        Log.d(
-            "CharacterStatsSection", "Displaying stats - HP: $health/$maxHealth, " +
-                    "Stamina: $stamina, XP: $experience, " +
-                    "Level: ${wizardProfile?.level ?: 0}, " +
-                    "Tasks: $tasksCompleted/$totalTasksForLevel"
-        )
-    }
-
-    // Animate health and stamina changes for visual feedback
+    // Animate values
     val animatedHealth by animateIntAsState(
         targetValue = health,
         animationSpec = tween(durationMillis = 500),
@@ -223,108 +245,113 @@ fun CharacterStatsSection(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Use row layout for more compact design
-            Row(
-                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Avatar on the left
-                WizardAvatar(
-                    wizardResult = wizardResult, modifier = Modifier.size(80.dp) // Smaller avatar
+        Box {
+            // Background layer
+            equippedItems?.background?.let { bg ->
+                Image(
+                    painter = painterResource(id = bg.resourceId),
+                    contentDescription = "Background",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.6f
                 )
+            }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Name, class and level on the right
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    when {
-                        error != null -> {
-                            Text(
-                                text = "Character Load Failed",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error
+            // Content layer
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
                             )
-                        }
+                        )
+                    )
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Character info section
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    WizardAvatar(
+                        wizardResult = wizardResult,
+                        equippedItems = equippedItems,
+                        modifier = Modifier.size(80.dp)
+                    )
 
-                        wizardProfile != null -> {
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    wizardProfile?.let { wizard ->
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = wizardProfile.wizardName,
+                                text = wizard.wizardName,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = wizardProfile.wizardClass.name,
+                                text = wizard.wizardClass.name,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            // Level text
                             Text(
-                                text = "Level ${wizardProfile.level}",
+                                text = "Level ${wizard.level}",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
-
-                        else -> {
-                            Text(
-                                text = "Loading Character...",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Stats Section
+                StatBar(
+                    label = "HP",
+                    value = animatedHealth,
+                    maxValue = maxHealth,
+                    color = Color(0xFFE53935),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                StatBar(
+                    label = "Stamina",
+                    value = animatedStamina,
+                    maxValue = 100,
+                    color = Color(0xFF43A047),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // XP and tasks to level up - pass the direct values
+                CompactLevelProgressSection(
+                    level = wizardProfile?.level ?: 1,
+                    experience = animatedExp,  // Use animated experience
+                    tasksCompleted = tasksCompleted,
+                    totalTasksForLevel = totalTasksForLevel
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Task progress section - pass all values directly
+                TaskProgressSection(
+                    tasksCompleted = tasksCompleted,
+                    totalTasksForLevel = totalTasksForLevel
+                )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Stats Section - Always show these stats regardless of wizard profile loading state
-            // Use the direct parameter values instead of the wizard profile
-            // HP bar - use animated values for smooth transitions
-            StatBar(
-                label = "HP",
-                value = animatedHealth,
-                maxValue = maxHealth,
-                color = Color(0xFFE53935),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
-
-            // Stamina bar - use animated values
-            StatBar(
-                label = "Stamina",
-                value = animatedStamina,
-                maxValue = 100,
-                color = Color(0xFF43A047),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(6.dp)) // Reduced spacing
-
-            // XP and tasks to level up - pass the direct values
-            CompactLevelProgressSection(
-                level = wizardProfile?.level ?: 1,
-                experience = animatedExp,  // Use animated experience
-                tasksCompleted = tasksCompleted,
-                totalTasksForLevel = totalTasksForLevel
-            )
-
-            // Task progress section - pass all values directly
-            Spacer(modifier = Modifier.height(8.dp))
-            TaskProgressSection(
-                tasksCompleted = tasksCompleted,
-                totalTasksForLevel = totalTasksForLevel
-            )
         }
     }
 }
@@ -349,7 +376,7 @@ private fun StatBar(
             )
         }
 
-        Spacer(modifier = Modifier.height(2.dp)) // Reduced spacing
+        Spacer(modifier = Modifier.height(2.dp))
 
         LinearProgressIndicator(
             progress = {
@@ -924,14 +951,15 @@ fun PriorityIndicator(priority: Priority) {
 fun TaskBottomBar(
     onHome: () -> Unit,
     onSettings: () -> Unit,
-    onSearch: () -> Unit
+    onSearch: () -> Unit,
+    onInventory: () -> Unit
 ) {
     BottomAppBar {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onHome) {
@@ -942,8 +970,10 @@ fun TaskBottomBar(
                 Icon(Icons.Default.Search, contentDescription = "Search")
             }
 
+            IconButton(onClick = onInventory) {
+                Icon(Icons.Default.Person, contentDescription = "Inventory")
+            }
 
-            // Settings icon
             IconButton(onClick = onSettings) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings")
             }
@@ -1163,7 +1193,6 @@ fun TaskSearchBar(
                     }
                 }
 
-                // Apply button
                 Button(
                     onClick = {
                         viewModel.activateSearch()

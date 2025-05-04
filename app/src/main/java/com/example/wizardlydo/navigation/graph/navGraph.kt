@@ -22,6 +22,7 @@ import com.example.wizardlydo.screens.signupsigin.WelcomeAuthScreen
 import com.example.wizardlydo.screens.splash.SplashScreen
 import com.example.wizardlydo.screens.tasks.CreateTaskScreen
 import com.example.wizardlydo.screens.tasks.EditTaskScreen
+import com.example.wizardlydo.screens.tasks.InventoryScreen
 import com.example.wizardlydo.screens.tasks.TaskScreen
 
 @SuppressLint("NewApi")
@@ -136,6 +137,8 @@ fun NavigationGraph() {
         }
 
         composable(Screen.Tasks.route) {
+
+
             TaskScreen(
                 onBack = {
                     navController.navigate(Screen.Login.route) {
@@ -154,25 +157,14 @@ fun NavigationGraph() {
                 onSettings = {
                     navController.navigate(Screen.Tasks.Settings.route)
                 },
+                onInventory = {
+                    navController.navigate(Screen.Inventory.route)
+                }
             )
         }
 
-        // Define all nested Task routes explicitly
         composable(Screen.Tasks.CreateTask.route) {
             CreateTaskScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(
-            route = Screen.Tasks.EditTask.route,
-            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val taskIdString = backStackEntry.arguments?.getString("taskId") ?: "0"
-            val taskId = taskIdString.toIntOrNull() ?: 0
-
-            EditTaskScreen(
-                taskId = taskId,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -198,6 +190,13 @@ fun NavigationGraph() {
                         popUpTo(Screen.Tasks.route) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        // Add the inventory screen
+        composable(Screen.Inventory.route) {
+            InventoryScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

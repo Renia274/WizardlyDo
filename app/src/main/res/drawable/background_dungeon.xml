@@ -1,0 +1,66 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Dark background -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M0,0 L200,0 L200,200 L0,200 Z" />
+
+    <!-- Stone wall texture (converted from rect to path) -->
+    <path
+        android:fillColor="#424242"
+        android:pathData="M0,0 L200,0 L200,40 L0,40 Z" />
+
+    <path
+        android:fillColor="#424242"
+        android:pathData="M0,80 L200,80 L200,120 L0,120 Z" />
+
+    <path
+        android:fillColor="#424242"
+        android:pathData="M0,160 L200,160 L200,200 L0,200 Z" />
+
+    <!-- Torch light -->
+    <path
+        android:fillType="evenOdd"
+        android:alpha="0.3"
+        android:pathData="M0,0 L80,0 L80,120 L0,120 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="40"
+                android:centerY="60"
+                android:gradientRadius="40"
+                android:type="radial">
+                <item android:offset="0" android:color="#FFA000" />
+                <item android:offset="1" android:color="#00FFA000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Torch flame -->
+    <path
+        android:fillColor="#FFA000"
+        android:pathData="M35,50 L45,50 Q40,40 40,55 Q40,50 40,60 Q40,65 35,60 L35,50 Z" />
+
+    <!-- Torch handle (converted from rect to path) -->
+    <path
+        android:fillColor="#795548"
+        android:pathData="M36,60 L44,60 L44,100 L36,100 Z" />
+
+    <!-- Chain and shackle -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M160,20 C160,15 155,10 150,10 C145,10 140,15 140,20 C140,25 145,30 150,30 C155,30 160,25 160,20 Z" />
+
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M149,30 L151,30 L151,50 L149,50 Z" />
+
+    <!-- Floor -->
+    <path
+        android:fillColor="#424242"
+        android:pathData="M0,190 L200,190 L200,200 L0,200 Z" />
+</vector>

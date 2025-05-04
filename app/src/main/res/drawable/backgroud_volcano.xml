@@ -1,0 +1,27 @@
+<!-- res/drawable/background_volcano.xml -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Sky -->
+    <path
+        android:fillColor="#BF360C"
+        android:pathData="M0,0h200v200H0z" />
+
+    <!-- Volcano mountain -->
+    <path
+        android:fillColor="#424242"
+        android:pathData="M20,180h160L100,40z" />
+
+    <!-- Lava -->
+    <path
+        android:fillColor="#FF5722"
+        android:pathData="M80,60h40l10,10h-20l10,10h-20l-20,0l-10,-10l10,-10z" />
+
+    <!-- Ground -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M0,180h200v20H0z" />
+</vector>

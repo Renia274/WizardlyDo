@@ -1,8 +1,6 @@
 package com.example.wizardlydo.screens.tasks
 
-import android.Manifest
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -10,20 +8,16 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -44,20 +38,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.wizardlydo.comps.items.EquippedItems
 import com.example.wizardlydo.data.Priority
 import com.example.wizardlydo.data.Task
 import com.example.wizardlydo.data.WizardClass
 import com.example.wizardlydo.data.WizardProfile
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
-import com.example.wizardlydo.getDaysRemaining
 import com.example.wizardlydo.screens.tasks.comps.CharacterStatsSection
 import com.example.wizardlydo.screens.tasks.comps.EmptyTaskList
 import com.example.wizardlydo.screens.tasks.comps.ErrorMessage
@@ -69,16 +61,14 @@ import com.example.wizardlydo.screens.tasks.comps.TaskListSection
 import com.example.wizardlydo.screens.tasks.comps.TaskSearchBar
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.utilities.TaskNotificationService
+import com.example.wizardlydo.viewmodel.InventoryViewModel
 import com.example.wizardlydo.viewmodel.TaskViewModel
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(
     viewModel: TaskViewModel = koinViewModel(),
@@ -87,54 +77,59 @@ fun TaskScreen(
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
     onSettings: () -> Unit,
+    onInventory: () -> Unit,
+    inventoryViewModel: InventoryViewModel? = null
 ) {
+
+
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
 
-    // Search state
+    // Fix: Use proper delegates
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
 
-    // Get current wizard profile and guarantee it's not null for UI updates
+    // Get equipped items from inventory viewmodel if provided
+    val equippedItems by if (inventoryViewModel != null) {
+        inventoryViewModel.equippedItemsFlow.collectAsState()
+    } else {
+        remember { mutableStateOf<EquippedItems?>(null) }
+    }
+
     val wizardProfile = state.wizardProfile?.getOrNull()
 
-    // These state values will be updated directly from the wizard profile
     val currentHealth = wizardProfile?.health ?: 100
     val currentMaxHealth = wizardProfile?.maxHealth ?: 100
     val currentStamina = wizardProfile?.stamina ?: 50
     val currentLevel = wizardProfile?.level ?: 1
     val currentExp = wizardProfile?.experience ?: 0
 
-    // Track FAB and BottomBar visibility
     var isFabVisible by remember { mutableStateOf(true) }
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
-    // Calculate task progression
     val (completedTasks, totalTasksForLevel) = remember(wizardProfile) {
         derivedStateOf {
             wizardProfile?.let { profile ->
                 val totalNeeded = when {
-                    profile.level < 5 -> 10  // Increased from 4 to 10 for slower progression
-                    profile.level < 8 -> 15  // Increased from 6 to 15 for slower progression
-                    else -> 20  // Increased from 10 to 20 for slower progression
+                    profile.level < 5 -> 10
+                    profile.level < 8 -> 15
+                    else -> 20
                 }
                 val remaining = viewModel.getTasksToNextLevel(profile)
                 Pair((totalNeeded - remaining).coerceAtLeast(0), totalNeeded)
-            } ?: Pair(0, 10)  // Default to 10 tasks for level 1
+            } ?: Pair(0, 10)
         }
     }.value
 
-    // Ensure we load data when the screen starts
     LaunchedEffect(Unit) {
         viewModel.loadData()
         viewModel.setNotificationService(taskNotificationService)
     }
 
-    // Apply search filters when they change
     LaunchedEffect(searchQuery, selectedPriority, state.currentFilter) {
         if (isSearchVisible) {
             viewModel.applySearchFilters(
@@ -145,7 +140,6 @@ fun TaskScreen(
         }
     }
 
-    // Track search visibility
     LaunchedEffect(isSearchVisible) {
         if (isSearchVisible) {
             viewModel.activateSearch()
@@ -154,60 +148,10 @@ fun TaskScreen(
         }
     }
 
-    // Notification permission and badge state
-    val notificationPermission = rememberPermissionState(
-        permission = Manifest.permission.POST_NOTIFICATIONS
-    )
-    var showNotificationBadge by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        if (!notificationPermission.status.isGranted) {
-            notificationPermission.launchPermissionRequest()
-        }
-        coroutineScope.launch {
-            val tasks = viewModel.getUpcomingTasksSync()
-            showNotificationBadge = tasks.isNotEmpty()
-        }
-    }
-
-    LaunchedEffect(state.recentlyCreatedTask) {
-        state.recentlyCreatedTask?.let { newTask ->
-            taskNotificationService.showTaskCreatedNotification(newTask)
-            if (newTask.dueDate != null && !newTask.isCompleted) {
-                taskNotificationService.scheduleTaskNotification(newTask)
-            }
-
-            newTask.getDaysRemaining()?.let { days ->
-                val message = if (days in 1..7) {
-                    "Added: ${newTask.title} (Due in $days day${if (days != 1) "s" else ""})"
-                } else {
-                    "Added: ${newTask.title}"
-                }
-
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = message,
-                        duration = SnackbarDuration.Short
-                    )
-                    viewModel.resetRecentlyCreatedTask()
-                }
-            } ?: run {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "Added: ${newTask.title}",
-                        duration = SnackbarDuration.Short
-                    )
-                    viewModel.resetRecentlyCreatedTask()
-                }
-            }
-        }
-    }
-
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             if (isSearchVisible) {
-                // Show search bar when search is active
                 TaskSearchBar(
                     searchQuery = searchQuery,
                     onSearchQueryChange = { searchQuery = it },
@@ -224,42 +168,11 @@ fun TaskScreen(
                     viewModel = viewModel
                 )
             } else {
-                // Show regular top app bar when search is not active
                 TopAppBar(
                     title = { Text("Task Manager") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                        }
-                    },
-                    actions = {
-                        Box {
-                            IconButton(
-                                onClick = {
-                                    coroutineScope.launch {
-                                        val tasks = viewModel.getUpcomingTasksSync()
-                                        if (tasks.isNotEmpty()) {
-                                            taskNotificationService.showTaskSummaryNotification(tasks)
-                                            showNotificationBadge = false
-                                        } else {
-                                            snackbarHostState.showSnackbar(
-                                                message = "No upcoming tasks found",
-                                                duration = SnackbarDuration.Short
-                                            )
-                                        }
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
-                            }
-                            if (showNotificationBadge) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .background(Color.Red, CircleShape)
-                                        .align(Alignment.TopStart)
-                                )
-                            }
                         }
                     }
                 )
@@ -283,7 +196,8 @@ fun TaskScreen(
                         isSearchVisible = true
                         viewModel.activateSearch()
                     },
-                    onSettings = onSettings
+                    onSettings = onSettings,
+                    onInventory = onInventory
                 )
             }
         },
@@ -321,8 +235,8 @@ fun TaskScreen(
             experience = currentExp,
             tasksCompleted = completedTasks,
             totalTasksForLevel = totalTasksForLevel,
+            equippedItems = equippedItems, // Pass equipped items to TaskContent
             onCompleteTask = { taskId ->
-                Log.d("TaskScreen", "Complete task clicked: $taskId")
                 coroutineScope.launch {
                     viewModel.completeTask(taskId, taskNotificationService)
                 }
@@ -368,6 +282,7 @@ fun TaskContent(
     experience: Int,
     tasksCompleted: Int,
     totalTasksForLevel: Int,
+    equippedItems: EquippedItems? = null,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
@@ -384,17 +299,6 @@ fun TaskContent(
     val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
     val verticalSpacing = (screenHeight * 0.01f).coerceIn(4.dp, 8.dp)
 
-    // Debug log to verify proper content values
-    LaunchedEffect(wizardProfile, health, stamina, experience) {
-        Log.d("TaskContent", "Content values - " +
-                "Health: $health/$maxHealth, " +
-                "Stamina: $stamina, " +
-                "XP: $experience, " +
-                "Tasks: $tasksCompleted/$totalTasksForLevel, " +
-                "Current page: ${state.currentPage}/${state.totalPages}, " +
-                "Wizard Profile null? ${wizardProfile == null}")
-    }
-
     Column(modifier.fillMaxSize()) {
         CharacterStatsSection(
             wizardResult = state.wizardProfile,
@@ -404,7 +308,8 @@ fun TaskContent(
             stamina = stamina,
             experience = experience,
             tasksCompleted = tasksCompleted,
-            totalTasksForLevel = totalTasksForLevel
+            totalTasksForLevel = totalTasksForLevel,
+            equippedItems = equippedItems // Pass equipped items to stats section
         )
 
         wizardProfile?.let { LevelUpIndicator(it.level) }
@@ -432,7 +337,6 @@ fun TaskContent(
                     onNextPage = onNextPage,
                     onPreviousPage = onPreviousPage,
                     onCompleteTask = { taskId ->
-                        Log.d("TaskContent", "Completing task: $taskId")
                         onCompleteTask(taskId)
                     },
                     onEditTask = onEditTask,
