@@ -1,7 +1,7 @@
 package com.example.wizardlydo.data.models
 
-import com.example.wizardlydo.data.Priority
-import com.example.wizardlydo.data.Task
+import com.example.wizardlydo.data.tasks.Priority
+import com.example.wizardlydo.data.tasks.Task
 
 data class EditTaskState(
     val task: Task? = null,

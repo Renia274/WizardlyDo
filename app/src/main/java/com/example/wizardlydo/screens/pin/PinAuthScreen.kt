@@ -23,7 +23,7 @@ import com.example.wizardlydo.screens.pin.comps.PinAuthHeader
 import com.example.wizardlydo.screens.pin.comps.PinInputSection
 import com.example.wizardlydo.screens.pin.comps.PinVerifyButton
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.PinViewModel
+import com.example.wizardlydo.viewmodel.pin.PinViewModel
 import org.koin.androidx.compose.koinViewModel
 
 

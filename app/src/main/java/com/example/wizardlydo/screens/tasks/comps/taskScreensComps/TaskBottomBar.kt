@@ -1,0 +1,52 @@
+package com.example.wizardlydo.screens.tasks.comps.taskScreensComps
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun TaskBottomBar(
+    onHome: () -> Unit,
+    onSettings: () -> Unit,
+    onSearch: () -> Unit,
+    onInventory: () -> Unit
+) {
+    BottomAppBar {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onHome) {
+                Icon(Icons.Default.Home, contentDescription = "Home")
+            }
+
+            IconButton(onClick = onSearch) {
+                Icon(Icons.Default.Search, contentDescription = "Search")
+            }
+
+            IconButton(onClick = onInventory) {
+                Icon(Icons.Default.Person, contentDescription = "Inventory")
+            }
+
+            IconButton(onClick = onSettings) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings")
+            }
+        }
+    }
+}

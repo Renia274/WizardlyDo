@@ -9,7 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.example.wizardlydo.data.WizardClass
+import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.navigation.screens.Screen
 import com.example.wizardlydo.screens.customization.CustomizationScreen
 import com.example.wizardlydo.screens.login.LoginScreen

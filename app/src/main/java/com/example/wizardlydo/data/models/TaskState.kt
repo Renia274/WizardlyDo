@@ -1,8 +1,8 @@
 package com.example.wizardlydo.data.models
 
-import com.example.wizardlydo.data.Priority
-import com.example.wizardlydo.data.Task
-import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.data.tasks.Priority
+import com.example.wizardlydo.data.tasks.Task
+import com.example.wizardlydo.data.wizard.WizardProfile
 
 data class TaskUiState(
     val wizardProfile: Result<WizardProfile?>? = null,

@@ -48,7 +48,7 @@ import com.example.wizardlydo.screens.settings.comps.SettingsActionItem
 import com.example.wizardlydo.screens.settings.comps.SettingsItem
 import com.example.wizardlydo.screens.settings.comps.SettingsSection
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.SettingsViewModel
+import com.example.wizardlydo.viewmodel.settings.SettingsViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

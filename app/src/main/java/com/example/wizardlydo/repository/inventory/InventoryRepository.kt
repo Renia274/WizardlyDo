@@ -1,6 +1,6 @@
 package com.example.wizardlydo.repository.inventory
 
-import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.inventory.InventoryItems
 import com.example.wizardlydo.room.inventory.InventoryDao
 import com.example.wizardlydo.room.inventory.InventoryItemEntity

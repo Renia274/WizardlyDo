@@ -1,6 +1,6 @@
 package com.example.wizardlydo.navigation.screens
 
-import com.example.wizardlydo.data.WizardClass
+import com.example.wizardlydo.data.wizard.WizardClass
 
 
 sealed class Screen(val route: String) {

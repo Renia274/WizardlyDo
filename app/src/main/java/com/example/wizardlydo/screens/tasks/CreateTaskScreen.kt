@@ -44,18 +44,18 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.data.Priority
-import com.example.wizardlydo.data.Task
-import com.example.wizardlydo.screens.tasks.comps.CategorySelector
-import com.example.wizardlydo.screens.tasks.comps.CreateTaskButton
-import com.example.wizardlydo.screens.tasks.comps.DailyTaskToggle
-import com.example.wizardlydo.screens.tasks.comps.DueDateSelector
-import com.example.wizardlydo.screens.tasks.comps.PrioritySelector
-import com.example.wizardlydo.screens.tasks.comps.TaskDescriptionField
-import com.example.wizardlydo.screens.tasks.comps.TaskTitleField
+import com.example.wizardlydo.data.tasks.Priority
+import com.example.wizardlydo.data.tasks.Task
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.CreateTaskButton
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.CategorySelector
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.DailyTaskToggle
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.DueDateSelector
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.PrioritySelector
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskDescriptionField
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskTitleField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.utilities.TaskNotificationService
-import com.example.wizardlydo.viewmodel.TaskViewModel
+import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
@@ -77,7 +77,6 @@ fun CreateTaskScreen(
     val taskNotificationService = remember { TaskNotificationService(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Collect userId as state instead of accessing .value directly
     val userId by viewModel.currentUserIdState.collectAsState()
 
     Scaffold(
@@ -99,7 +98,6 @@ fun CreateTaskScreen(
             padding = paddingValues,
             onCreateTask = { task ->
                 coroutineScope.launch {
-                    // Create the task
                     viewModel.createTask(task)
 
                     taskNotificationService.showTaskCreatedNotification(task)
@@ -109,7 +107,6 @@ fun CreateTaskScreen(
                         taskNotificationService.scheduleTaskNotification(task)
                     }
 
-                    // Navigate back to task screen
                     onBack()
                 }
             },

@@ -32,7 +32,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,31 +42,33 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.comps.items.EquippedItems
-import com.example.wizardlydo.data.Priority
-import com.example.wizardlydo.data.Task
-import com.example.wizardlydo.data.WizardClass
-import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.R
+import com.example.wizardlydo.comps.ErrorMessage
+import com.example.wizardlydo.comps.FullScreenLoading
+import com.example.wizardlydo.data.inventory.ItemType
+import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.data.tasks.Priority
+import com.example.wizardlydo.data.tasks.Task
+import com.example.wizardlydo.data.wizard.WizardClass
+import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
-import com.example.wizardlydo.screens.tasks.comps.CharacterStatsSection
-import com.example.wizardlydo.screens.tasks.comps.EmptyTaskList
-import com.example.wizardlydo.screens.tasks.comps.ErrorMessage
-import com.example.wizardlydo.screens.tasks.comps.FullScreenLoading
-import com.example.wizardlydo.screens.tasks.comps.LevelUpIndicator
-import com.example.wizardlydo.screens.tasks.comps.TaskBottomBar
-import com.example.wizardlydo.screens.tasks.comps.TaskFilterChips
-import com.example.wizardlydo.screens.tasks.comps.TaskListSection
-import com.example.wizardlydo.screens.tasks.comps.TaskSearchBar
+import com.example.wizardlydo.room.inventory.InventoryItemEntity
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.CharacterStatsSection
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.EmptyTaskList
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.LevelUpIndicator
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskBottomBar
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskFilterChips
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskSearchBar
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskListSection
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.utilities.TaskNotificationService
-import com.example.wizardlydo.viewmodel.InventoryViewModel
-import com.example.wizardlydo.viewmodel.TaskViewModel
+import com.example.wizardlydo.viewmodel.inventory.InventoryViewModel
+import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 
-// TaskScreen.kt
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,17 +88,14 @@ fun TaskScreen(
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
 
-    // Fix: Use proper delegates
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
 
-    // Get equipped items from inventory viewmodel
     val equippedItems by inventoryViewModel.equippedItemsFlow.collectAsState()
 
     val wizardProfile = state.wizardProfile?.getOrNull()
 
-    // Use values directly from wizardProfile - this ensures persistence
     val currentHealth = wizardProfile?.health ?: 100
     val currentMaxHealth = wizardProfile?.maxHealth ?: WizardProfile.calculateMaxHealth(1)
     val currentStamina = wizardProfile?.stamina ?: 50
@@ -108,19 +106,13 @@ fun TaskScreen(
     var isFabVisible by remember { mutableStateOf(true) }
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
-    val (completedTasks, totalTasksForLevel) = remember(wizardProfile) {
-        derivedStateOf {
-            wizardProfile?.let { profile ->
-                val totalNeeded = when {
-                    profile.level < 5 -> 10
-                    profile.level < 8 -> 15
-                    else -> 20
-                }
-                val remaining = viewModel.getTasksToNextLevel(profile)
-                Pair((totalNeeded - remaining).coerceAtLeast(0), totalNeeded)
-            } ?: Pair(0, 10)
-        }
-    }.value
+    val (completedTasksForLevel, totalTasksForLevel) = remember(wizardProfile) {
+        wizardProfile?.let { profile ->
+            val completed = viewModel.getTasksCompletedForLevel(profile)
+            val total = viewModel.getTasksRequiredForLevel(profile.level)
+            Pair(completed, total)
+        } ?: Pair(0, 10)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadData()
@@ -231,9 +223,9 @@ fun TaskScreen(
             stamina = currentStamina,
             maxStamina = currentMaxStamina,
             experience = currentExp,
-            tasksCompleted = completedTasks,
+            tasksCompleted = completedTasksForLevel,
             totalTasksForLevel = totalTasksForLevel,
-            equippedItems = equippedItems, // Pass equipped items to TaskContent
+            equippedItems = equippedItems,
             onCompleteTask = { taskId ->
                 coroutineScope.launch {
                     viewModel.completeTask(taskId, taskNotificationService)
@@ -269,7 +261,6 @@ fun TaskScreen(
     }
 }
 
-// TaskContent.kt
 @Composable
 fun TaskContent(
     modifier: Modifier = Modifier,
@@ -295,7 +286,6 @@ fun TaskContent(
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
 
-    // Responsive values
     val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
     val verticalSpacing = (screenHeight * 0.01f).coerceIn(4.dp, 8.dp)
 
@@ -310,7 +300,7 @@ fun TaskContent(
             experience = experience,
             tasksCompleted = tasksCompleted,
             totalTasksForLevel = totalTasksForLevel,
-            equippedItems = equippedItems // Pass equipped items to stats section
+            equippedItems = equippedItems
         )
 
         wizardProfile?.let { LevelUpIndicator(it.level) }
@@ -434,3 +424,6 @@ fun TaskContentPreview() {
         )
     }
 }
+
+
+

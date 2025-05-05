@@ -12,10 +12,9 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.example.wizardlydo.MainActivity
 import com.example.wizardlydo.R
-import com.example.wizardlydo.data.Priority
-import com.example.wizardlydo.data.Task
-import com.example.wizardlydo.data.WizardProfile
-import com.example.wizardlydo.getDaysRemaining
+import com.example.wizardlydo.data.tasks.Priority
+import com.example.wizardlydo.data.tasks.Task
+import com.example.wizardlydo.data.wizard.WizardProfile
 import java.util.concurrent.TimeUnit
 
 class TaskNotificationService(private val context: Context) {
@@ -345,6 +344,14 @@ class TaskNotificationService(private val context: Context) {
                     }
                 }
             }
+        }
+    }
+
+    fun Task.getDaysRemaining(): Int? {
+        return dueDate?.let { dueDateMillis ->
+            val currentTime = System.currentTimeMillis()
+            val diff = dueDateMillis - currentTime
+            TimeUnit.MILLISECONDS.toDays(diff).toInt().coerceAtLeast(0) + 1 // +1 to count current partial day
         }
     }
 

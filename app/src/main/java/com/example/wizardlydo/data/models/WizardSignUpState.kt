@@ -1,6 +1,6 @@
 package com.example.wizardlydo.data.models
 
-import com.example.wizardlydo.data.WizardClass
+import com.example.wizardlydo.data.wizard.WizardClass
 
 data class WizardSignUpState(
     val email: String = "",

@@ -3,8 +3,8 @@ package com.example.wizardlydo.room.tasks
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.wizardlydo.data.Priority
-import com.example.wizardlydo.data.Task
+import com.example.wizardlydo.data.tasks.Priority
+import com.example.wizardlydo.data.tasks.Task
 
 @Entity(tableName = "tasks")
 data class TaskEntity(

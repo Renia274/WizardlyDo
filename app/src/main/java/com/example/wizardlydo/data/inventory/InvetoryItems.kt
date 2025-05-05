@@ -1,13 +1,15 @@
 package com.example.wizardlydo.data.inventory
 
 import com.example.wizardlydo.R
-import com.example.wizardlydo.data.WizardClass
+import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.room.inventory.InventoryItemEntity
 
 
 enum class ItemType {
     OUTFIT,
-    BACKGROUND
+    BACKGROUND,
+    ACCESSORY,
+    WEAPON
 }
 
 object InventoryItems {
@@ -132,6 +134,34 @@ object InventoryItems {
         )
     )
 
+
+    val commonItems = listOf(
+        InventoryItemEntity(
+            id = "accessory_wizard_hat",
+            wizardId = "",
+            itemId = "wizard_hat",
+            itemType = ItemType.ACCESSORY.toString(),
+            isUnlocked = false,
+            isEquipped = false,
+            unlockLevel = 15,
+            resourceId = R.drawable.wizard_hat,
+            name = "Wizard Hat",
+            description = "Prestigious wizard's hat for accomplished mages"
+        ),
+        InventoryItemEntity(
+            id = "weapon_golden_staff",
+            wizardId = "",
+            itemId = "golden_staff",
+            itemType = ItemType.WEAPON.toString(),
+            isUnlocked = false,
+            isEquipped = false,
+            unlockLevel = 30,
+            resourceId = R.drawable.golden_staff,
+            name = "Golden Staff",
+            description = "The ultimate staff of power for master wizards"
+        )
+    )
+
     val backgrounds = listOf(
         InventoryItemEntity(
             id = "background_1",
@@ -197,10 +227,10 @@ object InventoryItems {
 
     fun getItemsForClass(wizardClass: WizardClass): List<InventoryItemEntity> {
         return when (wizardClass) {
-            WizardClass.MYSTWEAVER -> mystweaverOutfits + backgrounds
-            WizardClass.DRACONIST -> dragonistOutfits + backgrounds
-            WizardClass.LUMINARI -> luminariOutfits + backgrounds
-            WizardClass.CHRONOMANCER -> chronomancerOutfits + backgrounds
+            WizardClass.MYSTWEAVER -> mystweaverOutfits + backgrounds + commonItems
+            WizardClass.DRACONIST -> dragonistOutfits + backgrounds + commonItems
+            WizardClass.LUMINARI -> luminariOutfits + backgrounds + commonItems
+            WizardClass.CHRONOMANCER -> chronomancerOutfits + backgrounds + commonItems
         }
     }
 }

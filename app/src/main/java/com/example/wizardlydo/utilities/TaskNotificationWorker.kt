@@ -3,9 +3,8 @@ package com.example.wizardlydo.utilities
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.example.wizardlydo.data.Priority
-import com.example.wizardlydo.data.Task
-import java.util.concurrent.TimeUnit
+import com.example.wizardlydo.data.tasks.Priority
+import com.example.wizardlydo.data.tasks.Task
 
 class TaskNotificationWorker(
     private val context: Context,

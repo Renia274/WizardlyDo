@@ -26,16 +26,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.comps.items.EquippedItems
-import com.example.wizardlydo.comps.items.ItemTypes
-import com.example.wizardlydo.data.WizardClass
-import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.data.wizard.items.ItemTypes
+import com.example.wizardlydo.data.wizard.WizardClass
+import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.room.inventory.InventoryItemEntity
-import com.example.wizardlydo.screens.tasks.comps.CharacterStatsSection
+import com.example.wizardlydo.screens.tasks.comps.inventory.BasicCharacterStatsSection
 import com.example.wizardlydo.screens.tasks.comps.inventory.InventoryItemsSection
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.InventoryUiState
-import com.example.wizardlydo.viewmodel.InventoryViewModel
+import com.example.wizardlydo.viewmodel.inventory.InventoryUiState
+import com.example.wizardlydo.viewmodel.inventory.InventoryViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,20 +84,9 @@ fun InventoryContent(
             .verticalScroll(rememberScrollState())
     ) {
         wizardProfile?.let { wizard ->
-            CharacterStatsSection(
-                wizardResult = Result.success(wizard),
+            BasicCharacterStatsSection(
+                wizardProfile = wizard,
                 modifier = Modifier.padding(16.dp),
-                health = wizard.health,
-                maxHealth = wizard.maxHealth,
-                stamina = wizard.stamina,
-                maxStamina = wizard.maxStamina,  // Added this parameter
-                experience = wizard.experience,
-                tasksCompleted = wizard.totalTasksCompleted,
-                totalTasksForLevel = when {
-                    wizard.level < 5 -> 10
-                    wizard.level < 8 -> 15
-                    else -> 20
-                },
                 equippedItems = equippedItems
             )
 
@@ -154,11 +143,10 @@ fun InventoryContentPreview() {
             gender = "Female",
             skinColor = "light",
             hairColor = "purple",
-            hairStyle = "1",  // Keep as String to match WizardProfile
+            hairStyle = "1",
             outfit = "Mystic Robe"
         )
 
-        // Rest of the preview code remains the same...
 
         val sampleEquippedItems = EquippedItems(
             outfit = InventoryItemEntity(

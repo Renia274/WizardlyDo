@@ -25,7 +25,7 @@ import com.example.wizardlydo.screens.recovery.comps.RecoveryHeader
 import com.example.wizardlydo.screens.recovery.comps.RecoverySubmitButton
 import com.example.wizardlydo.screens.recovery.comps.RecoverySuccessDialog
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.RecoveryViewModel
+import com.example.wizardlydo.viewmodel.recovery.RecoveryViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

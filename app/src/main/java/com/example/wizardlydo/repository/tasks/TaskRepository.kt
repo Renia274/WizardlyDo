@@ -1,6 +1,6 @@
 package com.example.wizardlydo.repository.tasks
 
-import com.example.wizardlydo.data.Task
+import com.example.wizardlydo.data.tasks.Task
 import com.example.wizardlydo.room.tasks.TaskDao
 import com.example.wizardlydo.room.tasks.TaskEntity
 import kotlinx.coroutines.Dispatchers

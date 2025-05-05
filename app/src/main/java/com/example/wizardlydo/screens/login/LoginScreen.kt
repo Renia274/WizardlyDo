@@ -33,7 +33,7 @@ import com.example.wizardlydo.screens.login.comps.LoginErrorDialog
 import com.example.wizardlydo.screens.login.comps.LoginHeader
 import com.example.wizardlydo.screens.login.comps.PasswordField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.LoginViewModel
+import com.example.wizardlydo.viewmodel.login.LoginViewModel
 import org.koin.androidx.compose.koinViewModel
 
 

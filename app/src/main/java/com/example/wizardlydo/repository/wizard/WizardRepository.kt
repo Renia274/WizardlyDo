@@ -1,9 +1,9 @@
 package com.example.wizardlydo.repository.wizard
 
-import com.example.wizardlydo.data.WizardProfile
-import com.example.wizardlydo.mappers.toEntity
-import com.example.wizardlydo.room.WizardDao
-import com.example.wizardlydo.room.WizardEntity
+import com.example.wizardlydo.data.wizard.WizardProfile
+import com.example.wizardlydo.mappers.wizard.toEntity
+import com.example.wizardlydo.room.wizard.WizardDao
+import com.example.wizardlydo.room.wizard.WizardEntity
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await

@@ -31,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.data.WizardClass
+import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
 import com.example.wizardlydo.screens.customization.comps.GenderSelector
 import com.example.wizardlydo.screens.customization.comps.HairColorSelector
@@ -40,7 +40,7 @@ import com.example.wizardlydo.screens.customization.comps.OutfitSelector
 import com.example.wizardlydo.screens.customization.comps.SkinSelector
 import com.example.wizardlydo.screens.customization.comps.WizardPreview
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.CustomizationViewModel
+import com.example.wizardlydo.viewmodel.customization.CustomizationViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 

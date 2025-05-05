@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.data.WizardClass
+import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.screens.signup.comps.EmailField
 import com.example.wizardlydo.screens.signup.comps.ErrorDialogComponent
 import com.example.wizardlydo.screens.signup.comps.GoogleSignInButton
@@ -34,7 +34,7 @@ import com.example.wizardlydo.screens.signup.comps.SignupHeader
 import com.example.wizardlydo.screens.signup.comps.WizardClassSelector
 import com.example.wizardlydo.screens.signup.comps.WizardNameField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.WizardAuthViewModel
+import com.example.wizardlydo.viewmodel.signup.WizardAuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.GoogleAuthProvider

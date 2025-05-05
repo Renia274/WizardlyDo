@@ -32,8 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.comps.getHairResourceId
-import com.example.wizardlydo.data.WizardClass
+import com.example.wizardlydo.data.wizard.getHairResourceId
+import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
 
 // WizardPreview Customization

@@ -5,17 +5,17 @@ import androidx.work.WorkManager
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.example.wizardlydo.repository.pin.PinRepository
 import com.example.wizardlydo.repository.tasks.TaskRepository
-import com.example.wizardlydo.room.WizardDao
-import com.example.wizardlydo.room.WizardDatabase
-import com.example.wizardlydo.room.WizardTypeConverters
+import com.example.wizardlydo.room.wizard.WizardDao
+import com.example.wizardlydo.room.wizard.WizardDatabase
+import com.example.wizardlydo.room.wizard.WizardTypeConverters
 import com.example.wizardlydo.utilities.SecurityProvider
-import com.example.wizardlydo.viewmodel.CustomizationViewModel
-import com.example.wizardlydo.viewmodel.LoginViewModel
-import com.example.wizardlydo.viewmodel.PinViewModel
-import com.example.wizardlydo.viewmodel.RecoveryViewModel
-import com.example.wizardlydo.viewmodel.SettingsViewModel
-import com.example.wizardlydo.viewmodel.TaskViewModel
-import com.example.wizardlydo.viewmodel.WizardAuthViewModel
+import com.example.wizardlydo.viewmodel.customization.CustomizationViewModel
+import com.example.wizardlydo.viewmodel.login.LoginViewModel
+import com.example.wizardlydo.viewmodel.pin.PinViewModel
+import com.example.wizardlydo.viewmodel.recovery.RecoveryViewModel
+import com.example.wizardlydo.viewmodel.settings.SettingsViewModel
+import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
+import com.example.wizardlydo.viewmodel.signup.WizardAuthViewModel
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -31,7 +31,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import com.example.wizardlydo.utilities.TaskNotificationService
-import com.example.wizardlydo.viewmodel.InventoryViewModel
+import com.example.wizardlydo.viewmodel.inventory.InventoryViewModel
 import com.example.wizardlydo.repository.inventory.InventoryRepository
 
 class MyApp : Application() {

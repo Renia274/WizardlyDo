@@ -5,7 +5,7 @@ package com.example.wizardlydo.utilities
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.example.wizardlydo.data.Priority
+import com.example.wizardlydo.data.tasks.Priority
 import com.example.wizardlydo.repository.tasks.TaskRepository
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import kotlinx.coroutines.CoroutineScope
