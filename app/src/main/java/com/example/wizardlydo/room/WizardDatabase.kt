@@ -7,12 +7,14 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.wizardlydo.room.inventory.InventoryDao
 import com.example.wizardlydo.room.inventory.InventoryItemEntity
+import com.example.wizardlydo.room.pin.PinDao
+import com.example.wizardlydo.room.pin.PinEntity
 import com.example.wizardlydo.room.tasks.TaskDao
 import com.example.wizardlydo.room.tasks.TaskEntity
 
 @Database(
-    entities = [WizardEntity::class,PinEntity::class,TaskEntity::class, InventoryItemEntity::class],
-    version = 10,
+    entities = [WizardEntity::class, PinEntity::class,TaskEntity::class, InventoryItemEntity::class],
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(WizardTypeConverters::class)

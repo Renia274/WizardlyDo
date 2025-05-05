@@ -10,7 +10,6 @@ enum class ItemType {
     BACKGROUND
 }
 
-
 object InventoryItems {
     // Mystweaver outfits
     val mystweaverOutfits = listOf(
@@ -133,7 +132,6 @@ object InventoryItems {
         )
     )
 
-    // Backgrounds
     val backgrounds = listOf(
         InventoryItemEntity(
             id = "background_1",
@@ -141,7 +139,7 @@ object InventoryItems {
             itemId = "forest_background",
             itemType = ItemType.BACKGROUND.toString(),
             isUnlocked = true,
-            isEquipped = true,
+            isEquipped = false,
             unlockLevel = 1,
             resourceId = R.drawable.background_forest,
             name = "Mystic Forest",

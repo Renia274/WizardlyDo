@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wizardlydo.comps.items.EquippedItems
-import com.example.wizardlydo.comps.items.ItemTypes
 import com.example.wizardlydo.data.WizardProfile
+import com.example.wizardlydo.data.inventory.ItemType
 import com.example.wizardlydo.repository.inventory.InventoryRepository
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.example.wizardlydo.room.inventory.InventoryItemEntity
@@ -90,10 +90,10 @@ class InventoryViewModel(
                 inventoryRepository.getInventoryItems(wizard.userId).collect { items ->
                     // Update equipped items state
                     val equippedOutfit = items.firstOrNull {
-                        it.itemType == ItemTypes.OUTFIT && it.isEquipped
+                        it.itemType == ItemType.OUTFIT.toString() && it.isEquipped
                     }
                     val equippedBackground = items.firstOrNull {
-                        it.itemType == ItemTypes.BACKGROUND && it.isEquipped
+                        it.itemType == ItemType.BACKGROUND.toString() && it.isEquipped
                     }
 
                     equippedItems.value = EquippedItems(
@@ -116,7 +116,18 @@ class InventoryViewModel(
         viewModelScope.launch {
             try {
                 inventoryRepository.equipItem(wizard.userId, itemId)
-                updateWizardOutfit(itemId)
+
+                // Only update wizard outfit for outfit items, not backgrounds
+                val outfitIds = listOf(
+                    "mystic_robe", "storm_cloak", "crystal_armor",
+                    "flame_costume", "dragon_scale", "crystal_robe",
+                    "light_armor", "astronomer_robe", "time_cloak"
+                )
+
+                if (itemId in outfitIds) {
+                    updateWizardOutfit(itemId)
+                }
+
                 loadInventory(wizard)
             } catch (e: Exception) {
                 Log.e("InventoryViewModel", "Error equipping item", e)
@@ -146,7 +157,7 @@ class InventoryViewModel(
                 userId = wizard.userId,
                 gender = wizard.gender,
                 skinColor = wizard.skinColor,
-                hairStyle = wizard.hairStyle,
+                hairStyle = wizard.hairStyle.toInt(),
                 hairColor = wizard.hairColor,
                 outfit = outfitName
             )

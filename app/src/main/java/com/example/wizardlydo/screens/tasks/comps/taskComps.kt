@@ -116,7 +116,7 @@ fun WizardAvatar(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Background layer
+                    // Background layer - only show if equipped
                     equippedItems?.background?.let { background ->
                         Image(
                             painter = painterResource(id = background.resourceId),
@@ -166,12 +166,12 @@ fun WizardAvatar(
                         )
                     }
 
-                    // Hair
+                    // Hair - Convert String to Int for hairStyle
                     Image(
                         painter = painterResource(
                             id = getHairResourceId(
                                 wizardProfile.gender,
-                                wizardProfile.hairStyle,
+                                wizardProfile.hairStyle.toIntOrNull() ?: 0,
                                 wizardProfile.hairColor
                             )
                         ),
@@ -210,6 +210,7 @@ fun CharacterStatsSection(
     health: Int,
     maxHealth: Int,
     stamina: Int,
+    maxStamina: Int,
     experience: Int,
     tasksCompleted: Int,
     totalTasksForLevel: Int,
@@ -246,7 +247,7 @@ fun CharacterStatsSection(
         )
     ) {
         Box {
-            // Background layer
+            // Background layer - only show if equipped
             equippedItems?.background?.let { bg ->
                 Image(
                     painter = painterResource(id = bg.resourceId),
@@ -315,7 +316,6 @@ fun CharacterStatsSection(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Stats Section
                 StatBar(
                     label = "HP",
                     value = animatedHealth,
@@ -329,24 +329,24 @@ fun CharacterStatsSection(
                 StatBar(
                     label = "Stamina",
                     value = animatedStamina,
-                    maxValue = 100,
+                    maxValue = maxStamina,
                     color = Color(0xFF43A047),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // XP and tasks to level up - pass the direct values
+                // XP and tasks to level up
                 CompactLevelProgressSection(
                     level = wizardProfile?.level ?: 1,
-                    experience = animatedExp,  // Use animated experience
+                    experience = animatedExp,
                     tasksCompleted = tasksCompleted,
                     totalTasksForLevel = totalTasksForLevel
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Task progress section - pass all values directly
+                // Task progress section
                 TaskProgressSection(
                     tasksCompleted = tasksCompleted,
                     totalTasksForLevel = totalTasksForLevel

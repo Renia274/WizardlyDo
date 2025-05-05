@@ -90,6 +90,7 @@ fun InventoryContent(
                 health = wizard.health,
                 maxHealth = wizard.maxHealth,
                 stamina = wizard.stamina,
+                maxStamina = wizard.maxStamina,  // Added this parameter
                 experience = wizard.experience,
                 tasksCompleted = wizard.totalTasksCompleted,
                 totalTasksForLevel = when {
@@ -145,16 +146,19 @@ fun InventoryContentPreview() {
             wizardClass = WizardClass.MYSTWEAVER,
             level = 5,
             health = 90,
-            maxHealth = 100,
+            maxHealth = 180,  // Level 5: 100 + (4 × 20) = 180
             stamina = 75,
+            maxStamina = 104,  // Level 5: 100 + (4 × 1) = 104
             experience = 450,
             totalTasksCompleted = 15,
             gender = "Female",
             skinColor = "light",
             hairColor = "purple",
-            hairStyle = 1,
+            hairStyle = "1",  // Keep as String to match WizardProfile
             outfit = "Mystic Robe"
         )
+
+        // Rest of the preview code remains the same...
 
         val sampleEquippedItems = EquippedItems(
             outfit = InventoryItemEntity(
@@ -265,19 +269,6 @@ fun InventoryContentPreview() {
             wizardProfile = sampleWizard,
             onEquipItem = {},
             equippedItems = sampleEquippedItems
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun InventoryContentLoadingPreview() {
-    WizardlyDoTheme {
-        InventoryContent(
-            uiState = InventoryUiState.Loading,
-            wizardProfile = null,
-            onEquipItem = {},
-            equippedItems = EquippedItems()
         )
     }
 }

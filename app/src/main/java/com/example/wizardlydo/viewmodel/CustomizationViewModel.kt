@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
-import org.koin.core.component.KoinComponent
 
 @KoinViewModel
 class CustomizationViewModel(
@@ -37,7 +36,7 @@ class CustomizationViewModel(
                             current.copy(
                                 gender = profile.gender,
                                 skinColor = profile.skinColor,
-                                hairStyle = profile.hairStyle,
+                                hairStyle = profile.hairStyle.toInt(),
                                 hairColor = profile.hairColor,
                                 outfit = profile.outfit
                             )
@@ -113,6 +112,4 @@ class CustomizationViewModel(
             state.update { it.copy(isLoading = false, error = e.message) }
         }
     }
-
-
 }

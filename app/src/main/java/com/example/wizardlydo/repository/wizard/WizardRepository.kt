@@ -7,8 +7,6 @@ import com.example.wizardlydo.room.WizardEntity
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
-import kotlin.Result
-import kotlin.runCatching
 
 interface WizardRepository {
     val wizardDao: WizardDao
@@ -21,24 +19,28 @@ interface WizardRepository {
                 wizardClass = profile.wizardClass,
                 wizardName = profile.wizardName,
                 email = profile.email,
-                signInProvider = profile.signInProvider,
+                passwordHash = profile.passwordHash,
+                signInProvider = profile.signInProvider, // Already SignInProvider enum
                 level = profile.level,
                 experience = profile.experience,
                 health = profile.health,
                 maxHealth = profile.maxHealth,
+                stamina = profile.stamina,
+                maxStamina = profile.maxStamina,
                 gender = profile.gender,
                 skinColor = profile.skinColor,
-                hairStyle = profile.hairStyle,
+                hairStyle = profile.hairStyle.toIntOrNull() ?: 0,
                 hairColor = profile.hairColor,
                 outfit = profile.outfit,
                 lastTaskCompleted = profile.lastTaskCompleted,
                 consecutiveTasksCompleted = profile.consecutiveTasksCompleted,
                 totalTasksCompleted = profile.totalTasksCompleted,
+                spells = emptyList(),
                 achievements = profile.achievements,
                 joinDate = profile.joinDate,
                 lastLogin = profile.lastLogin,
-                passwordHash = profile.passwordHash,
-                stamina = profile.stamina
+                createdAt = profile.createdAt,
+                updatedAt = profile.updatedAt
             )
         )
     }
@@ -50,30 +52,34 @@ interface WizardRepository {
                 wizardClass = entity.wizardClass,
                 wizardName = entity.wizardName,
                 email = entity.email,
-                signInProvider = entity.signInProvider,
+                passwordHash = entity.passwordHash,
+                signInProvider = entity.signInProvider, // Already SignInProvider enum
                 level = entity.level,
                 experience = entity.experience,
                 health = entity.health,
                 maxHealth = entity.maxHealth,
+                stamina = entity.stamina,
+                maxStamina = entity.maxStamina,
                 gender = entity.gender,
                 skinColor = entity.skinColor,
                 hairColor = entity.hairColor,
-                hairStyle = entity.hairStyle,
+                hairStyle = entity.hairStyle.toString(), // Convert int to string
                 outfit = entity.outfit,
                 lastTaskCompleted = entity.lastTaskCompleted,
                 consecutiveTasksCompleted = entity.consecutiveTasksCompleted,
                 totalTasksCompleted = entity.totalTasksCompleted,
                 achievements = entity.achievements,
                 joinDate = entity.joinDate,
-                lastLogin = entity.lastLogin,
-                passwordHash = entity.passwordHash,
-                stamina = entity.stamina
+                lastLogin =entity.lastLogin,
+                createdAt = entity.createdAt,
+                updatedAt = entity.updatedAt,
+                isSelected = false
             )
         }
     }
 
     suspend fun updateWizardLastLogin(userId: String): Result<Unit> = runCatching {
-        val currentTime = Timestamp.now().toDate().time
+        val currentTime = Timestamp.now()
         wizardDao.updateLastLogin(userId, currentTime)
     }
 
@@ -82,7 +88,7 @@ interface WizardRepository {
     }
 
     suspend fun updateWizardLevel(userId: String, level: Int): Result<Unit> = runCatching {
-        val currentTime = Timestamp.now().toDate().time
+        val currentTime = Timestamp.now()
         wizardDao.updateLevel(userId, level, currentTime)
     }
 
@@ -106,9 +112,16 @@ interface WizardRepository {
                 signInProvider = entity.signInProvider,
                 level = entity.level,
                 experience = entity.experience,
+                health = entity.health,
+                maxHealth = entity.maxHealth,
+                stamina = entity.stamina,
+                maxStamina = entity.maxStamina,
                 achievements = entity.achievements,
                 joinDate = entity.joinDate,
                 lastLogin = entity.lastLogin,
+                passwordHash = entity.passwordHash,
+                createdAt = entity.createdAt,
+                updatedAt = entity.updatedAt
             )
         }
     }
@@ -116,14 +129,7 @@ interface WizardRepository {
     fun getCurrentUserId(): String? = firebaseAuth.currentUser?.uid
 
     suspend fun updateWizardProfile(userId: String, profile: WizardProfile): Result<Unit> = runCatching {
-        val entity = profile.toEntity().copy(
-            joinDate = profile.joinDate,
-            lastLogin = profile.lastLogin,
-            health = profile.health,
-            stamina = profile.stamina,
-            experience = profile.experience,
-            level = profile.level
-        )
+        val entity = profile.toEntity()
 
         wizardDao.updateWizard(
             userId = entity.userId,
@@ -134,6 +140,13 @@ interface WizardRepository {
             signInProvider = entity.signInProvider,
             level = entity.level,
             experience = entity.experience,
+            health = entity.health,
+            maxHealth = entity.maxHealth,
+            stamina = entity.stamina,
+            maxStamina = entity.maxStamina,
+            lastTaskCompleted = entity.lastTaskCompleted,
+            consecutiveTasksCompleted = entity.consecutiveTasksCompleted,
+            totalTasksCompleted = entity.totalTasksCompleted,
             spells = entity.spells,
             achievements = entity.achievements,
             joinDate = entity.joinDate,
@@ -142,7 +155,9 @@ interface WizardRepository {
             skinColor = entity.skinColor,
             hairStyle = entity.hairStyle,
             hairColor = entity.hairColor,
-            outfit = entity.outfit
+            outfit = entity.outfit,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
         )
     }
 
@@ -156,13 +171,12 @@ interface WizardRepository {
         accessory: String = ""
     ): Result<Unit> = runCatching {
         wizardDao.updateWizardCustomization(
-            userId = userId.toInt(),
+            userId = userId,
             gender = gender,
             skinColor = skinColor,
             hairStyle = hairStyle,
             hairColor = hairColor,
-            outfit = outfit,
-            accessory = accessory
+            outfit = outfit
         )
     }
 

@@ -25,10 +25,11 @@ data class WizardEntity(
     val hairColor: String = "brown",
     val hairStyle: Int = 0,
     val outfit: String = "",
-    val accessory: String = "",
     // Task-related fields
     val health: Int = 100,
     val maxHealth: Int = 100,
+    val stamina: Int = 50,
+    val maxStamina: Int = 100,
     val lastTaskCompleted: Timestamp? = null,
     val consecutiveTasksCompleted: Int = 0,
     val totalTasksCompleted: Int = 0,
@@ -36,12 +37,13 @@ data class WizardEntity(
     val spells: List<String> = emptyList(),
     val achievements: List<String> = emptyList(),
     // Timestamp fields
-    val joinDate: Timestamp? = null,
-    val lastLogin: Timestamp? = null,
-    val stamina: Int = 75,
+    val joinDate: Timestamp? = Timestamp.now(),
+    val lastLogin: Timestamp? = Timestamp.now(),
+    val createdAt: Timestamp = Timestamp.now(),
+    val updatedAt: Timestamp = Timestamp.now(),
+    // Notification settings
     val reminderEnabled: Boolean = true,
     val reminderDays: Int = 1,
     val inAppNotificationsEnabled: Boolean = true,
     val damageNotificationsEnabled: Boolean = true
-
 )

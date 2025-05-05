@@ -193,7 +193,6 @@ fun NavigationGraph() {
             )
         }
 
-        // Add the inventory screen
         composable(Screen.Inventory.route) {
             InventoryScreen(
                 onBack = { navController.popBackStack() }

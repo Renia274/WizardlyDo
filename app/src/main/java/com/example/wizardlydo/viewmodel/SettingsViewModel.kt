@@ -58,7 +58,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             auth.currentUser?.uid?.let { userId ->
                 wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
-                    // Save dark mode from profile to shared preferences if it exists
+                    // Save dark mode from profile to shared preferences
                     profile.darkModeEnabled.let { darkMode ->
                         sharedPreferences.edit().putBoolean(DARK_MODE_KEY, darkMode).apply()
                     }

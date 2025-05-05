@@ -48,7 +48,6 @@ class TaskViewModel(
     private val taskType = MutableStateFlow(TaskFilter.ALL)
     private val searchActive = MutableStateFlow(false)
 
-    // Track if a task was recently created
     private var taskRecentlyCreated = false
     private var recentlyCreatedTaskId: Int? = null
     private var lastCreationTime = 0L
@@ -63,12 +62,10 @@ class TaskViewModel(
 
     companion object {
         private const val EXP_PER_LEVEL = 1000
-        private const val MAX_WIZARD_HEALTH = 150
-
-
+        private const val MAX_LEVEL = 30
         private const val BASE_XP_GAIN = 25
         private const val BASE_HP_GAIN = 5
-        private const val BASE_STAMINA_GAIN = 7
+        private const val BASE_STAMINA_GAIN = 3
     }
 
     init {
@@ -255,7 +252,7 @@ class TaskViewModel(
 
                 Log.d("TaskViewModel", "Loaded profile - Level: ${wizardProfile?.level}, " +
                         "Health: ${wizardProfile?.health}/${wizardProfile?.maxHealth}, " +
-                        "Stamina: ${wizardProfile?.stamina}, " +
+                        "Stamina: ${wizardProfile?.stamina}/${wizardProfile?.maxStamina}, " +
                         "XP: ${wizardProfile?.experience}, " +
                         "Tasks completed: ${wizardProfile?.totalTasksCompleted}")
 
@@ -341,11 +338,11 @@ class TaskViewModel(
                 }
 
                 // Calculate rewards based on priority and on-time status
-                // Using reduced base values for slower progression
                 val (hpGain, staminaGain, expGain) = calculateTaskEffects(
                     priority = task.priority,
                     isOnTime = task.dueDate?.let { System.currentTimeMillis() <= it } ?: true,
-                    currentLevel = wizardProfile.level
+                    currentLevel = wizardProfile.level,
+                    currentStamina = wizardProfile.stamina
                 )
 
                 Log.d("TaskViewModel", "Base rewards calculated - HP: $hpGain, Stamina: $staminaGain, XP: $expGain")
@@ -356,6 +353,7 @@ class TaskViewModel(
                 var newExperience = wizardProfile.experience + expGain
                 var newLevel = wizardProfile.level
                 var newMaxHealth = wizardProfile.maxHealth
+                var newMaxStamina = wizardProfile.maxStamina
 
                 // Store original values for notification
                 val actualHpGain: Int
@@ -363,27 +361,28 @@ class TaskViewModel(
 
                 // Check for level up
                 val isLevelUp = newExperience >= EXP_PER_LEVEL
-                if (isLevelUp) {
+                if (isLevelUp && newLevel < MAX_LEVEL) {
                     // Level up
                     newLevel++
                     newExperience -= EXP_PER_LEVEL
 
                     // Increase max health when leveling up
-                    newMaxHealth = (wizardProfile.maxHealth + 10).coerceAtMost(MAX_WIZARD_HEALTH)
+                    newMaxHealth = WizardProfile.calculateMaxHealth(newLevel)
+                    newMaxStamina = WizardProfile.calculateMaxStamina(newLevel)
 
                     // Set health to the new maximum on level up
                     actualHpGain = newMaxHealth - wizardProfile.health
                     newHealth = newMaxHealth
 
-                    // Increase stamina by 25 on level up (but don't fully restore)
-                    actualStaminaGain = 25
-                    newStamina = (wizardProfile.stamina + 25).coerceAtMost(100)
+                    // Increase stamina by 10 on level up (but don't fully restore)
+                    actualStaminaGain = 10
+                    newStamina = (wizardProfile.stamina + 10).coerceAtMost(newMaxStamina)
 
                     Log.d("TaskViewModel", "Level up! New level: $newLevel, Health: $newHealth/$newMaxHealth, Stamina: $newStamina")
                 } else {
                     // Cap stats if not leveling up
                     newHealth = newHealth.coerceAtMost(wizardProfile.maxHealth)
-                    newStamina = newStamina.coerceAtMost(100)
+                    newStamina = newStamina.coerceAtMost(wizardProfile.maxStamina)
 
                     // Use the actual calculated gains
                     actualHpGain = hpGain
@@ -401,6 +400,7 @@ class TaskViewModel(
                     health = newHealth,
                     maxHealth = newMaxHealth,
                     stamina = newStamina,
+                    maxStamina = newMaxStamina,
                     experience = newExperience,
                     totalTasksCompleted = newTotalTasksCompleted,
                     consecutiveTasksCompleted = 0, // Set to 0 to remove streak functionality
@@ -410,7 +410,7 @@ class TaskViewModel(
                 // Log the updated profile values for verification
                 Log.d("TaskViewModel", "Updated profile - Level: ${updatedProfile.level}, " +
                         "Health: ${updatedProfile.health}/${updatedProfile.maxHealth}, " +
-                        "Stamina: ${updatedProfile.stamina}, " +
+                        "Stamina: ${updatedProfile.stamina}/${updatedProfile.maxStamina}, " +
                         "XP: ${updatedProfile.experience}/${EXP_PER_LEVEL}, " +
                         "Total tasks completed: ${updatedProfile.totalTasksCompleted}")
 
@@ -494,42 +494,42 @@ class TaskViewModel(
     fun calculateTaskEffects(
         priority: Priority,
         isOnTime: Boolean,
-        currentLevel: Int
+        currentLevel: Int,
+        currentStamina: Int
     ): Triple<Int, Int, Int> {
-        // Use lower base values for slower progression
-        val baseHp = BASE_HP_GAIN
-        val baseStamina = BASE_STAMINA_GAIN
-        val baseXp = BASE_XP_GAIN
+        // Progressive HP gain based on level
+        val levelFactor = (currentLevel / 5f).coerceAtLeast(1f)
 
-        // Level scaling - make it more gradual
-        val scale = when {
-            currentLevel < 5 -> 1.0f
-            currentLevel < 8 -> 0.85f  // Less penalty for higher levels
-            else -> 0.7f  // Less penalty for highest levels
+        // Stamina gain scales based on current stamina and XP gained
+        val staminaEfficiency = when {
+            currentStamina < 30 -> 1.5f
+            currentStamina < 50 -> 1.2f
+            currentStamina < 70 -> 1.0f
+            else -> 0.7f
         }
 
         return when {
             isOnTime -> when (priority) {
                 Priority.HIGH -> Triple(
-                    (baseHp * 1.5 * scale).toInt(),
-                    (baseStamina * 1.3 * scale).toInt(),
-                    (baseXp * 1.5 * scale).toInt()
+                    (BASE_HP_GAIN * 1.5 * levelFactor).toInt(),
+                    (BASE_STAMINA_GAIN * 2 * staminaEfficiency).toInt(),
+                    (BASE_XP_GAIN * 1.5).toInt()
                 )
                 Priority.MEDIUM -> Triple(
-                    (baseHp * scale).toInt(),
-                    (baseStamina * scale).toInt(),
-                    (baseXp * scale).toInt()
+                    (BASE_HP_GAIN * levelFactor).toInt(),
+                    (BASE_STAMINA_GAIN * 1.5 * staminaEfficiency).toInt(),
+                    BASE_XP_GAIN
                 )
                 Priority.LOW -> Triple(
-                    (baseHp * 0.5 * scale).toInt(),
-                    (baseStamina * 0.7 * scale).toInt(),
-                    (baseXp * 0.7 * scale).toInt()
+                    (BASE_HP_GAIN * 0.5 * levelFactor).toInt(),
+                    (BASE_STAMINA_GAIN * staminaEfficiency).toInt(),
+                    (BASE_XP_GAIN * 0.7).toInt()
                 )
             }
             else -> when (priority) { // Overdue penalties
-                Priority.HIGH -> Triple(-10, -5, 3)  // Reduced penalties
-                Priority.MEDIUM -> Triple(-7, -3, 2)  // Reduced penalties
-                Priority.LOW -> Triple(-5, 0, 1)  // Reduced penalties
+                Priority.HIGH -> Triple(-15, -5, 3)
+                Priority.MEDIUM -> Triple(-10, -3, 2)
+                Priority.LOW -> Triple(-5, -1, 1)
             }
         }
     }

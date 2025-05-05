@@ -1,90 +1,58 @@
 package com.example.wizardlydo.data
 
+
 import com.example.wizardlydo.providers.SignInProvider
-import com.example.wizardlydo.room.WizardEntity
 import com.google.firebase.Timestamp
 
 data class WizardProfile(
-    // Core Identification
     val userId: String = "",
     val wizardName: String = "",
     val email: String = "",
     val signInProvider: SignInProvider = SignInProvider.EMAIL,
     val passwordHash: String = "",
-
-    // Appearance Customization
-    val wizardClass: WizardClass = WizardClass.MYSTWEAVER,
-    val gender: String = "Male",
-    val skinColor: String = "light",
-    val hairColor: String = "brown",
-    val hairStyle: Int = 0,
-    val outfit: String = "",
-
-
-    // Color Settings (Legacy Support)
-    val headColor: String = "#FFD700",
-    val bodyColor: String = "#FFD700",
-    val legsColor: String = "#2E0854",
-    val armsColor: String = "#2E0854",
-    val clothingColor: String = "#8E44AD",
-
-    // Progression System
     val level: Int = 1,
-    val experience: Int = 0,
+    val wizardClass: WizardClass = WizardClass.MYSTWEAVER,
     val health: Int = 100,
-    val maxHealth: Int = 100,
-    val achievements: List<String> = emptyList(),
-
-    val baseHealth: Int = 100,
-
-    val baseStamina: Int = 50,
-
-
-    // Task System Integration
-    val lastTaskCompleted: Timestamp? = null,
-    val consecutiveTasksCompleted: Int = 0,
+    val maxHealth: Int = calculateMaxHealth(1),
+    val stamina: Int = calculateInitialStamina(),
+    val maxStamina: Int = calculateMaxStamina(1),
+    val experience: Int = 0,
+    val gender: String = "",
+    val skinColor: String = "",
+    val hairStyle: String = "",
+    val hairColor: String = "",
+    val outfit: String = "",
     val totalTasksCompleted: Int = 0,
-
-    // Timestamps
+    val consecutiveTasksCompleted: Int = 0,
+    val lastTaskCompleted: Timestamp? = null,
+    val achievements: List<String> = emptyList(),
     val joinDate: Timestamp? = null,
     val lastLogin: Timestamp? = null,
+    val createdAt: Timestamp = Timestamp.now(),
+    val updatedAt: Timestamp = Timestamp.now(),
+    val darkModeEnabled: Boolean = false,
+    @Transient val isSelected: Boolean = false
+) {
+    companion object {
+        private const val BASE_HP = 100
+        private const val HP_PER_LEVEL = 20
+        private const val MAX_LEVEL = 30
+        private const val BASE_MAX_STAMINA = 100
+        private const val STAMINA_INCREMENT_PER_LEVEL = 1
+        private const val INITIAL_STAMINA_PERCENTAGE = 0.5
 
+        fun calculateMaxHealth(level: Int): Int {
+            val cappedLevel = level.coerceIn(1, MAX_LEVEL)
+            return BASE_HP + ((cappedLevel - 1) * HP_PER_LEVEL)
+        }
 
-    val stamina: Int = 75,
-    val emailNotificationsEnabled: Boolean = true,
-    val reminderEnabled: Boolean = true,
-    val reminderDays: Int = 1,
-    val inAppNotificationsEnabled: Boolean = true,
-    val damageNotificationsEnabled: Boolean = true,
-    val darkModeEnabled: Boolean = false
+        fun calculateInitialStamina(): Int {
+            return (BASE_MAX_STAMINA * INITIAL_STAMINA_PERCENTAGE).toInt()
+        }
 
-)
-
-private fun WizardProfile.toEntity() = WizardEntity(
-    userId = userId,
-    wizardClass = wizardClass,
-    wizardName = wizardName,
-    email = email,
-    passwordHash = "",
-    signInProvider = signInProvider,
-    gender = gender,
-    skinColor = skinColor,
-    hairColor = hairColor,
-    hairStyle = hairStyle,
-    outfit = outfit,
-    level = level,
-    experience = experience,
-    health = health,
-    maxHealth = maxHealth,
-    lastTaskCompleted = lastTaskCompleted,
-    consecutiveTasksCompleted = consecutiveTasksCompleted,
-    totalTasksCompleted = totalTasksCompleted,
-    achievements = achievements,
-    joinDate = joinDate,
-    lastLogin = lastLogin,
-    reminderEnabled = reminderEnabled,
-    reminderDays = reminderDays,
-    inAppNotificationsEnabled = inAppNotificationsEnabled,
-    damageNotificationsEnabled = damageNotificationsEnabled
-
-)
+        fun calculateMaxStamina(level: Int): Int {
+            val cappedLevel = level.coerceIn(1, MAX_LEVEL)
+            return BASE_MAX_STAMINA + ((cappedLevel - 1) * STAMINA_INCREMENT_PER_LEVEL)
+        }
+    }
+}

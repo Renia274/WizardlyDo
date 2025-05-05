@@ -67,21 +67,20 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 
+// TaskScreen.kt
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(
     viewModel: TaskViewModel = koinViewModel(),
+    inventoryViewModel: InventoryViewModel = koinViewModel(),
     onBack: () -> Unit,
     onHome: () -> Unit,
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
     onSettings: () -> Unit,
-    onInventory: () -> Unit,
-    inventoryViewModel: InventoryViewModel? = null
+    onInventory: () -> Unit
 ) {
-
-
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -93,18 +92,16 @@ fun TaskScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
 
-    // Get equipped items from inventory viewmodel if provided
-    val equippedItems by if (inventoryViewModel != null) {
-        inventoryViewModel.equippedItemsFlow.collectAsState()
-    } else {
-        remember { mutableStateOf<EquippedItems?>(null) }
-    }
+    // Get equipped items from inventory viewmodel
+    val equippedItems by inventoryViewModel.equippedItemsFlow.collectAsState()
 
     val wizardProfile = state.wizardProfile?.getOrNull()
 
+    // Use values directly from wizardProfile - this ensures persistence
     val currentHealth = wizardProfile?.health ?: 100
-    val currentMaxHealth = wizardProfile?.maxHealth ?: 100
+    val currentMaxHealth = wizardProfile?.maxHealth ?: WizardProfile.calculateMaxHealth(1)
     val currentStamina = wizardProfile?.stamina ?: 50
+    val currentMaxStamina = wizardProfile?.maxStamina ?: WizardProfile.calculateMaxStamina(1)
     val currentLevel = wizardProfile?.level ?: 1
     val currentExp = wizardProfile?.experience ?: 0
 
@@ -232,6 +229,7 @@ fun TaskScreen(
             health = currentHealth,
             maxHealth = currentMaxHealth,
             stamina = currentStamina,
+            maxStamina = currentMaxStamina,
             experience = currentExp,
             tasksCompleted = completedTasks,
             totalTasksForLevel = totalTasksForLevel,
@@ -271,6 +269,7 @@ fun TaskScreen(
     }
 }
 
+// TaskContent.kt
 @Composable
 fun TaskContent(
     modifier: Modifier = Modifier,
@@ -279,6 +278,7 @@ fun TaskContent(
     health: Int,
     maxHealth: Int,
     stamina: Int,
+    maxStamina: Int,
     experience: Int,
     tasksCompleted: Int,
     totalTasksForLevel: Int,
@@ -306,6 +306,7 @@ fun TaskContent(
             health = health,
             maxHealth = maxHealth,
             stamina = stamina,
+            maxStamina = maxStamina,
             experience = experience,
             tasksCompleted = tasksCompleted,
             totalTasksForLevel = totalTasksForLevel,
@@ -428,7 +429,8 @@ fun TaskContentPreview() {
             stamina = 75,
             experience = 250,
             onPreviousPage = {},
-            onNavigationBarVisibilityChange = { }
+            onNavigationBarVisibilityChange = { },
+            maxStamina = 120
         )
     }
 }

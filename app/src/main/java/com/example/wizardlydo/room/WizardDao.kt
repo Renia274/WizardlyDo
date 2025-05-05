@@ -30,15 +30,24 @@ interface WizardDao {
             signInProvider = :signInProvider,
             level = :level,
             experience = :experience,
+            health = :health,
+            maxHealth = :maxHealth,
+            stamina = :stamina,
+            maxStamina = :maxStamina,
             spells = :spells,
             achievements = :achievements,
             joinDate = :joinDate,
             lastLogin = :lastLogin,
+            lastTaskCompleted = :lastTaskCompleted,
+            consecutiveTasksCompleted = :consecutiveTasksCompleted,
+            totalTasksCompleted = :totalTasksCompleted,
             gender = :gender,
             skinColor = :skinColor,
             hairStyle = :hairStyle,
             hairColor = :hairColor,
-            outfit = :outfit
+            outfit = :outfit,
+            createdAt = :createdAt,
+            updatedAt = :updatedAt
         WHERE userId = :userId
     """
     )
@@ -51,18 +60,27 @@ interface WizardDao {
         signInProvider: SignInProvider,
         level: Int,
         experience: Int,
+        health: Int,
+        maxHealth: Int,
+        stamina: Int,
+        maxStamina: Int,
         spells: List<String>,
         achievements: List<String>,
         joinDate: Timestamp?,
         lastLogin: Timestamp?,
+        lastTaskCompleted: Timestamp?,
+        consecutiveTasksCompleted: Int,
+        totalTasksCompleted: Int,
         gender: String,
         skinColor: String,
         hairStyle: Int,
         hairColor: String,
-        outfit: String
+        outfit: String,
+        createdAt: Timestamp,
+        updatedAt: Timestamp
     )
 
-    // New method specifically for customization updates
+
     @Query(
         """
         UPDATE wizards 
@@ -71,26 +89,24 @@ interface WizardDao {
             skinColor = :skinColor,
             hairStyle = :hairStyle,
             hairColor = :hairColor,
-            outfit = :outfit,
-            accessory = :accessory
+            outfit = :outfit
         WHERE userId = :userId
     """
     )
     suspend fun updateWizardCustomization(
-        userId: Int,
+        userId: String,
         gender: String,
         skinColor: String,
         hairStyle: Int,
         hairColor: String,
-        outfit: String,
-        accessory: String
+        outfit: String
     )
 
     @Query("UPDATE wizards SET lastLogin = :loginTime WHERE userId = :userId")
-    suspend fun updateLastLogin(userId: String, loginTime: Long?)
+    suspend fun updateLastLogin(userId: String, loginTime: Timestamp?)
 
     @Query("UPDATE wizards SET level = :level, lastLogin = :loginTime WHERE userId = :userId")
-    suspend fun updateLevel(userId: String, level: Int, loginTime: Long?)
+    suspend fun updateLevel(userId: String, level: Int, loginTime: Timestamp?)
 
     @Query("SELECT EXISTS(SELECT 1 FROM wizards WHERE email = :email)")
     suspend fun isEmailRegistered(email: String): Boolean
@@ -98,12 +114,6 @@ interface WizardDao {
     @Query("UPDATE wizards SET experience = :experience WHERE userId = :userId")
     suspend fun updateExperience(userId: String, experience: Int)
 
-    @Query("UPDATE wizards SET level = :level, lastLogin = :loginTime WHERE userId = :userId")
-    suspend fun updateLevel(userId: String, level: Int, loginTime: Timestamp)
-
     @Query("SELECT EXISTS(SELECT 1 FROM wizards WHERE wizardName = :wizardName)")
     suspend fun isWizardNameExists(wizardName: String): Boolean
-
-
-
 }
