@@ -9,8 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.wizardlydo.data.inventory.InventoryItems
 import com.example.wizardlydo.data.inventory.ItemType
-import com.example.wizardlydo.data.wizard.items.ItemTypes
 import com.example.wizardlydo.room.inventory.InventoryItemEntity
 
 @Composable
@@ -19,8 +19,22 @@ fun InventoryItemsSection(
     wizardLevel: Int,
     onEquipItem: (String) -> Unit
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    // Get all  items by type
+    val outfitItems = items.filter { it.itemType == ItemType.OUTFIT.toString() }
+    val backgroundItems = items.filter { it.itemType == ItemType.BACKGROUND.toString() }
+    val accessoryItems = if (items.any { it.itemType == ItemType.ACCESSORY.toString() }) {
+        items.filter { it.itemType == ItemType.ACCESSORY.toString() }
+    } else {
+        InventoryItems.commonItems.filter { it.itemType == ItemType.ACCESSORY.toString() }
+    }
+    val weaponItems = if (items.any { it.itemType == ItemType.WEAPON.toString() }) {
+        items.filter { it.itemType == ItemType.WEAPON.toString() }
+    } else {
+        InventoryItems.commonItems.filter { it.itemType == ItemType.WEAPON.toString() }
+    }
 
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        // Outfits Section
         Text(
             text = "Outfits",
             style = MaterialTheme.typography.headlineSmall,
@@ -28,14 +42,14 @@ fun InventoryItemsSection(
         )
 
         ItemGrid(
-            items = items.filter { it.itemType == ItemType.OUTFIT.toString() },
+            items = outfitItems,
             wizardLevel = wizardLevel,
             onEquipItem = onEquipItem
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-
+        // Backgrounds Section
         Text(
             text = "Backgrounds",
             style = MaterialTheme.typography.headlineSmall,
@@ -43,45 +57,39 @@ fun InventoryItemsSection(
         )
 
         ItemGrid(
-            items = items.filter { it.itemType == ItemType.BACKGROUND.toString() },
+            items = backgroundItems,
             wizardLevel = wizardLevel,
             onEquipItem = onEquipItem
         )
 
+        // Accessories Section
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "Accessories",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-        val accessoryItems = items.filter { it.itemType == ItemType.ACCESSORY.toString() }
-        if (accessoryItems.isNotEmpty() && wizardLevel >= 15) {
-            Spacer(modifier = Modifier.height(24.dp))
+        ItemGrid(
+            items = accessoryItems,
+            wizardLevel = wizardLevel,
+            onEquipItem = onEquipItem
+        )
 
-            Text(
-                text = "Accessories",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+        // Weapons Section
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "Weapons",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-            ItemGrid(
-                items = accessoryItems,
-                wizardLevel = wizardLevel,
-                onEquipItem = onEquipItem
-            )
-        }
+        ItemGrid(
+            items = weaponItems,
+            wizardLevel = wizardLevel,
+            onEquipItem = onEquipItem
+        )
 
-
-        val weaponItems = items.filter { it.itemType == ItemType.WEAPON.toString() }
-        if (weaponItems.isNotEmpty() && wizardLevel == 30) {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Weapons",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            ItemGrid(
-                items = weaponItems,
-                wizardLevel = wizardLevel,
-                onEquipItem = onEquipItem
-            )
-        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }

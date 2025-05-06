@@ -31,7 +31,9 @@ import androidx.compose.ui.res.painterResource
 
 @Composable
 fun InventoryItemCard(
-    item: InventoryItemEntity, isLocked: Boolean, onEquip: () -> Unit
+    item: InventoryItemEntity,
+    isLocked: Boolean,
+    onEquip: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -43,7 +45,8 @@ fun InventoryItemCard(
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             if (isLocked) {
                 Column(
@@ -52,7 +55,7 @@ fun InventoryItemCard(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Locked",
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(32.dp),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                     Text(
@@ -74,7 +77,8 @@ fun InventoryItemCard(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .background(
-                                color = MaterialTheme.colorScheme.primary, shape = CircleShape
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = CircleShape
                             )
                             .padding(4.dp)
                     ) {

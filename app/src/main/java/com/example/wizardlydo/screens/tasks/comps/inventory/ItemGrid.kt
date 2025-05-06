@@ -1,6 +1,7 @@
 package com.example.wizardlydo.screens.tasks.comps.inventory
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -26,7 +27,9 @@ fun ItemGrid(
         columns = GridCells.Fixed(3),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.height(200.dp)
+        modifier = Modifier
+            .height(120.dp)
+            .fillMaxWidth()
     ) {
         items(items) { item ->
             InventoryItemCard(

@@ -5,24 +5,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.example.wizardlydo.room.inventory.InventoryItemEntity
 
 @Composable
@@ -32,65 +23,38 @@ fun ItemDetailsDialog(
     onEquip: () -> Unit,
     isEquipped: Boolean
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(item.name) },
+        text = {
+            Column {
                 Image(
                     painter = painterResource(id = item.resourceId),
                     contentDescription = item.name,
                     modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    contentScale = ContentScale.Fit
                 )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-
-                if (!isEquipped) {
-                    Button(
-                        onClick = {
-                            onEquip()
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Equip")
-                    }
-                } else {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary
-                        )
-                    ) {
-                        Text("Equipped")
-                    }
-                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(item.description)
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onEquip()
+                    onDismiss()
+                },
+                enabled = !isEquipped
+            ) {
+                Text(if (isEquipped) "Equipped" else "Equip")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
             }
         }
-    }
+    )
 }
-
