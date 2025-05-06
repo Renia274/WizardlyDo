@@ -42,10 +42,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.R
 import com.example.wizardlydo.comps.ErrorMessage
 import com.example.wizardlydo.comps.FullScreenLoading
-import com.example.wizardlydo.data.inventory.ItemType
 import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.data.tasks.Priority
 import com.example.wizardlydo.data.tasks.Task
@@ -53,8 +51,7 @@ import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
-import com.example.wizardlydo.room.inventory.InventoryItemEntity
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.CharacterStatsSection
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.CharacterStatsSection
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.EmptyTaskList
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.LevelUpIndicator
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskBottomBar

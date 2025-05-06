@@ -1,4 +1,4 @@
-package com.example.wizardlydo.screens.tasks.comps.taskScreensComps
+package com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats
 
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
@@ -26,13 +26,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.screens.tasks.comps.WizardAvatar
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.CompactLevelProgressSection
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.StatBar
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.TaskProgressSection
 
 @Composable
 fun CharacterStatsSection(
@@ -48,6 +46,7 @@ fun CharacterStatsSection(
     equippedItems: EquippedItems? = null
 ) {
     val wizardProfile = wizardResult?.getOrNull()
+    val isWizardDead = health <= 0
 
     val animatedHealth by animateIntAsState(
         targetValue = health,
@@ -73,7 +72,10 @@ fun CharacterStatsSection(
             .padding(horizontal = 16.dp),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isWizardDead)
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            else
+                MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Box {
@@ -85,7 +87,7 @@ fun CharacterStatsSection(
                         .fillMaxWidth()
                         .height(200.dp),
                     contentScale = ContentScale.Crop,
-                    alpha = 0.6f
+                    alpha = if (isWizardDead) 0.3f else 0.6f
                 )
             }
 
@@ -121,21 +123,67 @@ fun CharacterStatsSection(
                                 text = wizard.wizardName,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = if (isWizardDead)
+                                    MaterialTheme.colorScheme.error
+                                else
+                                    MaterialTheme.colorScheme.primary
                             )
-                            Text(
-                                text = wizard.wizardClass.name,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+
+                            if (isWizardDead) {
+                                Text(
+                                    text = "DEFEATED",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else {
+                                Text(
+                                    text = wizard.wizardClass.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
 
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
                                 text = "Level ${wizard.level}",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = if (isWizardDead)
+                                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                                else
+                                    MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // Death message when HP is zero
+                if (isWizardDead) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Your wizard has been defeated!",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Complete tasks to restore health and continue your journey.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
@@ -147,7 +195,7 @@ fun CharacterStatsSection(
                     label = "HP",
                     value = animatedHealth,
                     maxValue = maxHealth,
-                    color = Color(0xFFE53935),
+                    color = if (isWizardDead) Color.Gray else Color(0xFFE53935),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -157,7 +205,7 @@ fun CharacterStatsSection(
                     label = "Stamina",
                     value = animatedStamina,
                     maxValue = maxStamina,
-                    color = Color(0xFF43A047),
+                    color = if (isWizardDead) Color.Gray else Color(0xFF43A047),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -172,11 +220,18 @@ fun CharacterStatsSection(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                TaskProgressSection(
-                    tasksCompleted = tasksCompleted,
-                    totalTasksForLevel = totalTasksForLevel,
-                    maxHealth = maxHealth
-                )
+                if (!isWizardDead) {
+                    TaskProgressSection(
+                        tasksCompleted = tasksCompleted,
+                        totalTasksForLevel = totalTasksForLevel,
+                        maxHealth = maxHealth
+                    )
+                } else {
+                    RevivalProgressSection(
+                        tasksCompleted = tasksCompleted,
+                        tasksNeededForRevival = 3
+                    )
+                }
             }
         }
     }

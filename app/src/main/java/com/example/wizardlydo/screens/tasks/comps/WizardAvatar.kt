@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.wizardlydo.R
 import com.example.wizardlydo.data.wizard.getHairResourceId
 import com.example.wizardlydo.data.wizard.getOutfitResourceId
 import com.example.wizardlydo.data.wizard.getSkinResourceId
@@ -31,6 +32,7 @@ fun WizardAvatar(
 ) {
     val wizardProfile = wizardResult?.getOrNull()
     val error = wizardResult?.exceptionOrNull()
+    val isWizardDead = wizardProfile?.health != null && wizardProfile.health <= 0
 
     Box(
         modifier = modifier
@@ -40,7 +42,7 @@ fun WizardAvatar(
         contentAlignment = Alignment.Center
     ) {
         when {
-            wizardProfile != null -> {
+            wizardProfile != null && !isWizardDead -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -68,7 +70,7 @@ fun WizardAvatar(
                             .offset(x = (-10).dp, y = (-6).dp)
                     )
 
-                    // Outfit (equipped from inventory or default)
+                    // Outfit
                     if (equippedItems?.outfit != null) {
                         Image(
                             painter = painterResource(id = equippedItems.outfit.resourceId),
@@ -134,6 +136,36 @@ fun WizardAvatar(
                                 .offset(x = (-3).dp, y = (-10).dp)
                         )
                     }
+                }
+            }
+
+            wizardProfile != null && isWizardDead -> {
+                // Skeleton display when wizard is dead (HP <= 0)
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    equippedItems?.background?.let { background ->
+                        Image(
+                            painter = painterResource(id = background.resourceId),
+                            contentDescription = "Background",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                            alpha = 0.3f
+                        )
+                    }
+
+
+                    Image(
+                        painter = painterResource(id = R.drawable.skeleton_face),
+                        contentDescription = "Skeleton",
+                        modifier = Modifier
+                            .size(70.dp)
+                            .align(Alignment.Center),
+                        colorFilter = null
+                    )
                 }
             }
 
