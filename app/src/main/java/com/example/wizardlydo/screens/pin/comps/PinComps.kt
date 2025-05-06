@@ -30,136 +30,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 
-@Composable
-fun PinSetupHeader() {
-    Text(
-        text = "Set Up Security PIN",
-        style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.primary,
-        textAlign = TextAlign.Center
-    )
-}
-
-@Composable
-fun PinAuthHeader() {
-    Text(
-        text = "Enter PIN",
-        style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.primary,
-        textAlign = TextAlign.Center
-    )
-}
 
 
 
-@Composable
-fun PinInputSection(
-    pin: String,
-    onPinChange: (String) -> Unit
-) {
-    PinInputField(
-        pin = pin,
-        onPinChange = onPinChange
-    )
-}
 
-@Composable
-fun SavePinButton(
-    pin: String,
-    onSavePin: () -> Unit
-) {
-    Button(
-        onClick = onSavePin,
-        enabled = pin.length == 4,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text("Save PIN")
-    }
-}
 
-@Composable
-fun PinInputField(
-    pin: String,
-    onPinChange: (String) -> Unit
-) {
-    val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
 
-    BasicTextField(
-        value = pin,
-        onValueChange = {
-            // Limit to 4 digits
-            if (it.length <= 4 && it.all { char -> char.isDigit() }) {
-                onPinChange(it)
-            }
-        },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Number,
-            imeAction = ImeAction.Done
-        ),
-        modifier = Modifier.focusRequester(focusRequester),
-        decorationBox = { innerTextField ->
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                repeat(4) { index ->
-                    PinDigitBox(
-                        digit = pin.getOrNull(index)?.toString() ?: "",
-                        isFocused = pin.length == index
-                    )
-                }
-            }
-        }
-    )
-}
-
-@Composable
-fun PinDigitBox(
-    digit: String,
-    isFocused: Boolean
-) {
-    Box(
-        modifier = Modifier
-            .size(64.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(8.dp)
-            )
-            .border(
-                width = 2.dp,
-                color = if (isFocused)
-                    MaterialTheme.colorScheme.primary
-                else
-                    Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = if (digit.isNotEmpty()) "•" else "",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-fun ErrorDialog(
-    error: String,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Error") },
-        text = { Text(error) },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK")
-            }
-        }
-    )
-}
 
 @Composable
 fun PinVerifyButton(

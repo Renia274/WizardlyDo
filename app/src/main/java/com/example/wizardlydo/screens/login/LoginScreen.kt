@@ -23,15 +23,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.wizardlydo.screens.login.comps.EmailField
+import com.example.wizardlydo.comps.form.EmailField
+import com.example.wizardlydo.comps.form.login.PasswordFieldLogin
 import com.example.wizardlydo.screens.login.comps.LoginButton
 import com.example.wizardlydo.screens.login.comps.LoginErrorDialog
 import com.example.wizardlydo.screens.login.comps.LoginHeader
-import com.example.wizardlydo.screens.login.comps.PasswordField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.login.LoginViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -45,7 +44,6 @@ fun LoginScreen(
     onBackClick: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
     LaunchedEffect(state.loginSuccess) {
         if (state.loginSuccess) {
@@ -145,14 +143,13 @@ fun LoginContent(
                 EmailField(
                     email = email,
                     onEmailChange = onEmailChange,
-                    isError = hasError,
-                    errorMessage = emailError,
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    emailError = emailError
                 )
 
                 Spacer(modifier = Modifier.height(spacing))
 
-                PasswordField(
+                PasswordFieldLogin(
                     password = password,
                     onPasswordChange = onPasswordChange,
                     isError = hasError,

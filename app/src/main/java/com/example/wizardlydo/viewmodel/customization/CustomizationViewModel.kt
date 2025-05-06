@@ -102,7 +102,6 @@ class CustomizationViewModel(
                 hairStyle = current.hairStyle,
                 hairColor = current.hairColor,
                 outfit = current.outfit,
-                accessory = getDefaultAccessory(current.wizardClass)
             ).onSuccess {
                 state.update { it.copy(isLoading = false, isSaved = true) }
             }.onFailure { error ->

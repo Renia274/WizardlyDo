@@ -18,9 +18,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.data.wizard.getHairResourceId
-import com.example.wizardlydo.data.wizard.getOutfitResourceId
-import com.example.wizardlydo.data.wizard.getSkinResourceId
+import com.example.wizardlydo.wizardHelpers.getHairResourceId
+import com.example.wizardlydo.wizardHelpers.getOutfitResourceId
+import com.example.wizardlydo.wizardHelpers.getSkinResourceId
 import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.data.wizard.WizardProfile
 

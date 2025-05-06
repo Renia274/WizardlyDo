@@ -55,18 +55,6 @@ object InventoryItems {
 
     val dragonistOutfits = listOf(
         InventoryItemEntity(
-            id = "dragonist_outfit_1",
-            wizardId = "",
-            itemId = "flame_costume",
-            itemType = ItemType.OUTFIT.toString(),
-            isUnlocked = true,
-            isEquipped = true,
-            unlockLevel = 1,
-            resourceId = R.drawable.broad_armor_armoire_barrister_robe,
-            name = "Flame Costume",
-            description = "Default Dragonist outfit"
-        ),
-        InventoryItemEntity(
             id = "dragonist_outfit_2",
             wizardId = "",
             itemId = "dragon_scale",

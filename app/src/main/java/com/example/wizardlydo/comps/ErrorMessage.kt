@@ -24,3 +24,12 @@ fun ErrorMessage(error: String?) {
         )
     }
 }
+
+@Composable
+fun ErrorText(text: String) {
+    Text(
+        text = text,
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall
+    )
+}

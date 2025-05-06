@@ -6,8 +6,7 @@ import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.example.wizardlydo.repository.pin.PinRepository
 import com.example.wizardlydo.repository.tasks.TaskRepository
 import com.example.wizardlydo.room.wizard.WizardDao
-import com.example.wizardlydo.room.wizard.WizardDatabase
-import com.example.wizardlydo.room.wizard.WizardTypeConverters
+import com.example.wizardlydo.room.WizardDatabase
 import com.example.wizardlydo.utilities.SecurityProvider
 import com.example.wizardlydo.viewmodel.customization.CustomizationViewModel
 import com.example.wizardlydo.viewmodel.login.LoginViewModel
@@ -24,7 +23,6 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.core.context.startKoin
-
 import org.koin.dsl.module
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -33,6 +31,7 @@ import android.os.Build
 import com.example.wizardlydo.utilities.TaskNotificationService
 import com.example.wizardlydo.viewmodel.inventory.InventoryViewModel
 import com.example.wizardlydo.repository.inventory.InventoryRepository
+import com.example.wizardlydo.room.WizardTypeConverters
 
 class MyApp : Application() {
     override fun onCreate() {

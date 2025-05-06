@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,17 +13,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -47,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.example.wizardlydo.R
 import com.example.wizardlydo.comps.textFile.readDonationText
 import com.example.wizardlydo.comps.textFile.readPayPalUsername
+import com.example.wizardlydo.data.currency.Currency
 import com.example.wizardlydo.screens.donation.comps.QuickAmountButton
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 
@@ -75,6 +82,17 @@ fun DonationContent(
 
     var donationAmount by remember { mutableStateOf("10.00") }
     var showAmountError by remember { mutableStateOf(false) }
+
+    val currencies = listOf(
+        Currency("USD", "$", "US Dollar"),
+        Currency("EUR", "€", "Euro"),
+        Currency("GBP", "£", "British Pound"),
+        Currency("JPY", "¥", "Japanese Yen"),
+        Currency("CAD", "C$", "Canadian Dollar"),
+        Currency("AUD", "A$", "Australian Dollar")
+    )
+    var selectedCurrency by remember { mutableStateOf(currencies[0]) }
+    var isCurrencyMenuExpanded by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -120,13 +138,11 @@ fun DonationContent(
         ) {
             Spacer(modifier = Modifier.height(verticalSpacing))
 
-
             Image(
                 painter = painterResource(id = R.drawable.paypal_logo),
                 contentDescription = "PayPal Logo",
                 modifier = Modifier.height((screenHeight * 0.06f).coerceIn(40f, 60f).dp)
             )
-
 
             Spacer(modifier = Modifier.height(verticalSpacing))
 
@@ -148,6 +164,57 @@ fun DonationContent(
 
             Spacer(modifier = Modifier.height(verticalSpacing))
 
+            // Currency Selection
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Currency:",
+                    fontSize = labelSize,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Box {
+                    OutlinedButton(
+                        onClick = { isCurrencyMenuExpanded = true },
+                        modifier = Modifier.width((screenWidth * 0.4f).coerceIn(120f, 200f).dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = "${selectedCurrency.symbol} ${selectedCurrency.code}")
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Select Currency"
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = isCurrencyMenuExpanded,
+                        onDismissRequest = { isCurrencyMenuExpanded = false }
+                    ) {
+                        currencies.forEach { currency ->
+                            DropdownMenuItem(
+                                text = { Text("${currency.symbol} ${currency.code} - ${currency.name}") },
+                                onClick = {
+                                    selectedCurrency = currency
+                                    isCurrencyMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(verticalSpacing / 2))
+
             Text(
                 text = "Enter Donation Amount",
                 fontSize = labelSize,
@@ -166,7 +233,7 @@ fun DonationContent(
                     }
                 },
                 label = { Text("Amount") },
-                prefix = { Text("$") },
+                prefix = { Text(selectedCurrency.symbol) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = horizontalPadding),
@@ -228,7 +295,7 @@ fun DonationContent(
                     } else {
                         // Open PayPal.me link with the amount
                         val amount = donationAmount.toFloat()
-                        val paypalUri = Uri.parse("https://www.paypal.me/$paypalUsername/$amount")
+                        val paypalUri = Uri.parse("https://www.paypal.me/$paypalUsername/$amount/${selectedCurrency.code}")
                         val intent = Intent(Intent.ACTION_VIEW, paypalUri)
                         context.startActivity(intent)
                     }
@@ -252,7 +319,7 @@ fun DonationContent(
             Spacer(modifier = Modifier.height(verticalSpacing * 3 / 4))
 
             Text(
-                text = "You will be redirected to PayPal to complete your donation securely.",
+                text = "You will be redirected to PayPal to complete your donation securely in ${selectedCurrency.name}.",
                 fontSize = (descriptionSize.value * 0.9f).sp,
                 textAlign = TextAlign.Center,
                 color = Color.Gray,
@@ -263,10 +330,9 @@ fun DonationContent(
         }
     }
 }
-
 @Preview(showBackground = true)
 @Composable
-fun WizardSplashPreview() {
+fun DonationContentPreview() {
     WizardlyDoTheme {
         DonationContent(
             onBack = {}

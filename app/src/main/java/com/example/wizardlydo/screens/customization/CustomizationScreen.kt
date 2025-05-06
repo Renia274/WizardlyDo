@@ -113,13 +113,11 @@ fun CustomizationContent(
                 .fillMaxSize()
                 .padding(horizontal = padding)
         ) {
-            // Character preview with adaptive height
             WizardPreview(
                 state = state,
                 modifier = Modifier.height((screenHeight * 0.35f).coerceIn(200.dp, 300.dp))
             )
 
-            // Customization options
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -162,12 +160,10 @@ fun CustomizationContent(
                     onOutfitSelected = onOutfitSelected
                 )
 
-                // Extra space at bottom for save button
                 Spacer(modifier = Modifier.height(buttonHeight + spacing))
             }
         }
 
-        // Sticky save button at the bottom
         AnimatedVisibility(
             visible = isSaveButtonVisible,
             modifier = Modifier.align(Alignment.BottomCenter),

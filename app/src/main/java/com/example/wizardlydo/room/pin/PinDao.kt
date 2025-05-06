@@ -19,6 +19,6 @@ interface PinDao {
     @Query("DELETE FROM security_pins")
     suspend fun clearPin()
 
-    @Query("UPDATE security_pins SET encryptedPin = :newEncryptedPin WHERE id = 1")
+    @Query("UPDATE security_pins SET encrypted_pin = :newEncryptedPin WHERE id = 1")
     suspend fun updatePin(newEncryptedPin: String)
 }

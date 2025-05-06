@@ -25,11 +25,8 @@ data class WizardProfile(
     val totalTasksCompleted: Int = 0,
     val consecutiveTasksCompleted: Int = 0,
     val lastTaskCompleted: Timestamp? = null,
-    val achievements: List<String> = emptyList(),
-    val joinDate: Timestamp? = null,
-    val lastLogin: Timestamp? = null,
-    val createdAt: Timestamp = Timestamp.now(),
-    val updatedAt: Timestamp = Timestamp.now(),
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
     val darkModeEnabled: Boolean = false,
     @Transient val isSelected: Boolean = false
 ) {

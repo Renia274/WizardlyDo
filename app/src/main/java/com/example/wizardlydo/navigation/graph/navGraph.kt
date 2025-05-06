@@ -14,8 +14,8 @@ import com.example.wizardlydo.navigation.screens.Screen
 import com.example.wizardlydo.screens.customization.CustomizationScreen
 import com.example.wizardlydo.screens.donation.DonationScreen
 import com.example.wizardlydo.screens.login.LoginScreen
-import com.example.wizardlydo.screens.pin.PinAuthScreen
 import com.example.wizardlydo.screens.pin.PinSetupScreen
+import com.example.wizardlydo.screens.pin.PinVerifyScreen
 import com.example.wizardlydo.screens.recovery.RecoveryScreen
 import com.example.wizardlydo.screens.settings.SettingsScreen
 import com.example.wizardlydo.screens.signup.SignupScreen
@@ -128,7 +128,7 @@ fun NavigationGraph() {
         }
 
         composable(Screen.PinAuth.route) {
-            PinAuthScreen(
+            PinVerifyScreen(
                 onPinSuccess = {
                     navController.navigate(Screen.Tasks.route) {
                         popUpTo(Screen.PinAuth.route) { inclusive = true }

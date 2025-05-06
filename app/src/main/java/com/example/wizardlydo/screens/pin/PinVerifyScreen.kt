@@ -1,7 +1,5 @@
 package com.example.wizardlydo.screens.pin
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,31 +15,28 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wizardlydo.comps.errors.ErrorDialog
 import com.example.wizardlydo.screens.pin.comps.PinInputSection
-import com.example.wizardlydo.screens.pin.comps.PinSetupHeader
-import com.example.wizardlydo.screens.pin.comps.SavePinButton
+import com.example.wizardlydo.screens.pin.comps.PinVerifyButton
+import com.example.wizardlydo.screens.pin.comps.PinVerifyHeader
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.pin.PinViewModel
 import org.koin.androidx.compose.koinViewModel
 
 
-@RequiresApi(Build.VERSION_CODES.R)
 @Composable
-fun PinSetupScreen(
+fun PinVerifyScreen(
     viewModel: PinViewModel = koinViewModel(),
-    onPinSetupComplete: () -> Unit
+    onPinSuccess: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
-    LaunchedEffect(state.isPinSaved) {
-        if (state.isPinSaved) {
-            onPinSetupComplete()
+    LaunchedEffect(state.isPinVerified) {
+        if (state.isPinVerified) {
+            onPinSuccess()
         }
     }
 
@@ -49,18 +44,17 @@ fun PinSetupScreen(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            PinSetupContent(
+            PinVerifyContent(
                 pin = state.pin,
                 onPinChange = viewModel::updatePin,
-                onSavePin = viewModel::validateAndSavePin,
-                isLoading = false,
+                onVerifyPin = viewModel::verifyPin,
+                isLoading = state.isLoading,
                 hasError = state.error != null,
                 error = state.error,
                 onDismissError = viewModel::clearError
@@ -68,17 +62,15 @@ fun PinSetupScreen(
         }
     }
 }
-
-@RequiresApi(Build.VERSION_CODES.R)
 @Composable
-fun PinSetupContent(
+fun PinVerifyContent(
     pin: String,
     onPinChange: (String) -> Unit,
-    onSavePin: () -> Unit,
+    onVerifyPin: () -> Unit,
     isLoading: Boolean,
     hasError: Boolean,
     error: String?,
-    onDismissError: () -> Unit,
+    onDismissError: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -86,7 +78,7 @@ fun PinSetupContent(
             .widthIn(max = 450.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        PinSetupHeader()
+        PinVerifyHeader()
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -97,12 +89,11 @@ fun PinSetupContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SavePinButton(
+        PinVerifyButton(
             pin = pin,
-            onSavePin = onSavePin
+            onVerifyPin = onVerifyPin,
+            isLoading = isLoading
         )
-
-
     }
 
     error?.let {
@@ -113,15 +104,14 @@ fun PinSetupContent(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.R)
-@Preview(showBackground = true)
 @Composable
-fun PinSetupContentPreview() {
+@Preview(showBackground = true)
+fun PinVerifyContentPreview() {
     WizardlyDoTheme {
-        PinSetupContent(
+        PinVerifyContent(
             pin = "1234",
             onPinChange = {},
-            onSavePin = {},
+            onVerifyPin = {},
             isLoading = false,
             hasError = false,
             error = null,

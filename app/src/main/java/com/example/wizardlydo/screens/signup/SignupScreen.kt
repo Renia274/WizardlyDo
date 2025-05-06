@@ -23,12 +23,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
+import com.example.wizardlydo.comps.errors.ErrorDialog
 import com.example.wizardlydo.data.wizard.WizardClass
-import com.example.wizardlydo.screens.signup.comps.EmailField
-import com.example.wizardlydo.screens.signup.comps.ErrorDialogComponent
+import com.example.wizardlydo.comps.form.EmailField
 import com.example.wizardlydo.screens.signup.comps.GoogleSignInButton
 import com.example.wizardlydo.screens.signup.comps.LoginRedirectButton
-import com.example.wizardlydo.screens.signup.comps.PasswordField
+import com.example.wizardlydo.comps.form.PasswordField
 import com.example.wizardlydo.screens.signup.comps.SignupButton
 import com.example.wizardlydo.screens.signup.comps.SignupHeader
 import com.example.wizardlydo.screens.signup.comps.WizardClassSelector
@@ -51,7 +51,6 @@ fun SignupScreen(
 
     LaunchedEffect(state.isProfileComplete) {
         if (state.isProfileComplete) {
-            // Pass the selected class to parent
             onSignupSuccess(state.wizardClass)
         }
     }
@@ -101,7 +100,7 @@ fun SignupScreen(
         )
 
         state.error?.let { error ->
-            ErrorDialogComponent(
+            ErrorDialog(
                 error = error,
                 onDismiss = { viewModel.handleError(null) }
             )
