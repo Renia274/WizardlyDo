@@ -584,9 +584,8 @@ private fun getDrawableResourceId(name: String): Int {
         "skin_800ed0" -> R.drawable.skin_800ed0
         "skin_800ed0_sleep" -> R.drawable.skin_800ed0_sleep
 
-        // potion
-        "potion" -> R.drawable.potion
 
-        else -> 0 // Default or fallback
+
+        else -> 0
     }
 }

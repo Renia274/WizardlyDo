@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -25,13 +27,14 @@ fun TaskBottomBar(
     onHome: () -> Unit,
     onSettings: () -> Unit,
     onSearch: () -> Unit,
-    onInventory: () -> Unit
+    onInventory: () -> Unit,
+    onDonation: () -> Unit
 ) {
     BottomAppBar {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -69,6 +72,23 @@ fun TaskBottomBar(
                 }
                 Text(
                     text = "Inventory",
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconButton(onClick = onDonation) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Donate",
+                        tint = Color(0xFF0070BA)
+                    )
+                }
+                Text(
+                    text = "Donate",
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(top = 2.dp)
                 )

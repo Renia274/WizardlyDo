@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+/app/src/main/assets/paypal_username.txt
+/app/src/main/res/values/web_client_id.xml

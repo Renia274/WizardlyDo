@@ -12,6 +12,7 @@ import androidx.navigation.navArgument
 import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.navigation.screens.Screen
 import com.example.wizardlydo.screens.customization.CustomizationScreen
+import com.example.wizardlydo.screens.donation.DonationScreen
 import com.example.wizardlydo.screens.login.LoginScreen
 import com.example.wizardlydo.screens.pin.PinAuthScreen
 import com.example.wizardlydo.screens.pin.PinSetupScreen
@@ -137,8 +138,6 @@ fun NavigationGraph() {
         }
 
         composable(Screen.Tasks.route) {
-
-
             TaskScreen(
                 onBack = {
                     navController.navigate(Screen.Login.route) {
@@ -159,6 +158,9 @@ fun NavigationGraph() {
                 },
                 onInventory = {
                     navController.navigate(Screen.Inventory.route)
+                },
+                onDonation = {
+                    navController.navigate(Screen.Donation.route)
                 }
             )
         }
@@ -195,6 +197,12 @@ fun NavigationGraph() {
 
         composable(Screen.Inventory.route) {
             InventoryScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Donation.route) {
+            DonationScreen(
                 onBack = { navController.popBackStack() }
             )
         }

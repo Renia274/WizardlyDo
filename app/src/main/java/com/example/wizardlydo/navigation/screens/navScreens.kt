@@ -24,6 +24,7 @@ sealed class Screen(val route: String) {
         data object EditMode : Screen("${Tasks.route}/edit-mode")
     }
     data object Inventory : Screen("inventory")
+    data object Donation : Screen("donation")
 
 
 }

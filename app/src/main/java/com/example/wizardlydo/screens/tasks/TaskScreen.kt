@@ -77,7 +77,8 @@ fun TaskScreen(
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
     onSettings: () -> Unit,
-    onInventory: () -> Unit
+    onInventory: () -> Unit,
+    onDonation: () -> Unit // Added donation navigation callback
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -183,7 +184,8 @@ fun TaskScreen(
                         viewModel.activateSearch()
                     },
                     onSettings = onSettings,
-                    onInventory = onInventory
+                    onInventory = onInventory,
+                    onDonation = onDonation // Added donation callback
                 )
             }
         },

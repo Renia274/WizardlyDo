@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import kotlinx.coroutines.delay
 
 @Composable
@@ -177,5 +178,7 @@ fun SplashContent() {
 @Preview(showBackground = true)
 @Composable
 fun WizardSplashPreview() {
-    SplashContent()
+    WizardlyDoTheme {
+        SplashContent()
+    }
 }
