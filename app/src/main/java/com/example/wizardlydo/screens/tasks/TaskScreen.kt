@@ -44,20 +44,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.comps.ErrorMessage
 import com.example.wizardlydo.comps.FullScreenLoading
-import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.data.models.TaskFilter
+import com.example.wizardlydo.data.models.TaskUiState
 import com.example.wizardlydo.data.tasks.Priority
 import com.example.wizardlydo.data.tasks.Task
 import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.wizard.WizardProfile
-import com.example.wizardlydo.data.models.TaskFilter
-import com.example.wizardlydo.data.models.TaskUiState
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.CharacterStatsSection
+import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.EmptyTaskList
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.LevelUpIndicator
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskBottomBar
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskFilterChips
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskSearchBar
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskListSection
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskSearchBar
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.CharacterStatsSection
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.utilities.TaskNotificationService
 import com.example.wizardlydo.viewmodel.inventory.InventoryViewModel
@@ -185,7 +185,7 @@ fun TaskScreen(
                     },
                     onSettings = onSettings,
                     onInventory = onInventory,
-                    onDonation = onDonation // Added donation callback
+                    onDonation = onDonation
                 )
             }
         },

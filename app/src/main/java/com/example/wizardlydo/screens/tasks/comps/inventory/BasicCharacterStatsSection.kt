@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,9 +27,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.data.wizard.WizardProfile
-import androidx.compose.foundation.layout.size
+import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.screens.tasks.comps.WizardAvatar
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.StatBar
 
@@ -38,6 +38,17 @@ fun BasicCharacterStatsSection(
     modifier: Modifier = Modifier,
     equippedItems: EquippedItems?
 ) {
+    val isWizardDead = wizardProfile.health <= 0
+    val hasBackground = equippedItems?.background != null
+
+    val primaryColor = if (hasBackground) Color.White else MaterialTheme.colorScheme.primary
+    val onSurfaceVariantColor = if (hasBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val surfaceVariantColor = if (hasBackground) {
+        Color.Black.copy(alpha = 0.5f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+
     val animatedHealth by animateIntAsState(
         targetValue = wizardProfile.health,
         animationSpec = tween(durationMillis = 500),
@@ -56,7 +67,10 @@ fun BasicCharacterStatsSection(
             .padding(horizontal = 16.dp),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isWizardDead)
+                surfaceVariantColor.copy(alpha = 0.7f)
+            else
+                surfaceVariantColor
         )
     ) {
         Box {
@@ -68,7 +82,7 @@ fun BasicCharacterStatsSection(
                         .fillMaxWidth()
                         .height(200.dp),
                     contentScale = ContentScale.Crop,
-                    alpha = 0.6f
+                    alpha = if (isWizardDead) 0.3f else 0.6f
                 )
             }
 
@@ -79,7 +93,7 @@ fun BasicCharacterStatsSection(
                         brush = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                                surfaceVariantColor.copy(alpha = 0.7f)
                             )
                         )
                     )
@@ -103,44 +117,95 @@ fun BasicCharacterStatsSection(
                             text = wizardProfile.wizardName,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = if (isWizardDead)
+                                MaterialTheme.colorScheme.error
+                            else
+                                primaryColor
                         )
-                        Text(
-                            text = wizardProfile.wizardClass.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+
+                        if (isWizardDead) {
+                            Text(
+                                text = "DEFEATED",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Text(
+                                text = wizardProfile.wizardClass.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = onSurfaceVariantColor
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
                             text = "Level ${wizardProfile.level}",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if (isWizardDead)
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                            else
+                                primaryColor,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
+                // Death message when HP is zero
+                if (isWizardDead) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Your wizard has been defeated!",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
-                StatBar(
-                    label = "HP",
-                    value = animatedHealth,
-                    maxValue = wizardProfile.maxHealth,
-                    color = Color(0xFFE53935),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    StatBar(
+                        label = "HP",
+                        value = animatedHealth,
+                        maxValue = wizardProfile.maxHealth,
+                        color = when {
+                            isWizardDead -> Color.Gray
+                            hasBackground -> Color.Red
+                            else -> Color(0xFFE53935)
+                        },
+                        textColor = if (hasBackground) Color.White else Color.Black
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                StatBar(
-                    label = "Stamina",
-                    value = animatedStamina,
-                    maxValue = wizardProfile.maxStamina,
-                    color = Color(0xFF43A047),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    StatBar(
+                        label = "Stamina",
+                        value = animatedStamina,
+                        maxValue = wizardProfile.maxStamina,
+                        color = when {
+                            isWizardDead -> Color.Gray
+                            hasBackground -> Color.Green
+                            else -> Color(0xFF43A047)
+                        },
+                        textColor = if (hasBackground) Color.White else Color.Black
+                    )
+                }
             }
         }
     }

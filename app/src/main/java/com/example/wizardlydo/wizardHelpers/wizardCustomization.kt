@@ -194,10 +194,6 @@ fun getOutfitResourceId(wizardClass: WizardClass, outfit: String, gender: String
                 R.drawable.broad_armor_special_pyromancer
             else
                 R.drawable.slim_armor_special_pyromancer
-            "Blue Shirt" -> if (gender == "Male")
-                R.drawable.broad_shirt_blue
-            else
-                R.drawable.broad_shirt_blue
             else -> if (gender == "Male")
                 R.drawable.broad_armor_armoire_ram_fleece
             else
