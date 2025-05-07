@@ -34,7 +34,7 @@ import com.example.wizardlydo.screens.signup.comps.SignupHeader
 import com.example.wizardlydo.screens.signup.comps.WizardClassSelector
 import com.example.wizardlydo.screens.signup.comps.WizardNameField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
-import com.example.wizardlydo.viewmodel.signup.WizardAuthViewModel
+import com.example.wizardlydo.viewmodel.signup.SignupViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.GoogleAuthProvider
@@ -42,7 +42,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SignupScreen(
-    viewModel: WizardAuthViewModel = koinViewModel(),
+    viewModel: SignupViewModel = koinViewModel(),
     onLoginClick: () -> Unit,
     onSignupSuccess: (WizardClass) -> Unit
 ) {
@@ -132,7 +132,6 @@ fun SignupContent(
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
 
-    // Simple responsive values
     val padding = (screenWidth * 0.06f).coerceIn(24.dp, 40.dp)
     val spacing = (screenHeight * 0.02f).coerceIn(16.dp, 32.dp)
 
@@ -143,7 +142,7 @@ fun SignupContent(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top spacer
+
         Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
 
         SignupHeader()
@@ -189,14 +188,14 @@ fun SignupContent(
         SignupButton(
             onClick = onSignupClick,
             isLoading = isLoading,
-            enabled = !isLoading // Always enabled
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
         GoogleSignInButton(
             onClick = onGoogleSignIn,
-            enabled = !isLoading // Always enabled
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height((spacing * 0.8f)))
@@ -206,7 +205,6 @@ fun SignupContent(
             enabled = !isLoading
         )
 
-        // Bottom spacer to ensure content isn't cut off
         Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
     }
 }

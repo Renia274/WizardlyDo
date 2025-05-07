@@ -2,7 +2,7 @@ package com.example.wizardlydo.repository.pin
 
 import com.example.wizardlydo.room.pin.PinDao
 import com.example.wizardlydo.room.pin.PinEntity
-import com.example.wizardlydo.utilities.SecurityProvider
+import com.example.wizardlydo.utilities.security.SecurityProvider
 
 class PinRepository(
     private val pinDao: PinDao,

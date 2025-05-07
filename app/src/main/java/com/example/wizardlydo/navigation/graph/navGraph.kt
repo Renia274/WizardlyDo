@@ -140,7 +140,7 @@ fun NavigationGraph() {
         composable(Screen.Tasks.route) {
             TaskScreen(
                 onBack = {
-                    navController.navigate(Screen.Login.route) {
+                    navController.navigate(Screen.Signup.route) {
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },

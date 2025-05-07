@@ -1,20 +1,27 @@
 package com.example.wizardlydo
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import androidx.work.WorkManager
-import com.example.wizardlydo.repository.wizard.WizardRepository
+import com.example.wizardlydo.repository.inventory.InventoryRepository
 import com.example.wizardlydo.repository.pin.PinRepository
 import com.example.wizardlydo.repository.tasks.TaskRepository
-import com.example.wizardlydo.room.wizard.WizardDao
+import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.example.wizardlydo.room.WizardDatabase
-import com.example.wizardlydo.utilities.SecurityProvider
+import com.example.wizardlydo.room.WizardTypeConverters
+import com.example.wizardlydo.utilities.TaskNotificationService
+import com.example.wizardlydo.utilities.security.SecurityProvider
 import com.example.wizardlydo.viewmodel.customization.CustomizationViewModel
+import com.example.wizardlydo.viewmodel.inventory.InventoryViewModel
 import com.example.wizardlydo.viewmodel.login.LoginViewModel
 import com.example.wizardlydo.viewmodel.pin.PinViewModel
 import com.example.wizardlydo.viewmodel.recovery.RecoveryViewModel
 import com.example.wizardlydo.viewmodel.settings.SettingsViewModel
+import com.example.wizardlydo.viewmodel.signup.SignupViewModel
 import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
-import com.example.wizardlydo.viewmodel.signup.WizardAuthViewModel
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -24,14 +31,6 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
-import android.os.Build
-import com.example.wizardlydo.utilities.TaskNotificationService
-import com.example.wizardlydo.viewmodel.inventory.InventoryViewModel
-import com.example.wizardlydo.repository.inventory.InventoryRepository
-import com.example.wizardlydo.room.WizardTypeConverters
 
 class MyApp : Application() {
     override fun onCreate() {
@@ -72,11 +71,13 @@ val appModule = module {
     // Firebase Services
     single<FirebaseAuth> { Firebase.auth }
 
-    // WorkManager - used for scheduling notifications
+    // WorkManager
     single { WorkManager.getInstance(androidContext()) }
 
     // Notification Service
     factory { (context: Context) -> TaskNotificationService(context) }
+
+
 
     // Room Database
     single { WizardDatabase.getDatabase(androidContext()) }
@@ -85,12 +86,8 @@ val appModule = module {
     single { get<WizardDatabase>().taskDao() }
     single { get<WizardDatabase>().inventoryDao() }
 
-    single<WizardRepository> {
-        object : WizardRepository {
-            override val wizardDao = get<WizardDao>()
-            override val firebaseAuth = get<FirebaseAuth>()
-        }
-    }
+    //Repository
+    single {WizardRepository(get(), get(),get())}
     single { PinRepository(get(), get()) }
     single { TaskRepository(get()) }
     single { InventoryRepository(get()) }
@@ -100,16 +97,13 @@ val appModule = module {
     single { SecurityProvider(androidContext()) }
 
     // ViewModels
-    viewModelOf(::WizardAuthViewModel)
+    viewModelOf(::SignupViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::RecoveryViewModel)
     viewModel { TaskViewModel(get(), get(), get()) }
     viewModelOf(::PinViewModel)
     viewModelOf(::SettingsViewModel)
-
-    // Add inventory viewmodel
     viewModel { InventoryViewModel(get(), get()) }
-
     viewModel { params ->
         CustomizationViewModel(
             repository = get(),

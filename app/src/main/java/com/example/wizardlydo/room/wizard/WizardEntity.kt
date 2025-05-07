@@ -37,7 +37,6 @@ data class WizardEntity(
     @ColumnInfo(name = "experience", defaultValue = "0")
     val experience: Int = 0,
 
-    // Color and appearance fields
     @ColumnInfo(name = "gender", defaultValue = "Male")
     val gender: String = "Male",
 

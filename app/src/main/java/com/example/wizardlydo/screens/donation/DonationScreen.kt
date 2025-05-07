@@ -164,7 +164,7 @@ fun DonationContent(
 
             Spacer(modifier = Modifier.height(verticalSpacing))
 
-            // Currency Selection
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

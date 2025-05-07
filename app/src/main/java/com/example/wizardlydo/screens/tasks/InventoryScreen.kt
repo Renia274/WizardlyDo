@@ -46,7 +46,7 @@ fun InventoryScreen(
 ) {
     val currentWizard by viewModel.currentWizardFlow.collectAsState()
     val equippedItems by viewModel.equippedItemsFlow.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiStateFlow.collectAsState()
 
     Scaffold(
         topBar = {

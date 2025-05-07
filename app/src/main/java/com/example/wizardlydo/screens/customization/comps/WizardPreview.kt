@@ -1,19 +1,31 @@
 package com.example.wizardlydo.screens.customization.comps
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.R
 import com.example.wizardlydo.data.models.CustomizationState
 import com.example.wizardlydo.wizardHelpers.getHairResourceId
 import com.example.wizardlydo.wizardHelpers.getOutfitResourceId
+import com.example.wizardlydo.wizardHelpers.getSkinResourceId
 
 // WizardPreview Customization based on wizard class
 @Composable
@@ -21,52 +33,86 @@ fun WizardPreview(
     state: CustomizationState,
     modifier: Modifier = Modifier
 ) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
+
     Box(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = horizontalPadding)
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(16.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier.size(200.dp)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 16.dp)
         ) {
-            // Skin/Body
-            val skinResourceId = when (state.skinColor) {
-                "light" -> R.drawable.skin_f5a76e
-                "medium" -> R.drawable.skin_ea8349
-                "dark" -> R.drawable.skin_98461a
-                "fantasy1" -> R.drawable.skin_0ff591
-                "fantasy2" -> R.drawable.skin_800ed0
-                else -> R.drawable.skin_f5a76e
+            Box(
+                modifier = Modifier
+                    .size(180.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = getSkinResourceId(state.skinColor)),
+                        contentDescription = "Character Skin",
+                        modifier = Modifier
+                            .size(100.dp)
+                            .offset(x=(-12).dp,y = (28).dp)
+                    )
+
+                    val outfitResourceId = getOutfitResourceId(
+                        wizardClass = state.wizardClass,
+                        outfit = state.outfit,
+                        gender = state.gender
+                    )
+
+                    Image(
+                        painter = painterResource(id = outfitResourceId),
+                        contentDescription = "Character Outfit",
+                        modifier = Modifier
+                            .size(100.dp)
+                            .offset(x=(-12).dp,y = 30.dp)
+                    )
+
+                    val hairResourceId = getHairResourceId(
+                        gender = state.gender,
+                        hairStyle = state.hairStyle,
+                        hairColor = state.hairColor
+                    )
+
+                    Image(
+                        painter = painterResource(id = hairResourceId),
+                        contentDescription = "Character Hair",
+                        modifier = Modifier
+                            .size(42.dp)
+                            .offset( y = 24.dp)
+                    )
+                }
             }
 
-            Image(
-                painter = painterResource(id = skinResourceId),
-                contentDescription = "Character Body",
-                modifier = Modifier
-                    .size(80.dp)
-                    .align(Alignment.Center)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = state.wizardClass.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Outfit
-            val outfitResId = getOutfitResourceId(state.wizardClass, state.outfit, state.gender)
-            if (outfitResId != 0) {
-                Image(
-                    painter = painterResource(id = outfitResId),
-                    contentDescription = "Character Outfit",
-                    modifier = Modifier
-                        .size(80.dp)
-                        .align(Alignment.Center)
-                )
-            }
-
-            // Hair
-            val hairResId = getHairResourceId(state.gender, state.hairStyle, state.hairColor)
-            Image(
-                painter = painterResource(id = hairResId),
-                contentDescription = "Character Hair",
-                modifier = Modifier
-                    .size(40.dp)
-                    .align(Alignment.TopCenter)
-                    .offset(x = 10.dp, y = 73.dp)
+            Text(
+                text = "Customizing your character",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

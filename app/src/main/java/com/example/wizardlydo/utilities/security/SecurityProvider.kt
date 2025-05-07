@@ -1,4 +1,4 @@
-package com.example.wizardlydo.utilities
+package com.example.wizardlydo.utilities.security
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec

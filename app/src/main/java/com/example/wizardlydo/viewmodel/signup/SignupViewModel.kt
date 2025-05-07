@@ -7,6 +7,7 @@ import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.models.WizardSignUpState
 import com.example.wizardlydo.providers.SignInProvider
 import com.example.wizardlydo.repository.wizard.WizardRepository
+import com.example.wizardlydo.utilities.security.SecurityProvider
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,9 +20,10 @@ import java.util.regex.Pattern
 
 
 @KoinViewModel
-class WizardAuthViewModel(
+class SignupViewModel(
     private val auth: FirebaseAuth,
-    private val wizardRepository: WizardRepository
+    private val wizardRepository: WizardRepository,
+    private val securityProvider: SecurityProvider
 ) : ViewModel() {
 
     private val state = MutableStateFlow(WizardSignUpState())
@@ -43,6 +45,10 @@ class WizardAuthViewModel(
 
     val isFormValid: Boolean
         get() = isUsernameValid && isEmailValid && isPasswordValid
+
+    private fun encryptPassword(plainPassword: String): String {
+        return securityProvider.encrypt(plainPassword)
+    }
 
     fun signUpWithEmail() {
         if (!validateForm()) return
@@ -99,11 +105,14 @@ class WizardAuthViewModel(
                 wizardRepository.getWizardProfile(user.uid).fold(
                     onSuccess = { existingProfile ->
                         if (existingProfile == null) {
+                            val randomPassword = generateSecurePassword()
+
                             val newProfile = WizardProfile(
                                 userId = user.uid,
                                 wizardClass = state.value.wizardClass,
                                 wizardName = state.value.wizardName,
                                 email = user.email ?: state.value.email,
+                                passwordHash = encryptPassword(randomPassword),
                                 signInProvider = SignInProvider.GOOGLE
                             )
 
@@ -131,16 +140,32 @@ class WizardAuthViewModel(
         }
     }
 
+    // Generate secure random password for OAuth users
+    private fun generateSecurePassword(length: Int = 16): String {
+        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9') + "!@#$%^&*()-_=+[]{}|;:,.<>?/".toList()
+        return (1..length)
+            .map { allowedChars.random() }
+            .joinToString("")
+    }
+
     private suspend fun createWizardProfile(
         userId: String,
         provider: SignInProvider,
         email: String = state.value.email
     ) {
+
+        val encryptedPassword = if (provider == SignInProvider.EMAIL) {
+            encryptPassword(state.value.password)
+        } else {
+            encryptPassword(generateSecurePassword())
+        }
+
         val profile = WizardProfile(
             userId = userId,
             wizardClass = state.value.wizardClass,
             wizardName = state.value.wizardName,
             email = email,
+            passwordHash = encryptedPassword,
             signInProvider = provider
         )
 

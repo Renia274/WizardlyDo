@@ -30,7 +30,7 @@ class InventoryViewModel(
     private val wizardRepository: WizardRepository
 ) : ViewModel() {
 
-    val uiState = MutableStateFlow<InventoryUiState>(InventoryUiState.Loading)
+    private val uiState = MutableStateFlow<InventoryUiState>(InventoryUiState.Loading)
     val uiStateFlow: StateFlow<InventoryUiState> = uiState.asStateFlow()
 
     private val currentWizard = MutableStateFlow<WizardProfile?>(null)
@@ -168,23 +168,4 @@ class InventoryViewModel(
         }
     }
 
-    fun retryLoadWizardProfile() {
-        loadWizardProfile()
-    }
-
-    // Helper function to check if an item is equipped
-    fun isItemEquipped(itemId: String): Boolean {
-        val currentState = uiState.value
-        return if (currentState is InventoryUiState.Success) {
-            currentState.items.any { it.itemId == itemId && it.isEquipped }
-        } else false
-    }
-
-    // Helper function to get equipped items of a specific type
-    fun getEquippedItemOfType(itemType: String): InventoryItemEntity? {
-        val currentState = uiState.value
-        return if (currentState is InventoryUiState.Success) {
-            currentState.items.firstOrNull { it.itemType == itemType && it.isEquipped }
-        } else null
-    }
 }
