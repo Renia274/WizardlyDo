@@ -27,8 +27,8 @@ interface WizardDao {
     @Query("UPDATE wizards SET level = :level, experience = :experience WHERE user_id = :userId")
     suspend fun updateLevel(userId: String, level: Int, experience: Int)
 
-    @Query("UPDATE wizards SET skin_color = :skinColor, hair_style = :hairStyle, hair_color = :hairColor, gender = :gender WHERE user_id = :userId")
-    suspend fun updateWizardCustomization(userId: String, skinColor: String, hairStyle: Int, hairColor: String,gender: String)
+    @Query("UPDATE wizards SET skin_color = :skinColor, hair_style = :hairStyle, hair_color = :hairColor, gender = :gender, outfit = :outfit WHERE user_id = :userId")
+    suspend fun updateWizardCustomization(userId: String, skinColor: String, hairStyle: Int, hairColor: String,gender: String,outfit: String)
 
     @Query("SELECT EXISTS(SELECT 1 FROM wizards WHERE email = :email)")
     suspend fun isEmailRegistered(email: String): Boolean

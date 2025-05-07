@@ -1,11 +1,9 @@
 package com.example.wizardlydo.screens.customization.comps
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,9 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.wizardlydo.R
 import com.example.wizardlydo.data.wizard.WizardClass
-import com.example.wizardlydo.wizardHelpers.getDrawableResourceId
 
 @Composable
 fun OutfitSelector(
@@ -35,22 +32,19 @@ fun OutfitSelector(
 ) {
     val outfits = when (wizardClass) {
         WizardClass.CHRONOMANCER -> listOf(
-            "Astronomer Robe" to "broad_armor_special_snow",
-            "Thunder Cloak" to "broad_shirt_thunder"
+            "Astronomer Robe" to R.drawable.broad_armor_special_snow
         )
         WizardClass.LUMINARI -> listOf(
-            "Crystal Robe" to "broad_armor_armoire_crystal_robe",
-            "Blue Shirt" to "broad_shirt_blue"
+            "Crystal Robe" to R.drawable.broad_armor_armoire_crystal_robe
         )
         WizardClass.DRACONIST -> listOf(
-            "Flame Costume" to "broad_armor_armoire_barrister_robe",
-            "Ram Fleece" to "broad_armor_armoire_ram_fleece",
-            "Black Shirt" to "broad_shirt_black",
-            "Rainbow Shirt" to "broad_shirt_rainbow"
+            "Flame Robe" to R.drawable.broad_armor_draconist,
+            "Ram Fleece" to R.drawable.broad_armor_armoire_ram_fleece
         )
         WizardClass.MYSTWEAVER -> listOf(
-            "Mystic Robe" to "broad_armor_special_pyromancer",
-            "Blue Shirt" to "broad_shirt_blue"
+            "Mystic Robe" to R.drawable.broad_armor_special_pyromancer,
+            "Ram Fleece" to R.drawable.broad_armor_armoire_ram_fleece,
+            "Blue Shirt" to R.drawable.broad_shirt_blue
         )
     }
 
@@ -60,9 +54,7 @@ fun OutfitSelector(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(vertical = 8.dp)
         ) {
-            items(outfits) { (name, resourceName) ->
-                val resourceId = getDrawableResourceId(resourceName)
-
+            items(outfits) { (name, resourceId) ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
@@ -71,34 +63,18 @@ fun OutfitSelector(
                         .clip(RoundedCornerShape(8.dp))
                         .border(
                             width = 2.dp,
-                            color = if (selectedOutfit == name) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            color = if (selectedOutfit == name) MaterialTheme.colorScheme.primary
+                            else Color.Transparent,
                             shape = RoundedCornerShape(8.dp)
                         )
                         .clickable { onOutfitSelected(name) }
                         .padding(4.dp)
                 ) {
-                    if (resourceId != 0) {
-                        Image(
-                            painter = painterResource(id = resourceId),
-                            contentDescription = name,
-                            modifier = Modifier.size(60.dp)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(60.dp)
-                                .background(Color.LightGray),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Missing",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Black,
-                                textAlign = TextAlign.Center,
-                                fontSize = 8.sp
-                            )
-                        }
-                    }
+                    Image(
+                        painter = painterResource(id = resourceId),
+                        contentDescription = name,
+                        modifier = Modifier.size(60.dp)
+                    )
                     Text(
                         text = name,
                         style = MaterialTheme.typography.bodySmall,

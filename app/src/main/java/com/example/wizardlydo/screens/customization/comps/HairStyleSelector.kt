@@ -39,13 +39,13 @@ fun HairStyleSelector(
     val hairStyles = remember(gender) {
         if (gender == "Male") {
             listOf(
-                Triple("Short", R.drawable.creator_hair_bangs_1_black, Color.White),
+                Triple("Short", R.drawable.creator_hair_bangs_1_blond, Color.White),
                 Triple("Wavy", R.drawable.creator_hair_bangs_1_white, Color.White),
             )
         } else {
             listOf(
                 Triple("Wavy", R.drawable.creator_hair_bangs_1_white, Color.White),
-                Triple("Classic", R.drawable.creator_hair_bangs_2_blond, Color.White)
+                Triple("Classic",R.drawable.creator_hair_bangs_1_brown, Color.White)
             )
         }
     }
