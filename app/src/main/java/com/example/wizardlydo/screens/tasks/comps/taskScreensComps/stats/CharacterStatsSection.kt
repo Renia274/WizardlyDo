@@ -28,8 +28,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.screens.tasks.comps.WizardAvatar
 
 @Composable
@@ -49,6 +49,7 @@ fun CharacterStatsSection(
     val isWizardDead = health <= 0
     val hasBackground = equippedItems?.background != null
 
+    // Define colors based on background presence
     val primaryColor = if (hasBackground) {
         Color.White
     } else {
@@ -210,7 +211,7 @@ fun CharacterStatsSection(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-
+                // Wrap StatBar in a Box to maintain layout structure
                 Box(modifier = Modifier.fillMaxWidth()) {
                     StatBar(
                         label = "HP",
@@ -248,6 +249,7 @@ fun CharacterStatsSection(
                     experience = animatedExp,
                     tasksCompleted = tasksCompleted,
                     totalTasksForLevel = totalTasksForLevel,
+                    textColor = if (hasBackground) Color.White else Color.Black
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -257,11 +259,13 @@ fun CharacterStatsSection(
                         tasksCompleted = tasksCompleted,
                         totalTasksForLevel = totalTasksForLevel,
                         maxHealth = maxHealth,
+                        textColor = if (hasBackground) Color.White else Color.Black
                     )
                 } else {
                     RevivalProgressSection(
                         tasksCompleted = tasksCompleted,
                         tasksNeededForRevival = 3,
+                        textColor = if (hasBackground) Color.White else Color.Black
                     )
                 }
             }

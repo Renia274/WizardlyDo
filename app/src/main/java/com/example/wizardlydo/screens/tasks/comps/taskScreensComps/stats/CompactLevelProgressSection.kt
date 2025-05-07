@@ -22,10 +22,12 @@ fun CompactLevelProgressSection(
     level: Int,
     experience: Int,
     tasksCompleted: Int,
-    totalTasksForLevel: Int
+    totalTasksForLevel: Int,
+    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     val expPerLevel = 1000
     val nextLevel = level + 1
+    val expProgress = experience.toFloat() / expPerLevel.toFloat()
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -36,50 +38,40 @@ fun CompactLevelProgressSection(
             Text(
                 text = "$experience/$expPerLevel XP",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = textColor
             )
 
             Text(
-                text = "$tasksCompleted of $totalTasksForLevel tasks",
+                text = "$tasksCompleted/$totalTasksForLevel tasks",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = textColor
             )
         }
 
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             LinearProgressIndicator(
-                progress = {
-                    experience.toFloat() / expPerLevel.toFloat()
-                },
+                progress = { expProgress },
                 modifier = Modifier
                     .weight(1f)
-                    .height(6.dp),
-                color = Color(0xFFFFB300),
-                trackColor = Color(0xFFFFB300).copy(alpha = 0.2f)
+                    .height(8.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
             )
 
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = "Set",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "Level $level → $nextLevel",
+                style = MaterialTheme.typography.labelMedium,
+                color = textColor,
                 fontWeight = FontWeight.Bold
             )
         }
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        Text(
-            text = "Level $level → $nextLevel",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.align(Alignment.End)
-        )
     }
 }
+
