@@ -1,17 +1,34 @@
 package com.example.wizardlydo.screens.splash
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.EaseInOutQuad
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,7 +52,6 @@ fun SplashScreen(
 fun SplashContent() {
     val infiniteTransition = rememberInfiniteTransition(label = "")
 
-    // Body float animation
     val floatAnim by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 10f,
@@ -46,7 +62,6 @@ fun SplashContent() {
         label = ""
     )
 
-    // Robe sway animation
     val robeSwayAnim by infiniteTransition.animateFloat(
         initialValue = -5f,
         targetValue = 5f,
@@ -57,7 +72,6 @@ fun SplashContent() {
         label = ""
     )
 
-    // Staff rotation animation
     val staffRotation by infiniteTransition.animateFloat(
         initialValue = -10f,
         targetValue = 10f,
@@ -66,6 +80,28 @@ fun SplashContent() {
             repeatMode = RepeatMode.Reverse
         ),
         label = ""
+    )
+
+
+
+    val textColor by infiniteTransition.animateColor(
+        initialValue = Color.White,
+        targetValue = Color(0xFFA080FF),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOutQuad),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "text_color_animation"
+    )
+
+    val textFloatAnim by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, delayMillis = 200), // Slightly delayed from character
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "text_float_animation"
     )
 
     Box(
@@ -167,17 +203,26 @@ fun SplashContent() {
 
             Text(
                 text = "WizardlyDo",
-                color = Color.White,
+                color = textColor,
                 fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                style = TextStyle(
+                    shadow = Shadow(
+                        color = Color(0xFF9370DB),
+                        blurRadius = 3f,
+                        offset = Offset(0f, 0f)
+                    )
+                ),
+                modifier = Modifier.offset(y = textFloatAnim.dp)
             )
         }
     }
 }
 
+
 @Preview(showBackground = true)
 @Composable
-fun WizardSplashPreview() {
+fun SplashContentPreview() {
     WizardlyDoTheme {
         SplashContent()
     }
