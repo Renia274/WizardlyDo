@@ -135,6 +135,9 @@ class WizardRepository(
     fun getCurrentUserId(): String? = firebaseAuth.currentUser?.uid
 
     suspend fun updateWizardProfile(userId: String, profile: WizardProfile): Result<Unit> = runCatching {
+
+        val updatedProfile = wizardDao.getWizardById(userId)
+
         // Only encrypt if it's a new password
         val passwordToStore = if (profile.passwordHash != wizardDao.getWizardById(userId)?.passwordHash) {
             // New password, encrypt it
@@ -162,7 +165,7 @@ class WizardRepository(
                 skinColor = profile.skinColor,
                 hairStyle = profile.hairStyle.toIntOrNull() ?: 0,
                 hairColor = profile.hairColor,
-                outfit = profile.outfit,
+                outfit = updatedProfile.toString(),
                 lastTaskCompleted = profile.lastTaskCompleted,
                 consecutiveTasksCompleted = profile.consecutiveTasksCompleted,
                 totalTasksCompleted = profile.totalTasksCompleted,
@@ -189,6 +192,8 @@ class WizardRepository(
             gender = gender,
             outfit = outfit
         )
+
+
     }
 
 

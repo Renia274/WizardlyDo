@@ -1,4 +1,4 @@
-package com.example.wizardlydo.screens.tasks.comps
+package com.example.wizardlydo.wizardCustomization
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,11 +18,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.wizardHelpers.getHairResourceId
-import com.example.wizardlydo.wizardHelpers.getOutfitResourceId
-import com.example.wizardlydo.wizardHelpers.getSkinResourceId
-import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.wizard.WizardProfile
+import com.example.wizardlydo.data.wizard.items.EquippedItems
 
 @Composable
 fun WizardAvatar(
@@ -71,7 +69,25 @@ fun WizardAvatar(
                     )
 
                     // Outfit
-                    if (equippedItems?.outfit != null) {
+
+                    if (wizardProfile.wizardClass == WizardClass.MYSTWEAVER) {
+
+                        val outfitResourceId = getMystweaverOutfitResource(
+                            outfit = wizardProfile.outfit,
+                            gender = wizardProfile.gender
+                        )
+
+
+                        Image(
+                            painter = painterResource(id = outfitResourceId),
+                            contentDescription = "MYSTWEAVER Outfit",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .align(Alignment.Center)
+                                .offset(x = (-10).dp, y = (-6).dp)
+                        )
+                    } else if (equippedItems?.outfit != null) {
+                        // For equipped items
                         Image(
                             painter = painterResource(id = equippedItems.outfit.resourceId),
                             contentDescription = "Character Outfit",
@@ -81,14 +97,15 @@ fun WizardAvatar(
                                 .offset(x = (-10).dp, y = (-6).dp)
                         )
                     } else {
+                        // Classes:Draconist, Luminari and Chronomancer
+                        val outfitResource = getOutfitResource(
+                            wizardClass = wizardProfile.wizardClass,
+                            outfit = wizardProfile.outfit,
+                            gender = wizardProfile.gender
+                        )
+
                         Image(
-                            painter = painterResource(
-                                id = getOutfitResourceId(
-                                    wizardProfile.wizardClass,
-                                    wizardProfile.outfit,
-                                    wizardProfile.gender
-                                )
-                            ),
+                            painter = painterResource(id = outfitResource),
                             contentDescription = "Character Outfit",
                             modifier = Modifier
                                 .size(80.dp)
@@ -96,7 +113,6 @@ fun WizardAvatar(
                                 .offset(x = (-10).dp, y = (-6).dp)
                         )
                     }
-
                     // Hair
                     Image(
                         painter = painterResource(

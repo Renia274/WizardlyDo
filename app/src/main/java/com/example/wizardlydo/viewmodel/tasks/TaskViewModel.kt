@@ -3,13 +3,13 @@ package com.example.wizardlydo.viewmodel.tasks
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wizardlydo.data.tasks.Priority
-import com.example.wizardlydo.data.tasks.Task
-import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.models.EditTaskField
 import com.example.wizardlydo.data.models.EditTaskState
 import com.example.wizardlydo.data.models.TaskFilter
 import com.example.wizardlydo.data.models.TaskUiState
+import com.example.wizardlydo.data.tasks.Priority
+import com.example.wizardlydo.data.tasks.Task
+import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.repository.tasks.TaskRepository
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.example.wizardlydo.utilities.TaskNotificationService
@@ -24,8 +24,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
-import java.lang.Exception
-import kotlin.math.ceil
 
 @KoinViewModel
 class TaskViewModel(
@@ -250,11 +248,14 @@ class TaskViewModel(
                     return@launch
                 }
 
+                // Log the loaded profile details including outfit
                 Log.d("TaskViewModel", "Loaded profile - Level: ${wizardProfile?.level}, " +
                         "Health: ${wizardProfile?.health}/${wizardProfile?.maxHealth}, " +
                         "Stamina: ${wizardProfile?.stamina}/${wizardProfile?.maxStamina}, " +
                         "XP: ${wizardProfile?.experience}, " +
-                        "Tasks completed: ${wizardProfile?.totalTasksCompleted}")
+                        "Tasks completed: ${wizardProfile?.totalTasksCompleted}, " +
+                        "Outfit: '${wizardProfile?.outfit}', " +
+                        "Gender: ${wizardProfile?.gender}")
 
                 val tasks = try {
                     taskRepository.getAllTasks(userId)
@@ -284,10 +285,28 @@ class TaskViewModel(
                     currentFilterTasks.subList(start, end)
                 }
 
-                // Set the profile directly in the state update with null check
+                // Preserve the current wizardProfile if already loaded, to avoid losing custom outfit info
+                val currentProfile = mutableState.value.wizardProfile?.getOrNull()
+
+                // Only update if we got a new profile AND it has valid outfit information
+                val profileToUse = if (wizardProfile != null) {
+                    // Check if we need to preserve outfit from existing profile
+                    if (wizardProfile.outfit.isBlank() && currentProfile?.outfit?.isNotBlank() == true) {
+                        Log.d("TaskViewModel", "Preserving existing outfit: '${currentProfile.outfit}' instead of blank outfit")
+                        wizardProfile.copy(outfit = currentProfile.outfit)
+                    } else {
+                        // Use the newly loaded profile as is
+                        Log.d("TaskViewModel", "Using newly loaded profile with outfit: '${wizardProfile.outfit}'")
+                        wizardProfile
+                    }
+                } else {
+                    // If wizard profile not loaded , preserve the current profile
+                    currentProfile
+                }
+
                 mutableState.update {
                     it.copy(
-                        wizardProfile = Result.success(wizardProfile),
+                        wizardProfile = if (profileToUse != null) Result.success(profileToUse) else it.wizardProfile,
                         tasks = tasks,
                         filteredTasks = paginatedTasks,
                         totalPages = totalPages,
@@ -301,8 +320,10 @@ class TaskViewModel(
                     )
                 }
 
+
+
+
             } catch (e: Exception) {
-                Log.e("TaskViewModel", "Failed to load data: ${e.message}", e)
                 mutableState.update {
                     it.copy(
                         error = "Failed to load: ${e.message}",
@@ -313,7 +334,7 @@ class TaskViewModel(
         }
     }
 
-    // Updated to properly handle HP and stamina changes after completion
+    // handle HP and stamina changes after completion
     fun completeTask(taskId: Int, notificationService: TaskNotificationService? = null) {
         viewModelScope.launch {
             try {
@@ -331,7 +352,7 @@ class TaskViewModel(
                     return@launch
                 }
 
-                // Get latest profile to ensure we have the current values
+                // Get latest profile
                 val wizardProfile = wizardRepository.getWizardProfile(userId).getOrNull() ?: run {
                     mutableState.update { it.copy(error = "Wizard profile not found") }
                     return@launch
@@ -345,7 +366,7 @@ class TaskViewModel(
                     currentStamina = wizardProfile.stamina
                 )
 
-                Log.d("TaskViewModel", "Base rewards calculated - HP: $hpGain, Stamina: $staminaGain, XP: $expGain")
+
 
                 // Calculate new stats
                 var newHealth = wizardProfile.health + hpGain
@@ -407,12 +428,7 @@ class TaskViewModel(
                     lastTaskCompleted = Timestamp.now()
                 )
 
-                // Log the updated profile values for verification
-                Log.d("TaskViewModel", "Updated profile - Level: ${updatedProfile.level}, " +
-                        "Health: ${updatedProfile.health}/${updatedProfile.maxHealth}, " +
-                        "Stamina: ${updatedProfile.stamina}/${updatedProfile.maxStamina}, " +
-                        "XP: ${updatedProfile.experience}/$EXP_PER_LEVEL, " +
-                        "Total tasks completed: ${updatedProfile.totalTasksCompleted}")
+
 
                 // Mark task as completed
                 taskRepository.updateTaskCompletionStatus(taskId, true)
@@ -696,7 +712,7 @@ class TaskViewModel(
         mutableEditTaskState.value = EditTaskState()
     }
 
-    // Updated to show all tasks in ALL tab (both completed and non-completed)
+    // show all tasks in ALL tab (both completed and non-completed)
     private fun filterTasks(tasks: List<Task>, filter: TaskFilter): List<Task> {
         return when (filter) {
             TaskFilter.ALL -> tasks  // Show all tasks regardless of completion status
@@ -715,18 +731,7 @@ class TaskViewModel(
         return tasksCompleted.coerceAtMost(totalTasksForLevel).coerceAtLeast(0)
     }
 
-    fun getTasksToNextLevel(wizardProfile: WizardProfile?): Int {
-        wizardProfile ?: return 0
 
-        val expPerLevel = EXP_PER_LEVEL
-        val currentLevelExp = wizardProfile.experience
-        val expPerTask = calculateExpPerTask(wizardProfile.level)
-
-        val totalTasksForLevel = getTasksRequiredForLevel(wizardProfile.level)
-        val tasksCompleted = currentLevelExp / expPerTask
-
-        return (totalTasksForLevel - tasksCompleted).coerceAtLeast(0)
-    }
 
     fun getTasksRequiredForLevel(level: Int): Int {
         return when (level) {
@@ -750,8 +755,5 @@ class TaskViewModel(
         return Pair(tasksCompleted, totalTasksForLevel)
     }
 
-    fun getTaskSetProgress(wizardProfile: WizardProfile): Float {
-        val (completed, total) = getTaskSetInfo(wizardProfile)
-        return if (total > 0) completed.toFloat() / total.toFloat() else 0f
-    }
+
 }

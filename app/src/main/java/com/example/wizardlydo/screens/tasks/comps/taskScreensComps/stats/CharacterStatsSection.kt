@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.data.wizard.WizardProfile
-import com.example.wizardlydo.screens.tasks.comps.WizardAvatar
+import com.example.wizardlydo.wizardCustomization.WizardAvatar
 
 @Composable
 fun CharacterStatsSection(

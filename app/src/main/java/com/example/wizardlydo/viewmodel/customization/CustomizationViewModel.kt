@@ -2,8 +2,8 @@ package com.example.wizardlydo.viewmodel.customization
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.models.CustomizationState
+import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,14 +49,6 @@ class CustomizationViewModel(
         }
     }
 
-    private fun getDefaultAccessory(wizardClass: WizardClass): String {
-        return when (wizardClass) {
-            WizardClass.CHRONOMANCER -> "Time Glasses"
-            WizardClass.LUMINARI -> "Light Mask"
-            WizardClass.DRACONIST -> "Dragon Eyes"
-            WizardClass.MYSTWEAVER -> "Arcane Monocle"
-        }
-    }
 
     fun getDefaultOutfit(wizardClass: WizardClass): String {
         return when (wizardClass) {

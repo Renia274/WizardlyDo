@@ -62,7 +62,7 @@ object InventoryItems {
             isUnlocked = false,
             isEquipped = false,
             unlockLevel = 7,
-            resourceId = R.drawable.broad_armor_armoire_ram_fleece,
+            resourceId = R.drawable.broad_armor_ram_fleece_robe,
             name = "Dragon Scale Armor",
             description = "Rare dragon scale armor"
         )

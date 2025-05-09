@@ -78,7 +78,7 @@ fun TaskScreen(
     onEditTask: (Int) -> Unit,
     onSettings: () -> Unit,
     onInventory: () -> Unit,
-    onDonation: () -> Unit // Added donation navigation callback
+    onDonation: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

@@ -1,4 +1,4 @@
-package com.example.wizardlydo.screens.customization.comps
+package com.example.wizardlydo.wizardCustomization
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -39,12 +39,12 @@ fun OutfitSelector(
         )
         WizardClass.DRACONIST -> listOf(
             "Flame Robe" to R.drawable.broad_armor_draconist,
-            "Ram Fleece" to R.drawable.broad_armor_armoire_ram_fleece
+            "Ram Fleece" to R.drawable.broad_armor_ram_fleece_robe
         )
         WizardClass.MYSTWEAVER -> listOf(
             "Mystic Robe" to R.drawable.broad_armor_special_pyromancer,
-            "Ram Fleece" to R.drawable.broad_armor_armoire_ram_fleece,
-            "Blue Shirt" to R.drawable.broad_shirt_blue
+            "Ram Fleece" to R.drawable.broad_armor_ram_fleece_robe,
+            "Rainbow Shirt" to R.drawable.broad_shirt_rainbow
         )
     }
 
@@ -55,6 +55,9 @@ fun OutfitSelector(
             modifier = Modifier.padding(vertical = 8.dp)
         ) {
             items(outfits) { (name, resourceId) ->
+                // Add debug logging when outfit is selected
+                val isSelected = selectedOutfit == name
+
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
@@ -63,11 +66,14 @@ fun OutfitSelector(
                         .clip(RoundedCornerShape(8.dp))
                         .border(
                             width = 2.dp,
-                            color = if (selectedOutfit == name) MaterialTheme.colorScheme.primary
+                            color = if (isSelected) MaterialTheme.colorScheme.primary
                             else Color.Transparent,
                             shape = RoundedCornerShape(8.dp)
                         )
-                        .clickable { onOutfitSelected(name) }
+                        .clickable {
+                            android.util.Log.d("OutfitDebug", "Selected outfit: '$name' for ${wizardClass.name}")
+                            onOutfitSelected(name)
+                        }
                         .padding(4.dp)
                 ) {
                     Image(

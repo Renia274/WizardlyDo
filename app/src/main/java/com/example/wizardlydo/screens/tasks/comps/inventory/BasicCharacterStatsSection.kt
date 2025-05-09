@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.wizard.items.EquippedItems
-import com.example.wizardlydo.screens.tasks.comps.WizardAvatar
+import com.example.wizardlydo.wizardCustomization.WizardAvatar
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.StatBar
 
 @Composable

@@ -1,4 +1,4 @@
-package com.example.wizardlydo.screens.customization.comps
+package com.example.wizardlydo.wizardCustomization
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,10 +22,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.wizardlydo.R
 import com.example.wizardlydo.data.models.CustomizationState
-import com.example.wizardlydo.wizardHelpers.getHairResourceId
-import com.example.wizardlydo.wizardHelpers.getOutfitResourceId
-import com.example.wizardlydo.wizardHelpers.getSkinResourceId
+import com.example.wizardlydo.data.wizard.WizardClass
 
 // WizardPreview Customization based on wizard class
 @Composable
@@ -36,6 +35,9 @@ fun WizardPreview(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
+
+    // Add debug logging
+    android.util.Log.d("OutfitDebug", "WizardPreview - Class: ${state.wizardClass}, Outfit: '${state.outfit}', Gender: ${state.gender}")
 
     Box(
         modifier = modifier
@@ -63,6 +65,7 @@ fun WizardPreview(
                         .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
+                    // Character Skin
                     Image(
                         painter = painterResource(id = getSkinResourceId(state.skinColor)),
                         contentDescription = "Character Skin",
@@ -71,11 +74,30 @@ fun WizardPreview(
                             .offset(x=(-12).dp,y = (28).dp)
                     )
 
-                    val outfitResourceId = getOutfitResourceId(
-                        wizardClass = state.wizardClass,
-                        outfit = state.outfit,
-                        gender = state.gender
-                    )
+                    // For MYSTWEAVER
+                    val outfitResourceId = if (state.wizardClass == WizardClass.MYSTWEAVER) {
+                        when (state.outfit.trim()) {
+                            "Ram Fleece" -> {
+                                R.drawable.broad_armor_ram_fleece_robe
+                            }
+                            "Rainbow Shirt" -> {
+                                R.drawable.broad_shirt_rainbow
+                            }
+                            "Mystic Robe" -> {
+                                if (state.gender == "Male")
+                                    R.drawable.broad_armor_special_pyromancer
+                                else
+                                    R.drawable.slim_armor_special_pyromancer
+                            }
+                            else -> {
+                                R.drawable.broad_armor_ram_fleece_robe
+                            }
+                        }
+                    } else {
+                        //Classes: CHRONOMANCER, LUMINARI, DRACONIST
+                        getOutfitResource(state.wizardClass, state.outfit, state.gender)
+                    }
+
 
                     Image(
                         painter = painterResource(id = outfitResourceId),
@@ -85,6 +107,7 @@ fun WizardPreview(
                             .offset(x=(-12).dp,y = 30.dp)
                     )
 
+                    // Character Hair
                     val hairResourceId = getHairResourceId(
                         gender = state.gender,
                         hairStyle = state.hairStyle,
@@ -96,7 +119,7 @@ fun WizardPreview(
                         contentDescription = "Character Hair",
                         modifier = Modifier
                             .size(42.dp)
-                            .offset( y = 24.dp)
+                            .offset(y = 24.dp)
                     )
                 }
             }
