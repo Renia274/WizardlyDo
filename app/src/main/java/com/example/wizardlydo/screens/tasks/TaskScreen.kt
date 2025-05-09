@@ -86,6 +86,8 @@ fun TaskScreen(
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
 
+
+
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
@@ -227,7 +229,22 @@ fun TaskScreen(
             equippedItems = equippedItems,
             onCompleteTask = { taskId ->
                 coroutineScope.launch {
-                    viewModel.completeTask(taskId, taskNotificationService)
+                    // Check if the wizard is defeated
+                    if (viewModel.isWizardDefeated()) {
+                        // Use the revival progress function
+                        viewModel.updateRevivalProgress(taskId) { restoredHealth ->
+                            // This callback is called when revival succeeds
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "Your wizard has been revived with $restoredHealth HP!",
+                                    duration = SnackbarDuration.Long
+                                )
+                            }
+                        }
+                    } else {
+                        // Normal completion when wizard is alive
+                        viewModel.completeTask(taskId, taskNotificationService)
+                    }
                 }
             },
             onEditTask = onEditTask,
@@ -284,6 +301,7 @@ fun TaskContent(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
+    val coroutineScope = rememberCoroutineScope()
 
     val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
     val verticalSpacing = (screenHeight * 0.01f).coerceIn(4.dp, 8.dp)
@@ -326,9 +344,7 @@ fun TaskContent(
                     totalPages = state.totalPages,
                     onNextPage = onNextPage,
                     onPreviousPage = onPreviousPage,
-                    onCompleteTask = { taskId ->
-                        onCompleteTask(taskId)
-                    },
+                    onCompleteTask = onCompleteTask,
                     onEditTask = onEditTask,
                     onDeleteTask = { taskId ->
                         onDeleteTask(taskId)

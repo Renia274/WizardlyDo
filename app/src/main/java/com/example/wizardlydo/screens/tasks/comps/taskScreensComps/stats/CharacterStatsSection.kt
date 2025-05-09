@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -28,9 +29,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.data.wizard.WizardProfile
+import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
 import com.example.wizardlydo.wizardCustomization.WizardAvatar
+
+// CompositionLocal for providing the TaskViewModel to the stats components
+val LocalTaskViewModel = staticCompositionLocalOf<TaskViewModel?> { null }
 
 @Composable
 fun CharacterStatsSection(
@@ -43,13 +48,13 @@ fun CharacterStatsSection(
     experience: Int,
     tasksCompleted: Int,
     totalTasksForLevel: Int,
-    equippedItems: EquippedItems? = null
+    equippedItems: EquippedItems? = null,
+    taskViewModel: TaskViewModel? = LocalTaskViewModel.current
 ) {
     val wizardProfile = wizardResult?.getOrNull()
     val isWizardDead = health <= 0
     val hasBackground = equippedItems?.background != null
 
-    // Define colors based on background presence
     val primaryColor = if (hasBackground) {
         Color.White
     } else {
@@ -211,7 +216,6 @@ fun CharacterStatsSection(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Wrap StatBar in a Box to maintain layout structure
                 Box(modifier = Modifier.fillMaxWidth()) {
                     StatBar(
                         label = "HP",
@@ -262,9 +266,17 @@ fun CharacterStatsSection(
                         textColor = if (hasBackground) Color.White else Color.Black
                     )
                 } else {
+                    // Get revival progress from viewModel if available
+                    val revivalProgress = if (taskViewModel != null) {
+                        taskViewModel.getRevivalProgress()
+                    } else {
+                        // Fallback if viewModel isn't available
+                        Pair(wizardProfile?.consecutiveTasksCompleted ?: 0, 3)
+                    }
+
                     RevivalProgressSection(
-                        tasksCompleted = tasksCompleted,
-                        tasksNeededForRevival = 3,
+                        tasksCompleted = revivalProgress.first,
+                        tasksNeededForRevival = revivalProgress.second,
                         textColor = if (hasBackground) Color.White else Color.Black
                     )
                 }

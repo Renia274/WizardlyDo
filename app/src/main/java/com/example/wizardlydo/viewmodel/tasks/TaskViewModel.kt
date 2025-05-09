@@ -749,10 +749,125 @@ class TaskViewModel(
         return EXP_PER_LEVEL / getTasksRequiredForLevel(level)
     }
 
-    fun getTaskSetInfo(wizardProfile: WizardProfile): Pair<Int, Int> {
-        val tasksCompleted = getTasksCompletedForLevel(wizardProfile)
-        val totalTasksForLevel = getTasksRequiredForLevel(wizardProfile.level)
-        return Pair(tasksCompleted, totalTasksForLevel)
+
+    /**
+     * Check if wizard is currently defeated (health <= 0)
+     */
+    fun isWizardDefeated(): Boolean {
+        return (mutableState.value.wizardProfile?.getOrNull()?.health ?: 1) <= 0
+    }
+
+    /**
+     * Get number of tasks completed toward revival
+     */
+    fun getRevivalProgress(): Pair<Int, Int> {
+        val tasksCompleted = mutableState.value.wizardProfile?.getOrNull()?.consecutiveTasksCompleted ?: 0
+        return Pair(tasksCompleted, 3) // 3 is the number of tasks needed for revival
+    }
+
+    /**
+     * Calculate health to be restored on revival (30% of max)
+     */
+    fun calculateRevivalHealth(): Int {
+        val wizardProfile = mutableState.value.wizardProfile?.getOrNull() ?: return 1
+        return (wizardProfile.maxHealth * 0.3).toInt().coerceAtLeast(1)
+    }
+
+    /**
+     * Update the wizard profile after completing a task toward revival
+     */
+    fun updateRevivalProgress(
+        taskId: Int,
+        onRevived: ((restoredHealth: Int) -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            try {
+                val userId = wizardRepository.getCurrentUserId() ?: run {
+                    mutableState.update { it.copy(error = "Not logged in") }
+                    return@launch
+                }
+
+                val task = taskRepository.getTaskById(taskId) ?: run {
+                    mutableState.update { it.copy(error = "Task not found") }
+                    return@launch
+                }
+
+                if (task.isCompleted) {
+                    return@launch
+                }
+
+                // Mark task as completed
+                taskRepository.updateTaskCompletionStatus(taskId, true)
+
+                // Get latest profile
+                val wizardProfile = wizardRepository.getWizardProfile(userId).getOrNull() ?: run {
+                    mutableState.update { it.copy(error = "Wizard profile not found") }
+                    return@launch
+                }
+
+                // Update consecutive tasks and total tasks completed
+                val newConsecutiveTasks = wizardProfile.consecutiveTasksCompleted + 1
+                val newTotalTasksCompleted = wizardProfile.totalTasksCompleted + 1
+                val tasksNeededForRevival = 3
+
+                // Check if revival happens
+                if (newConsecutiveTasks >= tasksNeededForRevival) {
+                    // Calculate revival health
+                    val restoredHealth = calculateRevivalHealth()
+
+                    // Update profile with revived health
+                    val updatedProfile = wizardProfile.copy(
+                        health = restoredHealth,
+                        consecutiveTasksCompleted = 0, // Reset counter after revival
+                        totalTasksCompleted = newTotalTasksCompleted,
+                        lastTaskCompleted = Timestamp.now()
+                    )
+
+                    // Save to database
+                    wizardRepository.updateWizardProfile(userId, updatedProfile)
+
+                    // Update state
+                    mutableState.update { state ->
+                        state.copy(
+                            wizardProfile = Result.success(updatedProfile),
+                            isLoading = false
+                        )
+                    }
+
+                    // Call the revival callback if provided
+                    onRevived?.invoke(restoredHealth)
+                } else {
+                    // Just update progress toward revival
+                    val updatedProfile = wizardProfile.copy(
+                        consecutiveTasksCompleted = newConsecutiveTasks,
+                        totalTasksCompleted = newTotalTasksCompleted,
+                        lastTaskCompleted = Timestamp.now()
+                    )
+
+                    // Save to database
+                    wizardRepository.updateWizardProfile(userId, updatedProfile)
+
+                    // Update state
+                    mutableState.update { state ->
+                        state.copy(
+                            wizardProfile = Result.success(updatedProfile),
+                            isLoading = false
+                        )
+                    }
+                }
+
+                // Refresh tasks
+                loadTasksOnly(userId)
+
+            } catch (e: Exception) {
+                mutableState.update {
+                    it.copy(
+                        error = "Revival progress update failed: ${e.message}",
+                        isLoading = false
+                    )
+                }
+            }
+        }
     }
 
 

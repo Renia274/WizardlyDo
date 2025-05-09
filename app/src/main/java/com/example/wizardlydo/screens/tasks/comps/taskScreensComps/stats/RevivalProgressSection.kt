@@ -18,12 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun RevivalProgressSection(
     tasksCompleted: Int,
-    tasksNeededForRevival: Int,
+    tasksNeededForRevival: Int = 3, // Default to 3
     textColor: Color = MaterialTheme.colorScheme.onErrorContainer
 ) {
     val progress = (tasksCompleted.toFloat() / tasksNeededForRevival).coerceIn(0f, 1f)
@@ -63,10 +64,18 @@ fun RevivalProgressSection(
                 style = MaterialTheme.typography.bodyMedium,
                 color = textColor
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Complete tasks to revive your wizard!",
+                style = MaterialTheme.typography.bodySmall,
+                color = textColor,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
-
 @Composable
 fun TaskProgressSection(
     tasksCompleted: Int,

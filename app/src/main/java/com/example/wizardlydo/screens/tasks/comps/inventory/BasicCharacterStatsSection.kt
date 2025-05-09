@@ -29,14 +29,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.RevivalProgressSection
 import com.example.wizardlydo.wizardCustomization.WizardAvatar
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.StatBar
+import androidx.compose.ui.text.style.TextAlign
+import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
 
 @Composable
 fun BasicCharacterStatsSection(
     wizardProfile: WizardProfile,
     modifier: Modifier = Modifier,
-    equippedItems: EquippedItems?
+    equippedItems: EquippedItems? = null,
+    taskViewModel: TaskViewModel? = LocalTaskViewModel.current
 ) {
     val isWizardDead = wizardProfile.health <= 0
     val hasBackground = equippedItems?.background != null
@@ -171,6 +175,13 @@ fun BasicCharacterStatsSection(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Complete tasks to restore health and continue your journey.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
@@ -203,6 +214,24 @@ fun BasicCharacterStatsSection(
                             hasBackground -> Color.Green
                             else -> Color(0xFF43A047)
                         },
+                        textColor = if (hasBackground) Color.White else Color.Black
+                    )
+                }
+
+                // Show revival progress if the wizard is dead
+                if (isWizardDead) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val revivalProgress = if (taskViewModel != null) {
+                        taskViewModel.getRevivalProgress()
+                    } else {
+                        // Fallback if viewModel isn't available
+                        Pair(wizardProfile.consecutiveTasksCompleted, 3)
+                    }
+
+                    RevivalProgressSection(
+                        tasksCompleted = revivalProgress.first,
+                        tasksNeededForRevival = revivalProgress.second,
                         textColor = if (hasBackground) Color.White else Color.Black
                     )
                 }
