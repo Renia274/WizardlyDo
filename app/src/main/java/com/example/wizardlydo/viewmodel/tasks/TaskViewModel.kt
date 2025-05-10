@@ -1,8 +1,13 @@
 package com.example.wizardlydo.viewmodel.tasks
 
+import android.content.Context
+import android.media.AudioAttributes
+import android.media.RingtoneManager
+import android.media.SoundPool
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wizardlydo.R
 import com.example.wizardlydo.data.models.EditTaskField
 import com.example.wizardlydo.data.models.EditTaskState
 import com.example.wizardlydo.data.models.TaskFilter
@@ -28,6 +33,7 @@ import org.koin.android.annotation.KoinViewModel
 @KoinViewModel
 class TaskViewModel(
     private val taskRepository: TaskRepository,
+    private val context: Context,
     auth: FirebaseAuth = Firebase.auth,
     private val wizardRepository: WizardRepository
 ) : ViewModel() {
@@ -58,6 +64,22 @@ class TaskViewModel(
 
     private var allTasks = listOf<Task>()
 
+    private val soundPool: SoundPool by lazy {
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_GAME)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        SoundPool.Builder()
+            .setMaxStreams(1)
+            .setAudioAttributes(audioAttributes)
+            .build()
+    }
+
+    private val level30SoundId: Int by lazy {
+        soundPool.load(context, R.raw.level_30_achievement, 1)
+    }
+
     companion object {
         private const val EXP_PER_LEVEL = 1000
         private const val MAX_LEVEL = 30
@@ -72,6 +94,18 @@ class TaskViewModel(
 
     fun setNotificationService(service: TaskNotificationService) {
         taskNotificationService = service
+    }
+
+    private fun checkForLevel30Achievement(newLevel: Int) {
+        if (newLevel == 30) {
+            // Play system notification sound
+            val notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val ringtone = RingtoneManager.getRingtone(context, notification)
+            ringtone?.play()
+
+            // Show dialog
+            mutableState.update { it.copy(showLevel30Dialog = true) }
+        }
     }
 
     fun nextPage() {
@@ -334,6 +368,13 @@ class TaskViewModel(
         }
     }
 
+
+
+
+    fun hideLevel30Dialog() {
+        mutableState.update { it.copy(showLevel30Dialog = false) }
+    }
+
     // handle HP and stamina changes after completion
     fun completeTask(taskId: Int, notificationService: TaskNotificationService? = null) {
         viewModelScope.launch {
@@ -366,8 +407,6 @@ class TaskViewModel(
                     currentStamina = wizardProfile.stamina
                 )
 
-
-
                 // Calculate new stats
                 var newHealth = wizardProfile.health + hpGain
                 var newStamina = wizardProfile.stamina + staminaGain
@@ -399,6 +438,11 @@ class TaskViewModel(
                     actualStaminaGain = 10
                     newStamina = (wizardProfile.stamina + 10).coerceAtMost(newMaxStamina)
 
+                    // Check for level 30 achievement
+                    if (newLevel == 30) {
+                        checkForLevel30Achievement(newLevel)
+                    }
+
                     Log.d("TaskViewModel", "Level up! New level: $newLevel, Health: $newHealth/$newMaxHealth, Stamina: $newStamina")
                 } else {
                     // Cap stats if not leveling up
@@ -415,7 +459,6 @@ class TaskViewModel(
                 // Increment total tasks completed
                 val newTotalTasksCompleted = wizardProfile.totalTasksCompleted + 1
 
-
                 val updatedProfile = wizardProfile.copy(
                     level = newLevel,
                     health = newHealth,
@@ -428,13 +471,10 @@ class TaskViewModel(
                     lastTaskCompleted = Timestamp.now()
                 )
 
-
-
                 // Mark task as completed
                 taskRepository.updateTaskCompletionStatus(taskId, true)
 
                 // Save profile updates to database
-
                 wizardRepository.updateWizardProfile(userId, updatedProfile)
 
                 // Show notification with HP and stamina gains
@@ -452,7 +492,6 @@ class TaskViewModel(
                     )
                 }
 
-
                 loadTasksOnly(userId)
 
             } catch (e: Exception) {
@@ -465,6 +504,11 @@ class TaskViewModel(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundPool.release()
     }
 
     private suspend fun loadTasksOnly(userId: String) {
@@ -869,6 +913,8 @@ class TaskViewModel(
             }
         }
     }
+
+
 
 
 }

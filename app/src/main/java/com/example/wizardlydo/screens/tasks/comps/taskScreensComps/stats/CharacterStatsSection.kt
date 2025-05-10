@@ -34,7 +34,6 @@ import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
 import com.example.wizardlydo.wizardCustomization.WizardAvatar
 
-// CompositionLocal for providing the TaskViewModel to the stats components
 val LocalTaskViewModel = staticCompositionLocalOf<TaskViewModel?> { null }
 
 @Composable

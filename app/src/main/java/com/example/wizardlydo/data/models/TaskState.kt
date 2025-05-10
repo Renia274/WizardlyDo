@@ -13,6 +13,8 @@ data class TaskUiState(
     val error: String? = null,
     val recentlyCreatedTask: Task? = null,
     val onFilterChange: ((TaskFilter) -> Unit)? = null,
+    val showLevel30Dialog: Boolean = false,
+
 
     // Pagination support
     val currentPage: Int = 1,

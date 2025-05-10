@@ -52,6 +52,7 @@ import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.wizard.items.EquippedItems
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.EmptyTaskList
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.Level30CompletionDialog
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.LevelUpIndicator
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskBottomBar
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskFilterChips
@@ -64,7 +65,6 @@ import com.example.wizardlydo.viewmodel.inventory.InventoryViewModel
 import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,8 +85,6 @@ fun TaskScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val taskNotificationService = remember { TaskNotificationService(context) }
-
-
 
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -135,6 +133,15 @@ fun TaskScreen(
         } else {
             viewModel.deactivateSearch()
         }
+    }
+
+    // Show Level 30 Dialog
+    if (state.showLevel30Dialog) {
+        Level30CompletionDialog(
+            onDismiss = { viewModel.hideLevel30Dialog() },
+            onDonate = onDonation,
+            wizardName = wizardProfile?.wizardName ?: "Wizard"
+        )
     }
 
     Scaffold(
@@ -301,12 +308,16 @@ fun TaskContent(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
-    val coroutineScope = rememberCoroutineScope()
 
+    // Calculate responsive horizontal padding
     val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
     val verticalSpacing = (screenHeight * 0.01f).coerceIn(4.dp, 8.dp)
 
-    Column(modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = horizontalPadding) // Apply horizontal padding to the main column
+    ) {
         CharacterStatsSection(
             wizardResult = state.wizardProfile,
             modifier = Modifier.padding(vertical = verticalSpacing),
