@@ -26,7 +26,7 @@
 
     git clone https://github.com/YourUsername/WizardlyDo.git
     cd WizardlyDo
-     Open in Android Studio and run!
+    Open in Android Studio and run!
 
 ##  🤝 Contributing
 
