@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.34.0"
 accompanistPermissionsVersion = "0.30.1"
-agp = "8.8.0"
+agp = "8.10.1"
 bcrypt = "0.10.2"
 biometric = "1.2.0-alpha04"
 braintree = "3.21.1"

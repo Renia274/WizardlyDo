@@ -26,14 +26,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.LocalTaskViewModel
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.RevivalProgressSection
-import com.example.wizardlydo.wizardCustomization.WizardAvatar
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.stats.StatBar
-import androidx.compose.ui.text.style.TextAlign
 import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
+import com.example.wizardlydo.wizardCustomization.WizardAvatar
 
 @Composable
 fun BasicCharacterStatsSection(

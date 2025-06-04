@@ -100,7 +100,7 @@ val appModule = module {
     viewModelOf(::SignupViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::RecoveryViewModel)
-    viewModel { TaskViewModel(get(), get(), get()) }
+    viewModel { TaskViewModel(get(), get(), get(),get()) }
     viewModelOf(::PinViewModel)
     viewModelOf(::SettingsViewModel)
     viewModel { InventoryViewModel(get(), get()) }

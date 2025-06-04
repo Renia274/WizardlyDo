@@ -5,26 +5,37 @@ import com.example.wizardlydo.data.wizard.WizardClass
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
-    data object WelcomeAuth : Screen("welcome_auth")
-    data object Signup : Screen("signup")
-    data object Login : Screen("login")
-    data object Recovery : Screen("recovery")
-    data object PinSetup : Screen("pin_setup")
-    data object PinAuth : Screen("pin_auth")
 
+    // Authentication Screens
+    sealed class Auth(route: String) : Screen(route) {
+        data object Welcome : Auth("auth/welcome")
+        data object Signup : Auth("auth/signup")
+        data object Login : Auth("auth/login")
+        data object Recovery : Auth("auth/recovery")
+    }
+
+    // PIN Security Screens
+    sealed class Pin(route: String) : Screen(route) {
+        data object Setup : Pin("pin/setup")
+        data object Verify : Pin("pin/verify")
+    }
+
+    // Customization Screen
     data object Customization : Screen("customization/{wizardClass}") {
         fun createRoute(wizardClass: WizardClass) = "customization/${wizardClass.name}"
     }
-    data object Tasks : Screen("tasks") {
-        data object CreateTask : Screen("${Tasks.route}/create")
-        data object EditTask : Screen("${Tasks.route}/edit/{taskId}") {
-            fun createRoute(taskId: String) = "${Tasks.route}/edit/$taskId"
+
+    // Task Related Screens
+    sealed class Tasks(route: String) : Screen(route) {
+        data object Main : Tasks("tasks")
+        data object Create : Tasks("tasks/create")
+        data object Edit : Tasks("tasks/edit/{taskId}") {
+            fun createRoute(taskId: String) = "tasks/edit/$taskId"
         }
-        data object Settings : Screen("${Tasks.route}/settings")
-        data object EditMode : Screen("${Tasks.route}/edit-mode")
+        data object Settings : Tasks("tasks/settings")
     }
+
+    // Other Screens
     data object Inventory : Screen("inventory")
     data object Donation : Screen("donation")
-
-
 }

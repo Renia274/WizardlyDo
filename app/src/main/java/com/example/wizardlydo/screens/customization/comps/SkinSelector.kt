@@ -37,14 +37,14 @@ fun SkinSelector(selectedSkin: String, onSkinSelected: (String) -> Unit) {
                 onClick = { onSkinSelected("dark") }
             )
 
-            // Fantasy skin colors
+            // Fantasy skin tones
             ColorChip(
-                color = Color(0xFF0FF591), // Mint green
+                color = Color(0xFF0FF591),
                 selected = selectedSkin == "fantasy1",
                 onClick = { onSkinSelected("fantasy1") }
             )
             ColorChip(
-                color = Color(0xFF800ED0), // Purple
+                color = Color(0xFF800ED0),
                 selected = selectedSkin == "fantasy2",
                 onClick = { onSkinSelected("fantasy2") }
             )

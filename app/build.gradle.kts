@@ -20,8 +20,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "DATABASE_NAME", "\"wizard_database_dev\"")
+        }
+
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "DATABASE_NAME", "\"wizard_database_live\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -40,6 +45,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -49,6 +55,11 @@ android {
     sourceSets.configureEach {
         kotlin.srcDir("build/generated/ksp/${name}/kotlin")
     }
+}
+
+// KSP configuration for Room schema location
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -80,7 +91,6 @@ dependencies {
     implementation(libs.androidx.tools.core)
     implementation(libs.androidx.emoji2.emojipicker)
 
-
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext)
@@ -90,18 +100,13 @@ dependencies {
 
     debugImplementation(libs.androidx.ui.tooling)
 
-
-
-
     // Coil for Image Loading
     implementation(libs.coil.compose)
 
     // Firebase UI
     implementation(libs.firebase.ui.auth)
 
-
-
-    // Accompanist Permissions 
+    // Accompanist Permissions
     implementation(libs.accompanist.permissions)
 
     // Compose Constraint Layout
@@ -111,9 +116,7 @@ dependencies {
 
     // Credential Manager
     implementation (libs.androidx.credentials)
-
     implementation (libs.androidx.credentials.play.services.auth)
-
 
     //Koin
     // Koin Core
@@ -139,15 +142,6 @@ dependencies {
     // WorkManager with Kotlin support
     implementation (libs.androidx.work.runtime.ktx.v280)
 
-
-
     // Permission handling with accompanist
     implementation (libs.accompanist.permissions.v0301)
-
-
-
-
-
-
-
 }

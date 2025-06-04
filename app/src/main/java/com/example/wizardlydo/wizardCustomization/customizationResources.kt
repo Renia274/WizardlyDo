@@ -5,12 +5,12 @@ import com.example.wizardlydo.data.wizard.WizardClass
 
 fun getSkinResourceId(skinColor: String): Int {
     return when (skinColor) {
-        "light" -> R.drawable.skin_f5a76e
-        "medium" -> R.drawable.skin_ea8349
-        "dark" -> R.drawable.skin_98461a
-        "fantasy1" -> R.drawable.skin_0ff591
-        "fantasy2" -> R.drawable.skin_800ed0
-        else -> R.drawable.skin_f5a76e
+        "light" -> R.drawable.skin_light
+        "medium" -> R.drawable.skin_medium
+        "dark" -> R.drawable.skin_dark
+        "fantasy1" -> R.drawable.skin_fantasy1
+        "fantasy2" -> R.drawable.skin_fantasy2
+        else -> R.drawable.skin_light
     }
 }
 
@@ -22,52 +22,32 @@ fun getHairResourceId(gender: String, hairStyle: Int, hairColor: String): Int {
         "brown" -> "brown"
         "red" -> "red"
         "white" -> "white"
-        else -> "black"
+        else -> "white"
     }
 
-    return if (gender == "Male") {
-        when (hairStyle) {
-            0 -> when (colorSuffix) {
-
-                "blond" -> R.drawable.creator_hair_bangs_1_blond
-                "brown" -> R.drawable.creator_hair_bangs_1_brown
-                "red" -> R.drawable.creator_hair_bangs_1_red
-                "white" -> R.drawable.creator_hair_bangs_1_white
-                else ->  R.drawable.creator_hair_bangs_1_white
-            }
-            1 -> when (colorSuffix) {
-                "blond" -> R.drawable.creator_hair_bangs_2_blond
-                "brown" -> R.drawable.creator_hair_bangs_2_brown
-                "red" -> R.drawable.creator_hair_bangs_2_red
-                "white" -> R.drawable.creator_hair_bangs_2_white
-                else -> R.drawable.creator_hair_bangs_1_white
-            }
-            2 -> when (colorSuffix) {
-                "blond" -> R.drawable.creator_hair_bangs_3_blond
-                "brown" -> R.drawable.creator_hair_bangs_3_brown
-                "red" -> R.drawable.creator_hair_bangs_3_red
-                else -> R.drawable.creator_hair_bangs_1_white
-            }
-            else ->R.drawable.creator_hair_bangs_1_white
+    return when (hairStyle) {
+        0 -> when (colorSuffix) {
+            "blond" -> R.drawable.hair_style_1_blond
+            "brown" -> R.drawable.hair_style_1_brown
+            "red" -> R.drawable.hair_style_1_red
+            "white" -> R.drawable.hair_style_1_white
+            else -> R.drawable.hair_style_1_white
         }
-    } else { // Female
-        when (hairStyle) {
-            0 -> when (colorSuffix) { // Wavy
-                "blond" -> R.drawable.creator_hair_bangs_1_blond
-                "brown" -> R.drawable.creator_hair_bangs_1_brown
-                "red" -> R.drawable.creator_hair_bangs_1_red
-                "white" -> R.drawable.creator_hair_bangs_1_white
-                else -> R.drawable.creator_hair_bangs_1_white
-            }
-            1 -> when (colorSuffix) { // Classic
-                "blond" -> R.drawable.creator_hair_bangs_2_blond
-                "brown" -> R.drawable.creator_hair_bangs_2_brown
-                "red" -> R.drawable.creator_hair_bangs_2_red
-                "white" -> R.drawable.creator_hair_bangs_2_white
-                else -> R.drawable.creator_hair_bangs_1_blond
-            }
-            else -> R.drawable.creator_hair_bangs_1_white
+        1 -> when (colorSuffix) {
+            "blond" -> R.drawable.hair_style_2_blond
+            "brown" -> R.drawable.hair_style_2_brown
+            "red" -> R.drawable.hair_style_2_red
+            "white" -> R.drawable.hair_style_2_white
+            else -> R.drawable.hair_style_2_white
         }
+        2 -> when (colorSuffix) {
+            "blond" -> R.drawable.hair_style_3_blond
+            "brown" -> R.drawable.hair_style_3_brown
+            "red" -> R.drawable.hair_style_3_red
+            "white" -> R.drawable.hair_style_3_white
+            else -> R.drawable.hair_style_3_white
+        }
+        else -> R.drawable.hair_style_1_white
     }
 }
 
@@ -76,84 +56,53 @@ fun getHairResourceId(gender: String, hairStyle: Int, hairColor: String): Int {
 /**
  * Get outfit resource
  */
-
 fun getOutfitResource(wizardClass: WizardClass, outfit: String, gender: String): Int {
     val isMale = gender == "Male"
     val normalizedOutfit = outfit.trim()
 
     return when (wizardClass) {
-        WizardClass.MYSTWEAVER -> {
-            // For MYSTWEAVER, explicitly handle each case
-            when {
-                normalizedOutfit.equals("Mystic Robe", ignoreCase = true) -> {
-                    if (isMale) R.drawable.broad_armor_special_pyromancer
-                    else R.drawable.slim_armor_special_pyromancer
-                }
-
-                normalizedOutfit.equals("Ram Fleece", ignoreCase = true) -> {
-                    if (isMale) R.drawable.broad_armor_ram_fleece_robe
-                    else R.drawable.slim_armor_ram_fleece_robe
-                }
-
-                normalizedOutfit.equals("Rainbow Shirt", ignoreCase = true) -> {
-                    if (isMale) R.drawable.broad_shirt_rainbow
-                    else R.drawable.slim_shirt_rainbow
-                }
-
-                normalizedOutfit.isEmpty() -> {
-                    if (isMale) R.drawable.broad_armor_ram_fleece_robe
-                    else R.drawable.slim_armor_ram_fleece_robe
-                }
-
-                else -> {
-                    if (isMale) R.drawable.broad_armor_ram_fleece_robe
-                    else R.drawable.slim_armor_ram_fleece_robe
-                }
-            }
-        }
-
         WizardClass.CHRONOMANCER -> when (normalizedOutfit) {
-            "Astronomer Robe" -> if (isMale)
-                R.drawable.broad_armor_special_snow
+            "Chronomancer Robe" -> if (isMale)
+                R.drawable.chronomancer_robe_male
             else
-                R.drawable.slim_armor_special_snow
-
+                R.drawable.chronomancer_robe_female
 
             else -> if (isMale)
-                R.drawable.broad_armor_special_snow
+                R.drawable.chronomancer_robe_male
             else
-                R.drawable.slim_armor_special_snow
+                R.drawable.chronomancer_robe_female
         }
 
         WizardClass.LUMINARI -> when (normalizedOutfit) {
-            "Crystal Robe" -> if (isMale)
-                R.drawable.broad_armor_armoire_crystal_robe
+            "Luminari Robe" -> if (isMale)
+                R.drawable.luminari_robe_male
             else
-                R.drawable.slim_armor_armoire_crystal_robe
-
+                R.drawable.luminari_robe_female
 
             else -> if (isMale)
-                R.drawable.broad_armor_armoire_crystal_robe
+                R.drawable.luminari_robe_male
             else
-                R.drawable.slim_armor_armoire_crystal_robe
+                R.drawable.luminari_robe_female
         }
 
         WizardClass.DRACONIST -> when (normalizedOutfit) {
-            "Flame Robe" -> if (isMale)
-                R.drawable.broad_armor_draconist
+            "Draconist Robe" -> if (isMale)
+                R.drawable.draconist_robe_male
             else
-                R.drawable.slim_armor_draconist
+                R.drawable.draconist_robe_female
 
-            "Ram Fleece" -> if (isMale)
-                R.drawable.broad_armor_ram_fleece_robe
+            "Winter Coat" -> if (isMale)
+                R.drawable.winter_coat_male
             else
-                R.drawable.slim_armor_ram_fleece_robe
+                R.drawable.winter_coat_female
 
             else -> if (isMale)
-                R.drawable.broad_armor_ram_fleece_robe
+                R.drawable.winter_coat_male
             else
-                R.drawable.slim_armor_ram_fleece_robe
+                R.drawable.winter_coat_female
         }
+
+        WizardClass.MYSTWEAVER -> getMystweaverOutfitResource(outfit, gender)
     }
 }
 
@@ -163,22 +112,22 @@ fun getMystweaverOutfitResource(outfit: String, gender: String): Int {
     val isMale = gender == "Male"
 
     return when {
-        trimmedOutfit.equals("Ram Fleece", ignoreCase = true) -> {
-            if (isMale) R.drawable.broad_armor_ram_fleece_robe
-            else R.drawable.slim_armor_ram_fleece_robe
+        trimmedOutfit.equals("Winter Coat", ignoreCase = true) -> {
+            if (isMale) R.drawable.winter_coat_male
+            else R.drawable.winter_coat_female
         }
-        trimmedOutfit.equals("Rainbow Shirt", ignoreCase = true) -> {
-            if (isMale) R.drawable.broad_shirt_rainbow
-            else R.drawable.slim_shirt_rainbow
+        trimmedOutfit.equals("Casual Shirt", ignoreCase = true) -> {
+            if (isMale) R.drawable.casual_shirt_male
+            else R.drawable.casual_shirt_female
         }
         trimmedOutfit.equals("Mystic Robe", ignoreCase = true) -> {
-            if (isMale) R.drawable.broad_armor_special_pyromancer
-            else R.drawable.slim_armor_special_pyromancer
+            if (isMale) R.drawable.mystweaver_robe_male
+            else R.drawable.mystweaver_robe_female
         }
         else -> {
-            // If unknown outfit, default to Ram Fleece
-            if (isMale) R.drawable.broad_armor_ram_fleece_robe
-            else R.drawable.slim_armor_ram_fleece_robe
+            // If unknown outfit, default to Winter Coat
+            if (isMale) R.drawable.winter_coat_male
+            else R.drawable.winter_coat_female
         }
     }
 }

@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wizardlydo.R
 
-
 @Composable
 fun HairStyleSelector(
     gender: String,
@@ -39,13 +38,15 @@ fun HairStyleSelector(
     val hairStyles = remember(gender) {
         if (gender == "Male") {
             listOf(
-                Triple("Short", R.drawable.creator_hair_bangs_1_blond, Color.White),
-                Triple("Wavy", R.drawable.creator_hair_bangs_1_white, Color.White),
+                Triple("Short", R.drawable.hair_style_1_blond, Color.White),
+                Triple("Classic", R.drawable.hair_style_2_brown, Color.White),
+                Triple("Curly", R.drawable.hair_style_3_red, Color.White)
             )
         } else {
             listOf(
-                Triple("Wavy", R.drawable.creator_hair_bangs_1_white, Color.White),
-                Triple("Classic",R.drawable.creator_hair_bangs_1_brown, Color.White)
+                Triple("Wavy", R.drawable.hair_style_1_blond, Color.White),
+                Triple("Long", R.drawable.hair_style_2_brown, Color.White),
+                Triple("Curly", R.drawable.hair_style_3_red, Color.White)
             )
         }
     }

@@ -4,10 +4,10 @@ import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.navigation.screens.Screen
@@ -39,29 +39,53 @@ fun NavigationGraph() {
         composable(Screen.Splash.route) {
             SplashScreen(
                 navigateToWelcomeAuth = {
-                    navController.navigate(Screen.WelcomeAuth.route) {
+                    navController.navigate(Screen.Auth.Welcome.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(Screen.WelcomeAuth.route) {
+        composable(Screen.Auth.Welcome.route) {
             WelcomeAuthScreen(
-                onSignUpClick = { navController.navigate(Screen.Signup.route) },
-                onSignInClick = { navController.navigate(Screen.Login.route) }
+                onSignUpClick = { navController.navigate(Screen.Auth.Signup.route) },
+                onSignInClick = { navController.navigate(Screen.Auth.Login.route) }
             )
         }
 
-        composable(Screen.Signup.route) {
+        composable(Screen.Auth.Signup.route) {
             SignupScreen(
                 onSignupSuccess = { wizardClass ->
                     navController.navigate(Screen.Customization.createRoute(wizardClass)) {
-                        popUpTo(Screen.Signup.route) { inclusive = true }
+                        popUpTo(Screen.Auth.Signup.route) { inclusive = true }
                     }
                 },
                 onLoginClick = {
-                    navController.navigate(Screen.Login.route)
+                    navController.navigate(Screen.Auth.Login.route)
+                }
+            )
+        }
+
+        composable(Screen.Auth.Login.route) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Pin.Setup.route) {
+                        popUpTo(Screen.Auth.Login.route) { inclusive = true }
+                    }
+                },
+                onForgotPasswordClick = {
+                    navController.navigate(Screen.Auth.Recovery.route)
+                },
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.Auth.Recovery.route) {
+            RecoveryScreen(
+                onNavigateToLogin = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -86,72 +110,48 @@ fun NavigationGraph() {
             CustomizationScreen(
                 wizardClass = wizardClass,
                 onComplete = {
-                    navController.navigate(Screen.PinSetup.route) {
+                    navController.navigate(Screen.Pin.Setup.route) {
                         popUpTo(Screen.Customization.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(Screen.Login.route) {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(Screen.PinSetup.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
-                },
-                onForgotPasswordClick = {
-                    navController.navigate(Screen.Recovery.route)
-                },
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        composable(Screen.Recovery.route) {
-            RecoveryScreen(
-                onNavigateToLogin = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        composable(Screen.PinSetup.route) {
+        composable(Screen.Pin.Setup.route) {
             PinSetupScreen(
                 onPinSetupComplete = {
-                    navController.navigate(Screen.PinAuth.route) {
-                        popUpTo(Screen.PinSetup.route) { inclusive = true }
+                    navController.navigate(Screen.Pin.Verify.route) {
+                        popUpTo(Screen.Pin.Setup.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(Screen.PinAuth.route) {
+        composable(Screen.Pin.Verify.route) {
             PinVerifyScreen(
                 onPinSuccess = {
-                    navController.navigate(Screen.Tasks.route) {
-                        popUpTo(Screen.PinAuth.route) { inclusive = true }
+                    navController.navigate(Screen.Tasks.Main.route) {
+                        popUpTo(Screen.Pin.Verify.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(Screen.Tasks.route) {
+        composable(Screen.Tasks.Main.route) {
             TaskScreen(
                 onBack = {
-                    navController.navigate(Screen.Signup.route) {
+                    navController.navigate(Screen.Auth.Signup.route) {
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },
                 onHome = {
-                    navController.popBackStack(Screen.Tasks.route, inclusive = false)
+                    navController.popBackStack(Screen.Tasks.Main.route, inclusive = false)
                 },
                 onCreateTask = {
-                    navController.navigate(Screen.Tasks.CreateTask.route)
+                    navController.navigate(Screen.Tasks.Create.route)
                 },
                 onEditTask = { taskId ->
-                    navController.navigate(Screen.Tasks.EditTask.createRoute(taskId.toString()))
+                    navController.navigate(Screen.Tasks.Edit.createRoute(taskId.toString()))
                 },
                 onSettings = {
                     navController.navigate(Screen.Tasks.Settings.route)
@@ -165,14 +165,14 @@ fun NavigationGraph() {
             )
         }
 
-        composable(Screen.Tasks.CreateTask.route) {
+        composable(Screen.Tasks.Create.route) {
             CreateTaskScreen(
                 onBack = { navController.popBackStack() }
             )
         }
 
         composable(
-            route = Screen.Tasks.EditTask.route,
+            route = Screen.Tasks.Edit.route,
             arguments = listOf(navArgument("taskId") { type = NavType.StringType })
         ) { backStackEntry ->
             val taskIdString = backStackEntry.arguments?.getString("taskId") ?: "0"
@@ -188,8 +188,8 @@ fun NavigationGraph() {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onLogout = {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Tasks.route) { inclusive = true }
+                    navController.navigate(Screen.Auth.Login.route) {
+                        popUpTo(Screen.Tasks.Main.route) { inclusive = true }
                     }
                 }
             )
