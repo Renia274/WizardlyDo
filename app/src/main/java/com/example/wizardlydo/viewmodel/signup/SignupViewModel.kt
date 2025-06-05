@@ -2,13 +2,12 @@ package com.example.wizardlydo.viewmodel.signup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wizardlydo.data.models.WizardSignUpState
 import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.wizard.WizardProfile
-import com.example.wizardlydo.data.models.WizardSignUpState
 import com.example.wizardlydo.providers.SignInProvider
 import com.example.wizardlydo.repository.wizard.WizardRepository
 import com.example.wizardlydo.utilities.security.SecurityProvider
-import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,62 +82,7 @@ class SignupViewModel(
         }
     }
 
-    fun handleGoogleSignIn(credential: AuthCredential) {
-        if (!validateForm()) return
 
-        viewModelScope.launch {
-            state.update { it.copy(isLoading = true) }
-            try {
-                val authResult = auth.signInWithCredential(credential).await()
-                val user = authResult.user ?: throw Exception("Authentication failed")
-
-                if (checkIfUsernameExists(state.value.wizardName)) {
-                    state.update {
-                        it.copy(
-                            usernameError = "This wizard name is already taken",
-                            isLoading = false
-                        )
-                    }
-                    return@launch
-                }
-
-                wizardRepository.getWizardProfile(user.uid).fold(
-                    onSuccess = { existingProfile ->
-                        if (existingProfile == null) {
-                            val randomPassword = generateSecurePassword()
-
-                            val newProfile = WizardProfile(
-                                userId = user.uid,
-                                wizardClass = state.value.wizardClass,
-                                wizardName = state.value.wizardName,
-                                email = user.email ?: state.value.email,
-                                passwordHash = encryptPassword(randomPassword),
-                                signInProvider = SignInProvider.GOOGLE
-                            )
-
-                            wizardRepository.createWizardProfile(newProfile).fold(
-                                onSuccess = {
-                                    state.update { it.copy(
-                                        isLoading = false,
-                                        isProfileComplete = true
-                                    ) }
-                                },
-                                onFailure = { handleError("Profile creation failed: ${it.message}") }
-                            )
-                        } else {
-                            state.update { it.copy(
-                                isLoading = false,
-                                isProfileComplete = true
-                            ) }
-                        }
-                    },
-                    onFailure = { handleError("Profile check failed: ${it.message}") }
-                )
-            } catch (e: Exception) {
-                handleError("Google sign-in failed: ${e.message}")
-            }
-        }
-    }
 
     // Generate secure random password for OAuth users
     private fun generateSecurePassword(length: Int = 16): String {

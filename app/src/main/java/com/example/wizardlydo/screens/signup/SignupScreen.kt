@@ -1,8 +1,5 @@
 package com.example.wizardlydo.screens.signup
 
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,22 +19,17 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.R
 import com.example.wizardlydo.comps.errors.ErrorDialog
-import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.comps.form.EmailField
-import com.example.wizardlydo.screens.signup.comps.GoogleSignInButton
-import com.example.wizardlydo.screens.signup.comps.LoginRedirectButton
 import com.example.wizardlydo.comps.form.PasswordField
+import com.example.wizardlydo.data.wizard.WizardClass
+import com.example.wizardlydo.screens.signup.comps.LoginRedirectButton
 import com.example.wizardlydo.screens.signup.comps.SignupButton
 import com.example.wizardlydo.screens.signup.comps.SignupHeader
 import com.example.wizardlydo.screens.signup.comps.WizardClassSelector
 import com.example.wizardlydo.screens.signup.comps.WizardNameField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.signup.SignupViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.firebase.auth.GoogleAuthProvider
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -55,26 +47,7 @@ fun SignupScreen(
         }
     }
 
-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(context.getString(R.string.default_web_client_id))
-        .requestEmail()
-        .build()
 
-    val googleSignInClient = GoogleSignIn.getClient(context, gso)
-
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            task.addOnSuccessListener { account ->
-                val credential = GoogleAuthProvider.getCredential(account.idToken!!, null)
-                viewModel.handleGoogleSignIn(credential)
-            }.addOnFailureListener {
-                viewModel.handleError("Google sign-in failed")
-            }
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         SignupContent(
@@ -87,9 +60,6 @@ fun SignupScreen(
             password = state.password,
             onPasswordChange = viewModel::updatePassword,
             onSignupClick = viewModel::signUpWithEmail,
-            onGoogleSignIn = {
-                googleSignInLauncher.launch(googleSignInClient.signInIntent)
-            },
             onLoginClick = onLoginClick,
             nameError = state.usernameError,
             emailError = state.emailError,
@@ -119,7 +89,6 @@ fun SignupContent(
     password: String,
     onPasswordChange: (String) -> Unit,
     onSignupClick: () -> Unit,
-    onGoogleSignIn: () -> Unit,
     onLoginClick: () -> Unit,
     nameError: String?,
     emailError: String?,
@@ -193,12 +162,6 @@ fun SignupContent(
 
         Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
-        GoogleSignInButton(
-            onClick = onGoogleSignIn,
-            enabled = !isLoading
-        )
-
-        Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
         LoginRedirectButton(
             onClick = onLoginClick,
@@ -224,7 +187,6 @@ fun SignupContentPreview() {
             password = "YouShallNotPass123",
             onPasswordChange = {},
             onSignupClick = {},
-            onGoogleSignIn = {},
             onLoginClick = {},
             nameError = null,
             emailError = null,
