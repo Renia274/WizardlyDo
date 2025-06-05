@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.R
 import com.example.wizardlydo.data.models.CustomizationState
 import com.example.wizardlydo.data.wizard.WizardClass
 
@@ -36,8 +35,7 @@ fun WizardPreview(
     val screenWidth = configuration.screenWidthDp.dp
     val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
 
-    // Add debug logging
-    android.util.Log.d("OutfitDebug", "WizardPreview - Class: ${state.wizardClass}, Outfit: '${state.outfit}', Gender: ${state.gender}")
+
 
     Box(
         modifier = modifier
@@ -74,30 +72,12 @@ fun WizardPreview(
                             .offset(x=(-12).dp,y = (28).dp)
                     )
 
-                    // For MYSTWEAVER
+                    // Updated outfit logic using the new function
                     val outfitResourceId = if (state.wizardClass == WizardClass.MYSTWEAVER) {
-                        when (state.outfit.trim()) {
-                            "Ram Fleece" -> {
-                                R.drawable.broad_armor_ram_fleece_robe
-                            }
-                            "Rainbow Shirt" -> {
-                                R.drawable.broad_shirt_rainbow
-                            }
-                            "Mystic Robe" -> {
-                                if (state.gender == "Male")
-                                    R.drawable.broad_armor_special_pyromancer
-                                else
-                                    R.drawable.slim_armor_special_pyromancer
-                            }
-                            else -> {
-                                R.drawable.broad_armor_ram_fleece_robe
-                            }
-                        }
+                        getMystweaverOutfitResource(state.outfit, state.gender)
                     } else {
-                        //Classes: CHRONOMANCER, LUMINARI, DRACONIST
                         getOutfitResource(state.wizardClass, state.outfit, state.gender)
                     }
-
 
                     Image(
                         painter = painterResource(id = outfitResourceId),
