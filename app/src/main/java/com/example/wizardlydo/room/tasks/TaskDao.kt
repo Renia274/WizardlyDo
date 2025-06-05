@@ -25,8 +25,7 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE user_id = :userId AND is_completed = 0 ORDER BY due_date ASC")
     suspend fun getActiveTasksByUser(userId: Int): List<TaskEntity>
 
-    @Query("SELECT * FROM tasks WHERE user_id = :userId AND is_daily = 1")
-    suspend fun getDailyTasks(userId: Int): List<TaskEntity>
+
 
     @Query("SELECT * FROM tasks WHERE user_id = :userId AND is_completed = 1")
     suspend fun getCompletedTasks(userId: Int): List<TaskEntity>

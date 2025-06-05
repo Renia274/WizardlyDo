@@ -188,7 +188,6 @@ private fun getDaysRemainingColor(days: Int): Color {
     }
 }
 
-// Add this extension function to your codebase
 fun Task.getDaysRemaining(): Int? {
     return dueDate?.let { dueDateMillis ->
         val currentTime = System.currentTimeMillis()

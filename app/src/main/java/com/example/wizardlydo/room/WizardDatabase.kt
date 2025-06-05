@@ -18,7 +18,7 @@ import com.example.wizardlydo.room.wizard.WizardEntity
 
 @Database(
     entities = [WizardEntity::class, PinEntity::class, TaskEntity::class, InventoryItemEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(WizardTypeConverters::class)

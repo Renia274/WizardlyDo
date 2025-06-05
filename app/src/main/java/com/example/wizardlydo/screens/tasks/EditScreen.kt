@@ -47,21 +47,18 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.wizardlydo.data.tasks.Priority
 import com.example.wizardlydo.data.models.EditTaskField
+import com.example.wizardlydo.data.tasks.Priority
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.CategorySelector
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.DailyTaskToggle
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.DueDateSelector
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.PrioritySelector
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskDescriptionField
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskTitleField
 import com.example.wizardlydo.ui.theme.WizardlyDoTheme
 import com.example.wizardlydo.viewmodel.tasks.TaskViewModel
+import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
-import org.koin.androidx.compose.koinViewModel
-
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -200,7 +197,6 @@ fun EditTaskScreen(
                 dueDate = editState.dueDate,
                 priority = editState.priority,
                 category = editState.category,
-                isDaily = editState.isDaily,
                 isSaving = editState.isSaving,
                 onTitleChange = {
                     viewModel.updateEditTaskField(EditTaskField.TITLE, it)
@@ -214,9 +210,6 @@ fun EditTaskScreen(
                 },
                 onCategorySelect = {
                     viewModel.updateEditTaskField(EditTaskField.CATEGORY, it)
-                },
-                onDailyChange = {
-                    viewModel.updateEditTaskField(EditTaskField.IS_DAILY, it)
                 },
                 onSaveClick = {
                     viewModel.saveEditedTask(onSuccess = {
@@ -237,14 +230,12 @@ fun EditTaskScreenContent(
     dueDate: Long?,
     priority: Priority,
     category: String,
-    isDaily: Boolean,
     isSaving: Boolean,
     onTitleChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onDueDateSelect: () -> Unit,
     onPrioritySelect: (Priority) -> Unit,
     onCategorySelect: (String) -> Unit,
-    onDailyChange: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
     padding: PaddingValues
 ) {
@@ -285,7 +276,6 @@ fun EditTaskScreenContent(
             )
             PrioritySelector(priority, onPrioritySelect)
             CategorySelector(category, categories, onCategorySelect)
-            DailyTaskToggle(isDaily, onDailyChange)
 
             Spacer(modifier = Modifier.height(verticalSpacing * 0.5f))
 
@@ -318,14 +308,12 @@ fun EditTaskScreenContentPreview() {
             dueDate = System.currentTimeMillis() + 86400000, // Tomorrow
             priority = Priority.HIGH,
             category = "School",
-            isDaily = false,
             isSaving = false,
             onTitleChange = {},
             onDescriptionChange = {},
             onDueDateSelect = {},
             onPrioritySelect = {},
             onCategorySelect = {},
-            onDailyChange = {},
             onSaveClick = {},
             padding = PaddingValues(0.dp)
         )

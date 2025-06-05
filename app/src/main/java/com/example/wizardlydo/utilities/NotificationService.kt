@@ -181,7 +181,6 @@ class TaskNotificationService(private val context: Context) {
             ${task.description}
             
             Priority: ${task.priority.name}
-            ${if (task.isDaily) "Repeats: Daily" else ""}
             ${task.category?.let { "Category: $it" } ?: ""}
         """.trimIndent())
             .setBigContentTitle("New Task Created")

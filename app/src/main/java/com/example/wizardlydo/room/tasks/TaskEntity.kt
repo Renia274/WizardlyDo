@@ -30,8 +30,7 @@ data class TaskEntity(
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
 
-    @ColumnInfo(name = "is_daily")
-    val isDaily: Boolean = false,
+
 
     @ColumnInfo(name = "category")
     val category: String? = null
@@ -45,7 +44,6 @@ data class TaskEntity(
         dueDate = dueDate,
         priority = priority,
         createdAt = createdAt,
-        isDaily = isDaily,
         category = category
     )
 }

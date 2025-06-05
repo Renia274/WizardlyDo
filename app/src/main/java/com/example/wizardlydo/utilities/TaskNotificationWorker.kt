@@ -37,7 +37,6 @@ class TaskNotificationWorker(
             dueDate = taskDueDate,
             priority = priority,
             createdAt = System.currentTimeMillis(),
-            isDaily = false,
             category = null
         )
 

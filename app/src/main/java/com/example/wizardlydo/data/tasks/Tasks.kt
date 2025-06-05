@@ -11,7 +11,6 @@ data class Task(
     val dueDate: Long? = null,
     val priority: Priority = Priority.MEDIUM,
     val createdAt: Long = System.currentTimeMillis(),
-    val isDaily: Boolean = false,
     val category: String? = null
 ) {
     fun toEntity() = TaskEntity(
@@ -23,7 +22,6 @@ data class Task(
         dueDate = dueDate,
         priority = priority,
         createdAt = createdAt,
-        isDaily = isDaily,
         category = category
     )
 }

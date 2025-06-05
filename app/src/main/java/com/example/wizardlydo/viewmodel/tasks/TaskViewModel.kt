@@ -17,6 +17,7 @@ import com.example.wizardlydo.data.tasks.Task
 import com.example.wizardlydo.data.wizard.WizardProfile
 import com.example.wizardlydo.repository.tasks.TaskRepository
 import com.example.wizardlydo.repository.wizard.WizardRepository
+import com.example.wizardlydo.room.WizardDatabase
 import com.example.wizardlydo.utilities.TaskNotificationService
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -88,8 +89,33 @@ class TaskViewModel(
         private const val BASE_STAMINA_GAIN = 3
     }
 
+
+    private suspend fun clearDatabaseOnce() {
+        val sharedPrefs = context.getSharedPreferences("wizard_app_prefs", Context.MODE_PRIVATE)
+        val hasCleared = sharedPrefs.getBoolean("database_cleared_v1", false)
+
+        if (!hasCleared) {
+            try {
+                val database = WizardDatabase.getDatabase(context)
+                database.clearAllTables()
+
+                // Mark as cleared so it doesn't happen again
+                sharedPrefs.edit()
+                    .putBoolean("database_cleared_v1", true)
+                    .apply()
+
+                Log.d("TaskViewModel", "Database cleared once successfully")
+            } catch (e: Exception) {
+                Log.e("TaskViewModel", "Failed to clear database: ${e.message}")
+            }
+        }
+    }
+
     init {
-        loadData()
+        viewModelScope.launch {
+            clearDatabaseOnce()
+            loadData()
+        }
     }
 
     fun setNotificationService(service: TaskNotificationService) {
@@ -216,7 +242,6 @@ class TaskViewModel(
 
         filteredTasks = when (taskType.value) {
             TaskFilter.ALL -> filteredTasks
-            TaskFilter.DAILY -> filteredTasks.filter { it.isDaily }
             TaskFilter.ACTIVE -> filteredTasks.filter { !it.isCompleted }
             TaskFilter.COMPLETED -> filteredTasks.filter { it.isCompleted }
         }
@@ -607,7 +632,6 @@ class TaskViewModel(
                             dueDate = foundTask.dueDate,
                             priority = foundTask.priority,
                             category = foundTask.category ?: "",
-                            isDaily = foundTask.isDaily,
                             isLoading = false
                         )
                     }
@@ -626,7 +650,6 @@ class TaskViewModel(
                                 dueDate = loadedTask.dueDate,
                                 priority = loadedTask.priority,
                                 category = loadedTask.category ?: "",
-                                isDaily = loadedTask.isDaily,
                                 isLoading = false
                             )
                         }
@@ -658,7 +681,6 @@ class TaskViewModel(
                 EditTaskField.DUE_DATE -> state.copy(dueDate = value as Long?)
                 EditTaskField.PRIORITY -> state.copy(priority = value as Priority)
                 EditTaskField.CATEGORY -> state.copy(category = value as String)
-                EditTaskField.IS_DAILY -> state.copy(isDaily = value as Boolean)
             }
         }
     }
@@ -680,7 +702,6 @@ class TaskViewModel(
                     dueDate = currentState.dueDate,
                     priority = currentState.priority,
                     category = currentState.category.ifEmpty { null },
-                    isDaily = currentState.isDaily
                 )
 
                 taskRepository.updateTask(updatedTask)
@@ -762,7 +783,6 @@ class TaskViewModel(
             TaskFilter.ALL -> tasks  // Show all tasks regardless of completion status
             TaskFilter.ACTIVE -> tasks.filter { !it.isCompleted }
             TaskFilter.COMPLETED -> tasks.filter { it.isCompleted }
-            TaskFilter.DAILY -> tasks.filter { it.isDaily }
         }
     }
 

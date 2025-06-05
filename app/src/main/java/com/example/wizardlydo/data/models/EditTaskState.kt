@@ -10,7 +10,6 @@ data class EditTaskState(
     val dueDate: Long? = null,
     val priority: Priority = Priority.MEDIUM,
     val category: String = "",
-    val isDaily: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isDeleting: Boolean = false,
@@ -44,8 +43,5 @@ enum class EditTaskField {
      */
     CATEGORY,
 
-    /**
-     * Whether the task is a daily recurring task.
-     */
-    IS_DAILY
+
 }

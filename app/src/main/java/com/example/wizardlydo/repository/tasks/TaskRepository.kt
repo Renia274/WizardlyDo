@@ -14,10 +14,6 @@ class TaskRepository(private val taskDao: TaskDao) {
         taskDao.getActiveTasksByUser(userId).map { it.toDomain() }
     }
 
-    suspend fun getDailyTasks(userId: Int): List<Task> = withContext(Dispatchers.IO) {
-        taskDao.getDailyTasks(userId).map { it.toDomain() }
-    }
-
     suspend fun getCompletedTasks(userId: Int): List<Task> = withContext(Dispatchers.IO) {
         taskDao.getCompletedTasks(userId).map { it.toDomain() }
     }
@@ -77,7 +73,6 @@ class TaskRepository(private val taskDao: TaskDao) {
         dueDate = dueDate,
         priority = priority,
         createdAt = createdAt,
-        isDaily = isDaily,
         category = category
     )
 
@@ -90,7 +85,6 @@ class TaskRepository(private val taskDao: TaskDao) {
         dueDate = dueDate,
         priority = priority,
         createdAt = createdAt,
-        isDaily = isDaily,
         category = category
     )
 }

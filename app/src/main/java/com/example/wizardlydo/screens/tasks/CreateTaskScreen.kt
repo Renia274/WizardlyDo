@@ -46,9 +46,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.data.tasks.Priority
 import com.example.wizardlydo.data.tasks.Task
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.CreateTaskButton
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.CategorySelector
-import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.DailyTaskToggle
+import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.CreateTaskButton
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.DueDateSelector
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.PrioritySelector
 import com.example.wizardlydo.screens.tasks.comps.taskScreensComps.TaskDescriptionField
@@ -127,7 +126,6 @@ fun CreateTaskContent(
     var dueDate by rememberSaveable { mutableStateOf<Long?>(null) }
     var priority by rememberSaveable { mutableStateOf(Priority.MEDIUM) }
     var category by rememberSaveable { mutableStateOf("") }
-    var isDaily by rememberSaveable { mutableStateOf(false) }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
 
     val categories = listOf("School", "Chores", "Work", "Personal")
@@ -202,7 +200,6 @@ fun CreateTaskContent(
         )
         PrioritySelector(priority, onPrioritySelected = { priority = it })
         CategorySelector(category, categories, onCategorySelected = { category = it })
-        DailyTaskToggle(isDaily, onDailyChanged = { isDaily = it })
 
         if (!notificationPermissionState.status.isGranted) {
             Row(
@@ -239,7 +236,6 @@ fun CreateTaskContent(
                         dueDate = dueDate,
                         priority = priority,
                         category = category.ifEmpty { null },
-                        isDaily = isDaily,
                         userId = safeUserId,
                         isCompleted = false,
                         createdAt = System.currentTimeMillis()
@@ -269,7 +265,6 @@ private fun CreateTaskContentForPreview() {
     var dueDate by remember { mutableStateOf<Long?>(null) }
     var priority by remember { mutableStateOf(Priority.MEDIUM) }
     var category by remember { mutableStateOf("") }
-    var isDaily by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val categories = listOf("School", "Chores", "Work", "Personal")
@@ -301,8 +296,6 @@ private fun CreateTaskContentForPreview() {
         )
         PrioritySelector(priority, onPrioritySelected = { priority = it })
         CategorySelector(category, categories, onCategorySelected = { category = it })
-        DailyTaskToggle(isDaily, onDailyChanged = { isDaily = it })
-
         Spacer(modifier = Modifier.height(verticalSpacing * 2))
 
         CreateTaskButton(

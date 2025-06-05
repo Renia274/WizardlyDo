@@ -406,7 +406,6 @@ fun TaskContentPreview() {
             userId = "",
             isCompleted = index % 4 == 0, // Every 4th task is completed
             createdAt = System.currentTimeMillis() - (index * 24 * 60 * 60 * 1000),
-            isDaily = index % 5 == 0, // Every 5th task is daily
             category = when (index % 4) {
                 0 -> "Work"
                 1 -> "Personal"

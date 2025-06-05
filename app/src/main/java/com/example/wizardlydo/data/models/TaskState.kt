@@ -27,4 +27,4 @@ data class TaskUiState(
     val taskType: TaskFilter = TaskFilter.ALL
 )
 
-enum class TaskFilter { ALL, ACTIVE, COMPLETED, DAILY }
+enum class TaskFilter { ALL, ACTIVE, COMPLETED}
