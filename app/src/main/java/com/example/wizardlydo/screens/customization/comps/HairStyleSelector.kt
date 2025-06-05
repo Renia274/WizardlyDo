@@ -40,13 +40,11 @@ fun HairStyleSelector(
             listOf(
                 Triple("Short", R.drawable.hair_style_1_blond, Color.White),
                 Triple("Classic", R.drawable.hair_style_2_brown, Color.White),
-                Triple("Curly", R.drawable.hair_style_3_red, Color.White)
             )
         } else {
             listOf(
                 Triple("Wavy", R.drawable.hair_style_1_blond, Color.White),
                 Triple("Long", R.drawable.hair_style_2_brown, Color.White),
-                Triple("Curly", R.drawable.hair_style_3_red, Color.White)
             )
         }
     }
