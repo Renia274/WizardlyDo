@@ -261,17 +261,10 @@ fun CharacterStatsSection(
                     TaskProgressSection(
                         tasksCompleted = tasksCompleted,
                         totalTasksForLevel = totalTasksForLevel,
-                        maxHealth = maxHealth,
                         textColor = if (hasBackground) Color.White else Color.Black
                     )
                 } else {
-                    // Get revival progress from viewModel if available
-                    val revivalProgress = if (taskViewModel != null) {
-                        taskViewModel.getRevivalProgress()
-                    } else {
-                        // Fallback if viewModel isn't available
-                        Pair(wizardProfile?.consecutiveTasksCompleted ?: 0, 3)
-                    }
+                    val revivalProgress = taskViewModel?.getRevivalProgress() ?: Pair(wizardProfile?.consecutiveTasksCompleted ?: 0, 3)
 
                     RevivalProgressSection(
                         tasksCompleted = revivalProgress.first,

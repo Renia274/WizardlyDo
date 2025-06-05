@@ -23,48 +23,60 @@ object InventoryItems {
             isUnlocked = true,
             isEquipped = true,
             unlockLevel = 1,
-            resourceId = R.drawable.broad_armor_special_pyromancer,
+            resourceId = R.drawable.mystweaver_robe_male,
             name = "Mystic Robe",
             description = "Default Mystweaver outfit"
         ),
         InventoryItemEntity(
             id = "mystweaver_outfit_2",
             wizardId = "",
-            itemId = "storm_cloak",
+            itemId = "winter_coat",
             itemType = ItemType.OUTFIT.toString(),
             isUnlocked = false,
             isEquipped = false,
             unlockLevel = 5,
-            resourceId = R.drawable.broad_armor_special_snow,
-            name = "Storm Cloak",
-            description = "Powerful wizard cloak"
+            resourceId = R.drawable.winter_coat_male,
+            name = "Winter Coat",
+            description = "Warm and cozy winter outfit"
         ),
         InventoryItemEntity(
             id = "mystweaver_outfit_3",
             wizardId = "",
-            itemId = "crystal_armor",
+            itemId = "casual_shirt",
             itemType = ItemType.OUTFIT.toString(),
             isUnlocked = false,
             isEquipped = false,
             unlockLevel = 10,
-            resourceId = R.drawable.broad_armor_armoire_crystal_robe,
-            name = "Crystal Armor",
-            description = "Rare crystal enchanted armor"
+            resourceId = R.drawable.casual_shirt_male,
+            name = "Casual Shirt",
+            description = "Relaxed everyday wear"
         )
     )
 
     val dragonistOutfits = listOf(
         InventoryItemEntity(
+            id = "dragonist_outfit_1",
+            wizardId = "",
+            itemId = "flame_robe",
+            itemType = ItemType.OUTFIT.toString(),
+            isUnlocked = true,
+            isEquipped = true,
+            unlockLevel = 1,
+            resourceId = R.drawable.draconist_robe_male,
+            name = "Flame Robe",
+            description = "Default Draconist outfit"
+        ),
+        InventoryItemEntity(
             id = "dragonist_outfit_2",
             wizardId = "",
-            itemId = "dragon_scale",
+            itemId = "winter_coat",
             itemType = ItemType.OUTFIT.toString(),
             isUnlocked = false,
             isEquipped = false,
             unlockLevel = 7,
-            resourceId = R.drawable.broad_shirt_rainbow,
-            name = "Dragon Scale Armor",
-            description = "Rare dragon scale armor"
+            resourceId = R.drawable.winter_coat_male,
+            name = "Winter Coat",
+            description = "Alternative warm outfit for dragons"
         )
     )
 
@@ -77,21 +89,21 @@ object InventoryItems {
             isUnlocked = true,
             isEquipped = true,
             unlockLevel = 1,
-            resourceId = R.drawable.broad_armor_armoire_crystal_robe,
+            resourceId = R.drawable.luminari_robe_male,
             name = "Crystal Robe",
             description = "Default Luminari outfit"
         ),
         InventoryItemEntity(
             id = "luminari_outfit_2",
             wizardId = "",
-            itemId = "light_armor",
+            itemId = "winter_coat",
             itemType = ItemType.OUTFIT.toString(),
             isUnlocked = false,
             isEquipped = false,
             unlockLevel = 6,
-            resourceId = R.drawable.broad_armor_special_snow,
-            name = "Light Armor",
-            description = "Glowing light enchanted armor"
+            resourceId = R.drawable.winter_coat_male,
+            name = "Winter Coat",
+            description = "Elegant winter wear for light wielders"
         )
     )
 
@@ -104,24 +116,23 @@ object InventoryItems {
             isUnlocked = true,
             isEquipped = true,
             unlockLevel = 1,
-            resourceId = R.drawable.broad_armor_special_snow,
+            resourceId = R.drawable.chronomancer_robe_male,
             name = "Astronomer Robe",
             description = "Default Chronomancer outfit"
         ),
         InventoryItemEntity(
             id = "chronomancer_outfit_2",
             wizardId = "",
-            itemId = "time_cloak",
+            itemId = "winter_coat",
             itemType = ItemType.OUTFIT.toString(),
             isUnlocked = false,
             isEquipped = false,
             unlockLevel = 8,
-            resourceId = R.drawable.broad_armor_special_pyromancer,
-            name = "Time Cloak",
-            description = "Mystical time-manipulating cloak"
+            resourceId = R.drawable.winter_coat_male,
+            name = "Winter Coat",
+            description = "Time-resistant winter clothing"
         )
     )
-
 
     val commonItems = listOf(
         InventoryItemEntity(

@@ -26,10 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
-import com.example.wizardlydo.data.wizard.items.EquippedItems
-import com.example.wizardlydo.data.wizard.items.ItemTypes
 import com.example.wizardlydo.data.wizard.WizardClass
 import com.example.wizardlydo.data.wizard.WizardProfile
+import com.example.wizardlydo.data.wizard.items.EquippedItems
+import com.example.wizardlydo.data.wizard.items.ItemTypes
 import com.example.wizardlydo.room.inventory.InventoryItemEntity
 import com.example.wizardlydo.screens.tasks.comps.inventory.BasicCharacterStatsSection
 import com.example.wizardlydo.screens.tasks.comps.inventory.InventoryItemsSection
@@ -157,7 +157,7 @@ fun InventoryContentPreview() {
                 isUnlocked = true,
                 isEquipped = true,
                 unlockLevel = 1,
-                resourceId = R.drawable.broad_armor_special_pyromancer,
+                resourceId = R.drawable.mystweaver_robe_male,
                 name = "Mystic Robe",
                 description = "Default Mystweaver outfit"
             ),
@@ -185,7 +185,7 @@ fun InventoryContentPreview() {
                 isUnlocked = true,
                 isEquipped = true,
                 unlockLevel = 1,
-                resourceId = R.drawable.broad_armor_special_pyromancer,
+                resourceId = R.drawable.mystweaver_robe_male,
                 name = "Mystic Robe",
                 description = "Default Mystweaver outfit"
             ),
@@ -197,7 +197,7 @@ fun InventoryContentPreview() {
                 isUnlocked = true,
                 isEquipped = false,
                 unlockLevel = 5,
-                resourceId = R.drawable.broad_armor_special_snow,
+                resourceId = R.drawable.chronomancer_robe_male,
                 name = "Storm Cloak",
                 description = "Powerful wizard cloak"
             ),
@@ -209,7 +209,7 @@ fun InventoryContentPreview() {
                 isUnlocked = false,
                 isEquipped = false,
                 unlockLevel = 10,
-                resourceId = R.drawable.broad_armor_armoire_crystal_robe,
+                resourceId = R.drawable.luminari_robe_male,
                 name = "Crystal Armor",
                 description = "Rare crystal enchanted armor"
             ),
