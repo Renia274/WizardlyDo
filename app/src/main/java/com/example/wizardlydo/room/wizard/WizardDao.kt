@@ -45,4 +45,7 @@ interface WizardDao {
 
     @Query("UPDATE wizards SET reminder_enabled = :reminderEnabled, reminder_days = :reminderDays WHERE user_id = :userId")
     suspend fun updateReminderSettings(userId: String, reminderEnabled: Boolean, reminderDays: Int)
+
+    @Query("DELETE FROM wizards WHERE user_id = :userId")
+    suspend fun deleteWizardById(userId: String)
 }

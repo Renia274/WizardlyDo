@@ -188,8 +188,13 @@ fun NavigationGraph() {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onLogout = {
-                    navController.navigate(Screen.Auth.Login.route) {
-                        popUpTo(Screen.Tasks.Main.route) { inclusive = true }
+                    navController.navigate(Screen.Auth.Login.route) {  // ✅ Correct route
+                        popUpTo(Screen.Tasks.Main.route) { inclusive = true }  // ✅ Correct route
+                    }
+                },
+                onAccountDeleted = {
+                    navController.navigate(Screen.Auth.Welcome.route) {  // ✅ Correct route
+                        popUpTo(0)
                     }
                 }
             )

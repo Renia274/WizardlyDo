@@ -1,6 +1,7 @@
 package com.example.wizardlydo.viewmodel.settings
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import at.favre.lib.crypto.bcrypt.BCrypt
@@ -60,7 +61,7 @@ class SettingsViewModel(
                 wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
                     // Save dark mode from profile to shared preferences
                     profile.darkModeEnabled.let { darkMode ->
-                        sharedPreferences.edit().putBoolean(DARK_MODE_KEY, darkMode).apply()
+                        sharedPreferences.edit { putBoolean(DARK_MODE_KEY, darkMode) }
                     }
 
                     stateFlow.value = stateFlow.value.copy(
@@ -115,12 +116,12 @@ class SettingsViewModel(
 
     fun toggleDarkMode(enabled: Boolean) {
         // Save to preferences
-        sharedPreferences.edit().putBoolean(DARK_MODE_KEY, enabled).apply()
+        sharedPreferences.edit { putBoolean(DARK_MODE_KEY, enabled) }
 
         // Update local state
         stateFlow.value = stateFlow.value.copy(darkModeEnabled = enabled)
 
-        // Also update profile
+        // update wizard profile
         viewModelScope.launch {
             auth.currentUser?.uid?.let { userId ->
                 wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
@@ -130,7 +131,6 @@ class SettingsViewModel(
             }
         }
 
-        // No need to recreate activity here - the listener will handle it
     }
 
     fun changePassword(
@@ -182,6 +182,76 @@ class SettingsViewModel(
                     val updatedProfile = profile.copy(passwordHash = hashedPassword)
                     wizardRepository.updateWizardProfile(userId, updatedProfile)
                 }
+            }
+        }
+    }
+
+    fun deleteAccount(
+        currentPassword: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        val user = auth.currentUser ?: run {
+            onError("User not authenticated")
+            return
+        }
+
+        val email = user.email ?: run {
+            onError("User email not found")
+            return
+        }
+
+        if (currentPassword.isBlank()) {
+            onError("Password is required")
+            return
+        }
+
+        // Re-authenticate user before deletion
+        val credential = EmailAuthProvider.getCredential(email, currentPassword)
+        user.reauthenticate(credential).addOnCompleteListener { authTask ->
+            if (authTask.isSuccessful) {
+                viewModelScope.launch {
+                    try {
+                        // Delete wizard profile and all associated data
+                        val deleteResult = wizardRepository.deleteWizardProfile(user.uid)
+
+                        if (deleteResult.isSuccess) {
+                            // Clear shared preferences
+                            sharedPreferences.edit { clear() }
+
+                            // Delete Firebase Auth user
+                            user.delete().addOnCompleteListener { deleteTask ->
+                                if (deleteTask.isSuccessful) {
+                                    onSuccess()
+                                } else {
+                                    val errorMessage = when {
+                                        deleteTask.exception?.message?.contains("network") == true ->
+                                            "Network error occurred"
+                                        deleteTask.exception?.message?.contains("too-many-requests") == true ->
+                                            "Too many requests. Please try again later"
+                                        else -> deleteTask.exception?.message ?: "Failed to delete account"
+                                    }
+                                    onError(errorMessage)
+                                }
+                            }
+                        } else {
+                            onError("Failed to delete user data from local storage")
+                        }
+                    } catch (e: Exception) {
+                        onError("Failed to delete user data: ${e.localizedMessage}")
+                    }
+                }
+            } else {
+                val errorMessage = when {
+                    authTask.exception?.message?.contains("password") == true ->
+                        "Incorrect password"
+                    authTask.exception?.message?.contains("network") == true ->
+                        "Network error. Please check your connection"
+                    authTask.exception?.message?.contains("too-many-requests") == true ->
+                        "Too many attempts. Please try again later"
+                    else -> authTask.exception?.message ?: "Authentication failed"
+                }
+                onError(errorMessage)
             }
         }
     }

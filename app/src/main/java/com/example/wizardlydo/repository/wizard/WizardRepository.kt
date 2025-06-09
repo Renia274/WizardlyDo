@@ -203,6 +203,11 @@ class WizardRepository(
     }
 
 
+    suspend fun deleteWizardProfile(userId: String): Result<Unit> = runCatching {
+        wizardDao.deleteWizardById(userId)
+    }
+
+
 
 
 

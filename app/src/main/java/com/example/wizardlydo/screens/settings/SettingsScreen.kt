@@ -43,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.wizardlydo.R
 import com.example.wizardlydo.data.models.SettingsState
+import com.example.wizardlydo.screens.settings.comps.DeleteAccountDialog
 import com.example.wizardlydo.screens.settings.comps.PasswordChangeDialog
 import com.example.wizardlydo.screens.settings.comps.SettingsActionItem
 import com.example.wizardlydo.screens.settings.comps.SettingsItem
@@ -55,6 +56,7 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingsScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
+    onAccountDeleted: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -62,6 +64,11 @@ fun SettingsScreen(
     val aboutDescription by viewModel.aboutDescription.collectAsState()
     val warningTitle by viewModel.warningTitle.collectAsState()
     val warningDescription by viewModel.warningDescription.collectAsState()
+    val context = LocalContext.current
+
+    // Add debug logging
+    android.util.Log.d("SettingsScreen", "State: email=${state.email}, wizardName=${state.wizardName}, darkMode=${state.darkModeEnabled}")
+    android.util.Log.d("SettingsScreen", "About title: $aboutTitle")
 
     Box(Modifier.fillMaxSize()) {
         SettingsContent(
@@ -81,6 +88,18 @@ fun SettingsScreen(
                     currentPassword = currentPassword,
                     onSuccess = {},
                     onError = {}
+                )
+            },
+            onDeleteAccount = { password ->
+                viewModel.deleteAccount(
+                    currentPassword = password,
+                    onSuccess = {
+                        Toast.makeText(context, "Account deleted successfully", Toast.LENGTH_SHORT).show()
+                        onAccountDeleted()
+                    },
+                    onError = { error ->
+                        Toast.makeText(context, "Failed to delete account: $error", Toast.LENGTH_LONG).show()
+                    }
                 )
             },
             onUpdateWizardName = { name ->
@@ -104,12 +123,16 @@ fun SettingsContent(
     onBack: () -> Unit,
     onLogoutConfirmed: () -> Unit,
     onChangePassword: (String, String) -> Unit,
+    onDeleteAccount: (String) -> Unit,
     onUpdateWizardName: (String) -> Unit,
     onToggleDarkMode: (Boolean) -> Unit
 ) {
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showWizardNameDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isDeleting by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -177,6 +200,47 @@ fun SettingsContent(
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showDeleteAccountDialog) {
+        DeleteAccountDialog(
+            onDismiss = { showDeleteAccountDialog = false },
+            onConfirmDelete = { password ->
+                onDeleteAccount(password)
+                showDeleteAccountDialog = false
+            },
+            isLoading = isDeleting
+        )
+    }
+
+    // Error Dialog
+    errorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = {
+                errorMessage = null
+                isDeleting = false
+            },
+            title = {
+                Text(
+                    "Delete Account Failed",
+                    color = MaterialTheme.colorScheme.error
+                )
+            },
+            text = {
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    errorMessage = null
+                    isDeleting = false
+                }) {
+                    Text("OK")
                 }
             }
         )
@@ -252,6 +316,20 @@ fun SettingsContent(
                 )
             }
 
+
+            SettingsSection(title = "Account Management") {
+                SettingsActionItem(
+                    icon = painterResource(id = R.drawable.ic_delete_account),
+                    title = "Delete Account",
+                    subtitle = "permanently delete your account and all data",
+                    onClick = {
+                        android.util.Log.d("SettingsScreen", "Delete account clicked!")
+                        showDeleteAccountDialog = true
+                    },
+                    isDestructive = true
+                )
+            }
+
             SettingsSection(title = "About WizardlyDo") {
                 Card(
                     modifier = Modifier.fillMaxWidth()
@@ -316,6 +394,7 @@ fun SettingsScreenPreview() {
             onBack = {},
             onLogoutConfirmed = {},
             onChangePassword = { _, _ -> },
+            onDeleteAccount = { _ -> },
             onUpdateWizardName = {},
             onToggleDarkMode = {}
         )
