@@ -66,9 +66,6 @@ fun SettingsScreen(
     val warningDescription by viewModel.warningDescription.collectAsState()
     val context = LocalContext.current
 
-    // Add debug logging
-    android.util.Log.d("SettingsScreen", "State: email=${state.email}, wizardName=${state.wizardName}, darkMode=${state.darkModeEnabled}")
-    android.util.Log.d("SettingsScreen", "About title: $aboutTitle")
 
     Box(Modifier.fillMaxSize()) {
         SettingsContent(

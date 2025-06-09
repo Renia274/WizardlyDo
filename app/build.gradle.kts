@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.wizardlydo"
+    namespace = "com.wizardlydo.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.wizardlydo"
+        applicationId = "com.wizardlydo.app"
         minSdk = 25
         targetSdk = 35
         versionCode = 1
@@ -58,7 +58,6 @@ android {
     }
 }
 
-// KSP configuration for Room schema location
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
@@ -81,16 +80,12 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
     implementation(libs.play.services.auth)
     implementation(libs.play.services.fido)
     implementation(libs.material)
     implementation(libs.androidx.compose.material)
     implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.play.services.fido)
-    implementation(libs.play.services.fido)
     implementation(libs.androidx.tools.core)
-    implementation(libs.androidx.emoji2.emojipicker)
 
     // Testing
     testImplementation(libs.junit)
@@ -99,6 +94,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test)
 
+    // Debug implementations
     debugImplementation(libs.androidx.ui.tooling)
 
     // Coil for Image Loading
@@ -116,33 +112,26 @@ dependencies {
     implementation(libs.googleid)
 
     // Credential Manager
-    implementation (libs.androidx.credentials)
-    implementation (libs.androidx.credentials.play.services.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
 
-    //Koin
-    // Koin Core
-    implementation (libs.koin.core)
-
-    // Koin Android
-    implementation (libs.koin.android)
-
-    // Koin Compose
-    implementation (libs.koin.androidx.compose)
-
+    // Koin
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
     implementation(libs.koin.annotation)
-
     ksp(libs.koin.ksp.compiler)
 
     // Room
-    implementation (libs.androidx.room.runtime)
-    implementation (libs.androidx.room.ktx)
-    ksp (libs.androidx.room.compiler)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     implementation(libs.bcrypt)
 
     // WorkManager with Kotlin support
-    implementation (libs.androidx.work.runtime.ktx.v280)
+    implementation(libs.androidx.work.runtime.ktx.v280)
 
     // Permission handling with accompanist
-    implementation (libs.accompanist.permissions.v0301)
+    implementation(libs.accompanist.permissions.v0301)
 }
