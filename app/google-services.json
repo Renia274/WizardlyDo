@@ -1,44 +1,26 @@
 {
   "project_info": {
-    "project_number": "781929258268",
-    "project_id": "wizardlydo-825e5",
-    "storage_bucket": "wizardlydo-825e5.firebasestorage.app"
+    "project_number": "159218667571",
+    "project_id": "wizardlydo-app",
+    "storage_bucket": "wizardlydo-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:781929258268:android:2c0eb81a5bcdb556502ed9",
+        "mobilesdk_app_id": "1:159218667571:android:61a1e4a18f3f86072e5346",
         "android_client_info": {
-          "package_name": "com.example.wizardlydo"
+          "package_name": "com.wizardlydo.app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "781929258268-uldpnoir4jhp3u1oi7ut1f0qs6tea483.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.wizardlydo",
-            "certificate_hash": "c490a0c3e8b411f99aa449bf949b8a9c4a7b46de"
-          }
-        },
-        {
-          "client_id": "781929258268-ng6di7gqlf5c8drqug4pesuq0eecgf0h.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDvudCgvCpHGjxXIqYfBI4pl89xmghuQ2k"
+          "current_key": "AIzaSyAeLZLElPvAoYNeCVgRYtLAiw3ImGkmD5o"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "781929258268-ng6di7gqlf5c8drqug4pesuq0eecgf0h.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

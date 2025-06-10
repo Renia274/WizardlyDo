@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.example.wizardlydo" />
-                  <option name="mobileSdkAppId" value="1:781929258268:android:2c0eb81a5bcdb556502ed9" />
-                  <option name="projectId" value="wizardlydo-825e5" />
-                  <option name="projectNumber" value="781929258268" />
+                  <option name="appId" value="PLACEHOLDER" />
+                  <option name="mobileSdkAppId" value="" />
+                  <option name="projectId" value="" />
+                  <option name="projectNumber" value="" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
