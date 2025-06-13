@@ -1,7 +1,6 @@
 package com.wizardlydo.app.wizardCustomization
 
 import com.wizardlydo.app.R
-import com.wizardlydo.app.data.wizard.WizardClass
 
 fun getSkinResourceId(skinColor: String): Int {
     return when (skinColor) {
@@ -51,60 +50,6 @@ fun getHairResourceId(gender: String, hairStyle: Int, hairColor: String): Int {
     }
 }
 
-
-
-/**
- * Get outfit resource
- */
-fun getOutfitResource(wizardClass: WizardClass, outfit: String, gender: String): Int {
-    val isMale = gender == "Male"
-    val normalizedOutfit = outfit.trim()
-
-    return when (wizardClass) {
-        WizardClass.CHRONOMANCER -> when (normalizedOutfit) {
-            "Chronomancer Robe" -> if (isMale)
-                R.drawable.chronomancer_robe_male
-            else
-                R.drawable.chronomancer_robe_female
-
-            else -> if (isMale)
-                R.drawable.chronomancer_robe_male
-            else
-                R.drawable.chronomancer_robe_female
-        }
-
-        WizardClass.LUMINARI -> when (normalizedOutfit) {
-            "Luminari Robe" -> if (isMale)
-                R.drawable.luminari_robe_male
-            else
-                R.drawable.luminari_robe_female
-
-            else -> if (isMale)
-                R.drawable.luminari_robe_male
-            else
-                R.drawable.luminari_robe_female
-        }
-
-        WizardClass.DRACONIST -> when (normalizedOutfit) {
-            "Draconist Robe" -> if (isMale)
-                R.drawable.draconist_robe_male
-            else
-                R.drawable.draconist_robe_female
-
-            "Winter Coat" -> if (isMale)
-                R.drawable.winter_coat_male
-            else
-                R.drawable.winter_coat_female
-
-            else -> if (isMale)
-                R.drawable.winter_coat_male
-            else
-                R.drawable.winter_coat_female
-        }
-
-        WizardClass.MYSTWEAVER -> getMystweaverOutfitResource(outfit, gender)
-    }
-}
 
 
 fun getMystweaverOutfitResource(outfit: String, gender: String): Int {

@@ -52,10 +52,10 @@ class CustomizationViewModel(
 
     fun getDefaultOutfit(wizardClass: WizardClass): String {
         return when (wizardClass) {
-            WizardClass.CHRONOMANCER -> "Astronomer Robe"
-            WizardClass.LUMINARI -> "Crystal Robe"
-            WizardClass.DRACONIST -> "Flame Costume"
-            WizardClass.MYSTWEAVER -> "Mystic Robe"
+            WizardClass.CHRONOMANCER -> "astronomer_robe"
+            WizardClass.LUMINARI -> "crystal_robe"
+            WizardClass.DRACONIST -> "flame_robe"
+            WizardClass.MYSTWEAVER -> "mystic_robe"
         }
     }
 

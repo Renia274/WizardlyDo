@@ -79,7 +79,9 @@ fun OutfitSelector(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .width(80.dp)
-                        .clickable { onOutfitSelected(outfitName) }
+                        .clickable {
+                            onOutfitSelected(outfitId)
+                        }
                 ) {
                     Box(
                         modifier = Modifier
@@ -87,7 +89,7 @@ fun OutfitSelector(
                             .clip(RoundedCornerShape(8.dp))
                             .border(
                                 width = 2.dp,
-                                color = if (selectedOutfit == outfitName)
+                                color = if (selectedOutfit == outfitId)
                                     MaterialTheme.colorScheme.primary
                                 else
                                     Color.Transparent,

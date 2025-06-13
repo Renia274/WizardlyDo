@@ -22,8 +22,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.wizardlydo.app.R
 import com.wizardlydo.app.data.models.CustomizationState
 import com.wizardlydo.app.data.wizard.WizardClass
+
 
 // WizardPreview Customization based on wizard class
 @Composable
@@ -59,8 +61,7 @@ fun WizardPreview(
                 contentAlignment = Alignment.Center
             ) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     // Character Skin
@@ -69,14 +70,40 @@ fun WizardPreview(
                         contentDescription = "Character Skin",
                         modifier = Modifier
                             .size(100.dp)
-                            .offset(x=(-12).dp,y = (28).dp)
+                            .offset(x = (-12).dp, y = 28.dp)
                     )
 
-                    // Updated outfit logic using the new function
-                    val outfitResourceId = if (state.wizardClass == WizardClass.MYSTWEAVER) {
-                        getMystweaverOutfitResource(state.outfit, state.gender)
-                    } else {
-                        getOutfitResource(state.wizardClass, state.outfit, state.gender)
+                    // FIXED: Updated outfit logic with explicit resource mapping
+                    val outfitResourceId = when (state.wizardClass) {
+                        WizardClass.MYSTWEAVER -> {
+                            when (state.outfit) {
+                                "mystic_robe" -> if (state.gender == "Male") R.drawable.mystweaver_robe_male else R.drawable.mystweaver_robe_female
+                                "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
+                                "casual_shirt" -> if (state.gender == "Male") R.drawable.casual_shirt_male else R.drawable.casual_shirt_female
+                                else -> if (state.gender == "Male") R.drawable.mystweaver_robe_male else R.drawable.mystweaver_robe_female
+                            }
+                        }
+                        WizardClass.CHRONOMANCER -> {
+                            when (state.outfit) {
+                                "astronomer_robe" -> if (state.gender == "Male") R.drawable.chronomancer_robe_male else R.drawable.chronomancer_robe_female
+                                "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
+                                else -> if (state.gender == "Male") R.drawable.chronomancer_robe_male else R.drawable.chronomancer_robe_female
+                            }
+                        }
+                        WizardClass.LUMINARI -> {
+                            when (state.outfit) {
+                                "crystal_robe" -> if (state.gender == "Male") R.drawable.luminari_robe_male else R.drawable.luminari_robe_female
+                                "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
+                                else -> if (state.gender == "Male") R.drawable.luminari_robe_male else R.drawable.luminari_robe_female
+                            }
+                        }
+                        WizardClass.DRACONIST -> {
+                            when (state.outfit) {
+                                "flame_robe" -> if (state.gender == "Male") R.drawable.draconist_robe_male else R.drawable.draconist_robe_female
+                                "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
+                                else -> if (state.gender == "Male") R.drawable.draconist_robe_male else R.drawable.draconist_robe_female
+                            }
+                        }
                     }
 
                     Image(
@@ -84,7 +111,7 @@ fun WizardPreview(
                         contentDescription = "Character Outfit",
                         modifier = Modifier
                             .size(100.dp)
-                            .offset(x=(-12).dp,y = 30.dp)
+                            .offset(x = (-12).dp, y = 30.dp)
                     )
 
                     // Character Hair

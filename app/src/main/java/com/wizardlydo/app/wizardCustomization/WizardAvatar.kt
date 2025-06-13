@@ -22,6 +22,8 @@ import com.wizardlydo.app.data.wizard.WizardClass
 import com.wizardlydo.app.data.wizard.WizardProfile
 import com.wizardlydo.app.data.wizard.items.EquippedItems
 
+
+
 @Composable
 fun WizardAvatar(
     wizardResult: Result<WizardProfile?>?,
@@ -68,51 +70,40 @@ fun WizardAvatar(
                             .offset(x = (-10).dp, y = (-6).dp)
                     )
 
-                    // Outfit
+                    val outfitResourceId = when {
+                        // Equipped items for wizard
+                        equippedItems?.outfit != null -> equippedItems.outfit.resourceId
 
-                    if (wizardProfile.wizardClass == WizardClass.MYSTWEAVER) {
+                        // MYSTWEAVER
+                        wizardProfile.wizardClass == WizardClass.MYSTWEAVER -> {
+                            getMystweaverOutfitResource(wizardProfile.outfit, wizardProfile.gender)
+                        }
 
-                        val outfitResourceId = getMystweaverOutfitResource(
-                            outfit = wizardProfile.outfit,
-                            gender = wizardProfile.gender
-                        )
+                        // CHRONOMANCER,LUMINARI,DRACONIST
+                        else -> {
+                            val (defaultMale, defaultFemale) = when (wizardProfile.wizardClass) {
+                                WizardClass.CHRONOMANCER -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female
+                                WizardClass.LUMINARI -> R.drawable.luminari_robe_male to R.drawable.luminari_robe_female
+                                WizardClass.DRACONIST -> R.drawable.draconist_robe_male to R.drawable.draconist_robe_female
+                                else -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female // fallback
+                            }
 
-
-                        Image(
-                            painter = painterResource(id = outfitResourceId),
-                            contentDescription = "MYSTWEAVER Outfit",
-                            modifier = Modifier
-                                .size(80.dp)
-                                .align(Alignment.Center)
-                                .offset(x = (-10).dp, y = (-6).dp)
-                        )
-                    } else if (equippedItems?.outfit != null) {
-                        // For equipped items
-                        Image(
-                            painter = painterResource(id = equippedItems.outfit.resourceId),
-                            contentDescription = "Character Outfit",
-                            modifier = Modifier
-                                .size(80.dp)
-                                .align(Alignment.Center)
-                                .offset(x = (-10).dp, y = (-6).dp)
-                        )
-                    } else {
-                        // Classes:Draconist, Luminari and Chronomancer
-                        val outfitResource = getOutfitResource(
-                            wizardClass = wizardProfile.wizardClass,
-                            outfit = wizardProfile.outfit,
-                            gender = wizardProfile.gender
-                        )
-
-                        Image(
-                            painter = painterResource(id = outfitResource),
-                            contentDescription = "Character Outfit",
-                            modifier = Modifier
-                                .size(80.dp)
-                                .align(Alignment.Center)
-                                .offset(x = (-10).dp, y = (-6).dp)
-                        )
+                            when (wizardProfile.outfit) {
+                                "winter_coat" -> genderSelect(wizardProfile.gender, R.drawable.winter_coat_male, R.drawable.winter_coat_female)
+                                else -> genderSelect(wizardProfile.gender, defaultMale, defaultFemale)
+                            }
+                        }
                     }
+
+                    Image(
+                        painter = painterResource(id = outfitResourceId),
+                        contentDescription = "Character Outfit",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .align(Alignment.Center)
+                            .offset(x = (-10).dp, y = (-6).dp)
+                    )
+
                     // Hair
                     Image(
                         painter = painterResource(
@@ -173,7 +164,6 @@ fun WizardAvatar(
                         )
                     }
 
-
                     Image(
                         painter = painterResource(id = R.drawable.skeleton_face),
                         contentDescription = "Skeleton",
@@ -202,3 +192,6 @@ fun WizardAvatar(
         }
     }
 }
+
+private fun genderSelect(gender: String, male: Int, female: Int) =
+    if (gender == "Male") male else female
