@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.wizardlydo.app.R
@@ -33,18 +32,11 @@ fun WizardPreview(
     state: CustomizationState,
     modifier: Modifier = Modifier
 ) {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
-
-
-
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = horizontalPadding)
             .background(
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.secondaryContainer,
                 shape = RoundedCornerShape(16.dp)
             ),
         contentAlignment = Alignment.Center
@@ -73,35 +65,24 @@ fun WizardPreview(
                             .offset(x = (-12).dp, y = 28.dp)
                     )
 
-                    // FIXED: Updated outfit logic with explicit resource mapping
-                    val outfitResourceId = when (state.wizardClass) {
-                        WizardClass.MYSTWEAVER -> {
-                            when (state.outfit) {
-                                "mystic_robe" -> if (state.gender == "Male") R.drawable.mystweaver_robe_male else R.drawable.mystweaver_robe_female
-                                "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
-                                "casual_shirt" -> if (state.gender == "Male") R.drawable.casual_shirt_male else R.drawable.casual_shirt_female
-                                else -> if (state.gender == "Male") R.drawable.mystweaver_robe_male else R.drawable.mystweaver_robe_female
-                            }
+                    // Outfit logic (simplified)
+                    val outfitResourceId = when {
+                        // MYSTWEAVER - Special handling
+                        state.wizardClass == WizardClass.MYSTWEAVER -> {
+                            getMystweaverOutfitResource(state.outfit, state.gender)
                         }
-                        WizardClass.CHRONOMANCER -> {
-                            when (state.outfit) {
-                                "astronomer_robe" -> if (state.gender == "Male") R.drawable.chronomancer_robe_male else R.drawable.chronomancer_robe_female
-                                "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
-                                else -> if (state.gender == "Male") R.drawable.chronomancer_robe_male else R.drawable.chronomancer_robe_female
+                        // All other classes - unified handling
+                        else -> {
+                            val (defaultMale, defaultFemale) = when (state.wizardClass) {
+                                WizardClass.CHRONOMANCER -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female
+                                WizardClass.LUMINARI -> R.drawable.luminari_robe_male to R.drawable.luminari_robe_female
+                                WizardClass.DRACONIST -> R.drawable.draconist_robe_male to R.drawable.draconist_robe_female
+                                else -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female
                             }
-                        }
-                        WizardClass.LUMINARI -> {
+
                             when (state.outfit) {
-                                "crystal_robe" -> if (state.gender == "Male") R.drawable.luminari_robe_male else R.drawable.luminari_robe_female
                                 "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
-                                else -> if (state.gender == "Male") R.drawable.luminari_robe_male else R.drawable.luminari_robe_female
-                            }
-                        }
-                        WizardClass.DRACONIST -> {
-                            when (state.outfit) {
-                                "flame_robe" -> if (state.gender == "Male") R.drawable.draconist_robe_male else R.drawable.draconist_robe_female
-                                "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
-                                else -> if (state.gender == "Male") R.drawable.draconist_robe_male else R.drawable.draconist_robe_female
+                                else -> if (state.gender == "Male") defaultMale else defaultFemale
                             }
                         }
                     }

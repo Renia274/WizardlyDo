@@ -99,21 +99,22 @@ fun LoginContent(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
-
+    val isLandscape = screenWidth > screenHeight
 
     val padding = (screenWidth * 0.06f).coerceIn(24.dp, 40.dp)
     val spacing = (screenHeight * 0.02f).coerceIn(8.dp, 24.dp)
     val maxWidth = if (screenWidth > 600.dp) 450.dp else screenWidth
 
+    val backButtonTopPadding = if (isLandscape) 8.dp else 32.dp
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(top = 48.dp),
+                .padding(top = backButtonTopPadding, start = 2.dp),
             enabled = !isLoading
         ) {
             Icon(
@@ -126,8 +127,9 @@ fun LoginContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = padding),
-            contentAlignment = Alignment.Center
+                .padding(horizontal = padding)
+                .padding(top = if (isLandscape) 60.dp else 80.dp),
+            contentAlignment = if (isLandscape) Alignment.TopCenter else Alignment.Center
         ) {
             Column(
                 modifier = Modifier
@@ -136,9 +138,13 @@ fun LoginContent(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                if (!isLandscape) {
+                    Spacer(modifier = Modifier.height(spacing))
+                }
+
                 LoginHeader()
 
-                Spacer(modifier = Modifier.height(spacing * 2))
+                Spacer(modifier = Modifier.height(if (isLandscape) spacing else spacing * 2))
 
                 EmailField(
                     email = email,
@@ -147,7 +153,7 @@ fun LoginContent(
                     emailError = emailError
                 )
 
-                Spacer(modifier = Modifier.height(spacing))
+                Spacer(modifier = Modifier.height(if (isLandscape) spacing * 0.5f else spacing * 0.7f))
 
                 PasswordFieldLogin(
                     password = password,
@@ -159,7 +165,7 @@ fun LoginContent(
                     onTogglePasswordVisibility = onTogglePasswordVisibility
                 )
 
-                Spacer(modifier = Modifier.height(spacing * 0.5f))
+                Spacer(modifier = Modifier.height(spacing * 0.3f))
 
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -173,17 +179,22 @@ fun LoginContent(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(spacing * 1.5f))
+                Spacer(modifier = Modifier.height(if (isLandscape) spacing * 0.8f else spacing * 1.5f))
 
                 LoginButton(
                     onClick = onLoginClick,
                     isLoading = isLoading,
                     enabled = !isLoading
                 )
+
+                if (isLandscape) {
+                    Spacer(modifier = Modifier.height(spacing))
+                }
             }
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
