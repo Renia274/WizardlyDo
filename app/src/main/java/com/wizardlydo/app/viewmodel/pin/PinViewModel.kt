@@ -2,7 +2,7 @@ package com.wizardlydo.app.viewmodel.pin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wizardlydo.app.data.models.PinSetupState
+import com.wizardlydo.app.data.models.PinState
 import com.wizardlydo.app.repository.pin.PinRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +15,7 @@ import org.koin.android.annotation.KoinViewModel
 class PinViewModel(
     private val pinRepository: PinRepository
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(PinSetupState())
+    private val mutableState = MutableStateFlow(PinState())
     val state = mutableState.asStateFlow()
 
     fun updatePin(pin: String) {
@@ -105,4 +105,54 @@ class PinViewModel(
             )
         }
     }
+
+
+    fun resetPin() {
+        mutableState.update { it.copy(isLoading = true) }
+
+        viewModelScope.launch {
+            val currentPin = state.value.pin
+
+            if (currentPin.length != 4 || !currentPin.all { it.isDigit() }) {
+                mutableState.update {
+                    it.copy(
+                        error = "PIN must be exactly 4 digits",
+                        isLoading = false
+                    )
+                }
+                return@launch
+            }
+
+            // Clear existing PIN and save new one
+            pinRepository.clearPin()
+
+            pinRepository.savePin(currentPin).fold(
+                onSuccess = {
+                    mutableState.update {
+                        it.copy(
+                            isPinSaved = true,
+                            error = null,
+                            isLoading = false
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    mutableState.update {
+                        it.copy(
+                            error = "Failed to reset PIN: ${e.message}",
+                            isPinSaved = false,
+                            isLoading = false
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun resetState() {
+        mutableState.update {
+            PinState()
+        }
+    }
+
 }

@@ -10,15 +10,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wizardlydo.app.comps.errors.ErrorDialog
+import com.wizardlydo.app.screens.pin.comps.ForgotPinButton
 import com.wizardlydo.app.screens.pin.comps.PinInputSection
 import com.wizardlydo.app.screens.pin.comps.PinVerifyButton
 import com.wizardlydo.app.screens.pin.comps.PinVerifyHeader
@@ -27,10 +34,13 @@ import com.wizardlydo.app.viewmodel.pin.PinViewModel
 import org.koin.androidx.compose.koinViewModel
 
 
+
 @Composable
 fun PinVerifyScreen(
     viewModel: PinViewModel = koinViewModel(),
-    onPinSuccess: () -> Unit
+    onPinSuccess: () -> Unit,
+    onForgotPin: () -> Unit,
+    onSignupClick: (() -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -38,6 +48,11 @@ fun PinVerifyScreen(
         if (state.isPinVerified) {
             onPinSuccess()
         }
+    }
+
+    // Reset state when screen is displayed
+    LaunchedEffect(Unit) {
+        viewModel.resetState()
     }
 
     Box(
@@ -54,6 +69,8 @@ fun PinVerifyScreen(
                 pin = state.pin,
                 onPinChange = viewModel::updatePin,
                 onVerifyPin = viewModel::verifyPin,
+                onForgotPin = onForgotPin,
+                onSignupClick = onSignupClick,
                 isLoading = state.isLoading,
                 hasError = state.error != null,
                 error = state.error,
@@ -62,11 +79,14 @@ fun PinVerifyScreen(
         }
     }
 }
+
 @Composable
 fun PinVerifyContent(
     pin: String,
     onPinChange: (String) -> Unit,
     onVerifyPin: () -> Unit,
+    onForgotPin: () -> Unit,
+    onSignupClick: (() -> Unit)? = null,
     isLoading: Boolean,
     hasError: Boolean,
     error: String?,
@@ -94,6 +114,53 @@ fun PinVerifyContent(
             onVerifyPin = onVerifyPin,
             isLoading = isLoading
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ForgotPinButton(
+            onForgotPin = onForgotPin
+        )
+
+        // Show signup option for returning users
+        onSignupClick?.let { signupClick ->
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Stay signed in?",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Sign up to keep your data and stay logged in",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = signupClick,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sign Up")
+                    }
+                }
+            }
+        }
     }
 
     error?.let {
@@ -103,7 +170,6 @@ fun PinVerifyContent(
         )
     }
 }
-
 @Composable
 @Preview(showBackground = true)
 fun PinVerifyContentPreview() {
@@ -115,7 +181,8 @@ fun PinVerifyContentPreview() {
             isLoading = false,
             hasError = false,
             error = null,
-            onDismissError = {}
+            onDismissError = {},
+            onForgotPin = {}
         )
     }
 }

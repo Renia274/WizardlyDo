@@ -13,7 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PinVerifyHeader() {
+fun ForgotPinHeader() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -25,7 +25,7 @@ fun PinVerifyHeader() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Enter Your PIN",
+            text = "Reset Your PIN",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -35,7 +35,7 @@ fun PinVerifyHeader() {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Please enter your 4-digit PIN to continue",
+            text = "Create a new 4-digit PIN to secure your account",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

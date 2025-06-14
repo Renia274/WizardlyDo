@@ -14,6 +14,7 @@ import com.wizardlydo.app.navigation.screens.Screen
 import com.wizardlydo.app.screens.customization.CustomizationScreen
 import com.wizardlydo.app.screens.donation.DonationScreen
 import com.wizardlydo.app.screens.login.LoginScreen
+import com.wizardlydo.app.screens.pin.ForgotPinScreen
 import com.wizardlydo.app.screens.pin.PinSetupScreen
 import com.wizardlydo.app.screens.pin.PinVerifyScreen
 import com.wizardlydo.app.screens.recovery.RecoveryScreen
@@ -38,8 +39,13 @@ fun NavigationGraph() {
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(
-                navigateToWelcomeAuth = {
-                    navController.navigate(Screen.Auth.Welcome.route) {
+                navigateToSignup = {
+                    navController.navigate(Screen.Auth.Signup.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                navigateToPinVerify = {
+                    navController.navigate(Screen.Pin.Verify.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
@@ -133,6 +139,19 @@ fun NavigationGraph() {
                     navController.navigate(Screen.Tasks.Main.route) {
                         popUpTo(Screen.Pin.Verify.route) { inclusive = true }
                     }
+                },
+                onForgotPin = {
+                    navController.navigate(Screen.Pin.Forgot.route)
+                }
+            )
+        }
+
+        composable(Screen.Pin.Forgot.route) {
+            ForgotPinScreen(
+                onPinResetComplete = {
+                    navController.navigate(Screen.Pin.Verify.route) {
+                        popUpTo(Screen.Pin.Forgot.route) { inclusive = true }
+                    }
                 }
             )
         }
@@ -188,12 +207,12 @@ fun NavigationGraph() {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onLogout = {
-                    navController.navigate(Screen.Auth.Login.route) {  // ✅ Correct route
-                        popUpTo(Screen.Tasks.Main.route) { inclusive = true }  // ✅ Correct route
+                    navController.navigate(Screen.Auth.Login.route) {
+                        popUpTo(Screen.Tasks.Main.route) { inclusive = true }
                     }
                 },
                 onAccountDeleted = {
-                    navController.navigate(Screen.Auth.Welcome.route) {  // ✅ Correct route
+                    navController.navigate(Screen.Auth.Welcome.route) {
                         popUpTo(0)
                     }
                 }

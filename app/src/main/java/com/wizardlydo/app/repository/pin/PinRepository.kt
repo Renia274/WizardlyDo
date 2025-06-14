@@ -42,9 +42,18 @@ class PinRepository(
         }
     }
 
-
     suspend fun hasPinSet(): Boolean {
         return pinDao.getPinCount() > 0
+    }
+
+
+    suspend fun clearPin(): Result<Unit> {
+        return try {
+            pinDao.clearPin()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
 }

@@ -33,16 +33,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wizardlydo.app.repository.pin.PinRepository
 import com.wizardlydo.app.ui.theme.WizardlyDoTheme
 import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
+
 
 @Composable
 fun SplashScreen(
-    navigateToWelcomeAuth: () -> Unit
+    navigateToSignup: () -> Unit,
+    navigateToPinVerify: () -> Unit
 ) {
+    val pinRepository = koinInject<PinRepository>()
+
     LaunchedEffect(key1 = true) {
         delay(2000)
-        navigateToWelcomeAuth()
+
+        // Check if user has completed the initial setup (has a PIN)
+        val hasCompletedSetup = pinRepository.hasPinSet()
+
+        if (hasCompletedSetup) {
+            // Returning user - go to PIN verify with signup option
+            navigateToPinVerify()
+        } else {
+            // First time user - go through full onboarding
+            navigateToSignup()
+        }
     }
 
     SplashContent()
@@ -82,8 +98,6 @@ fun SplashContent() {
         label = ""
     )
 
-
-
     val textColor by infiniteTransition.animateColor(
         initialValue = Color.White,
         targetValue = Color(0xFFA080FF),
@@ -98,7 +112,7 @@ fun SplashContent() {
         initialValue = 0f,
         targetValue = 5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, delayMillis = 200), // Slightly delayed from character
+            animation = tween(1200, delayMillis = 200),
             repeatMode = RepeatMode.Reverse
         ),
         label = "text_float_animation"
@@ -218,7 +232,6 @@ fun SplashContent() {
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

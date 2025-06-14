@@ -18,6 +18,7 @@ sealed class Screen(val route: String) {
     sealed class Pin(route: String) : Screen(route) {
         data object Setup : Pin("pin/setup")
         data object Verify : Pin("pin/verify")
+        data object Forgot : Pin("pin/forgot")
     }
 
     // Customization Screen
