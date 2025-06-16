@@ -5,13 +5,13 @@ import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import at.favre.lib.crypto.bcrypt.BCrypt
-import com.wizardlydo.app.data.models.SettingsState
-import com.wizardlydo.app.repository.wizard.WizardRepository
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.wizardlydo.app.data.models.SettingsState
+import com.wizardlydo.app.repository.wizard.WizardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,7 +31,7 @@ class SettingsViewModel(
 
     private val stateFlow = MutableStateFlow(
         SettingsState(
-            email = auth.currentUser?.email,
+            email = null, // Start with null, will be loaded from wizard profile
             wizardName = "",
             darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
         )
@@ -53,23 +53,52 @@ class SettingsViewModel(
     init {
         loadSettings()
         loadAboutText()
+
+        // Add auth state listener to handle late Firebase Auth restoration
+        auth.addAuthStateListener { firebaseAuth ->
+            if (firebaseAuth.currentUser != null && stateFlow.value.email == null) {
+                // Auth state restored, reload settings
+                loadSettings()
+            }
+        }
     }
 
     private fun loadSettings() {
         viewModelScope.launch {
-            auth.currentUser?.uid?.let { userId ->
-                wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
-                    // Save dark mode from profile to shared preferences
-                    profile.darkModeEnabled.let { darkMode ->
-                        sharedPreferences.edit { putBoolean(DARK_MODE_KEY, darkMode) }
-                    }
+            val currentUser = auth.currentUser
+            if (currentUser != null) {
+                wizardRepository.getWizardProfile(currentUser.uid).fold(
+                    onSuccess = { profile ->
+                        if (profile != null) {
+                            // Save dark mode from profile to shared preferences
+                            profile.darkModeEnabled.let { darkMode ->
+                                sharedPreferences.edit { putBoolean(DARK_MODE_KEY, darkMode) }
+                            }
 
-                    stateFlow.value = stateFlow.value.copy(
-                        email = auth.currentUser?.email,
-                        wizardName = profile.wizardName,
-                        darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
-                    )
-                }
+                            stateFlow.value = stateFlow.value.copy(
+                                email = profile.email, // Use email from wizard profile
+                                wizardName = profile.wizardName,
+                                darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
+                            )
+                        } else {
+                            // Profile not found, use Firebase Auth email as fallback
+                            stateFlow.value = stateFlow.value.copy(
+                                email = currentUser.email ?: "No email found"
+                            )
+                        }
+                    },
+                    onFailure = {
+                        // Repository failed, use Firebase Auth email as fallback
+                        stateFlow.value = stateFlow.value.copy(
+                            email = currentUser.email ?: "No email found"
+                        )
+                    }
+                )
+            } else {
+                // No current user
+                stateFlow.value = stateFlow.value.copy(
+                    email = "Not logged in"
+                )
             }
         }
     }
@@ -130,7 +159,6 @@ class SettingsViewModel(
                 }
             }
         }
-
     }
 
     fun changePassword(
@@ -258,5 +286,9 @@ class SettingsViewModel(
 
     fun logout() {
         auth.signOut()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
     }
 }

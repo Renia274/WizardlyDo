@@ -33,6 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.wizardlydo.app.repository.pin.PinRepository
 import com.wizardlydo.app.ui.theme.WizardlyDoTheme
 import kotlinx.coroutines.delay
@@ -45,18 +47,23 @@ fun SplashScreen(
     navigateToPinVerify: () -> Unit
 ) {
     val pinRepository = koinInject<PinRepository>()
+    val auth = Firebase.auth
 
     LaunchedEffect(key1 = true) {
         delay(2000)
 
-        // Check if user has completed the initial setup (has a PIN)
-        val hasCompletedSetup = pinRepository.hasPinSet()
 
-        if (hasCompletedSetup) {
-            // Returning user - go to PIN verify with signup option
-            navigateToPinVerify()
+        if (auth.currentUser != null) {
+            // User is logged in to Firebase Auth
+            val hasCompletedSetup = pinRepository.hasPinSet()
+
+            if (hasCompletedSetup) {
+                // Returning user with PIN - go to PIN verify
+                navigateToPinVerify()
+            } else {
+                navigateToPinVerify()
+            }
         } else {
-            // First time user - go through full onboarding
             navigateToSignup()
         }
     }

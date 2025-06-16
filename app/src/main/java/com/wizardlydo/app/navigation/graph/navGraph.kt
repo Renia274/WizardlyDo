@@ -83,7 +83,7 @@ fun NavigationGraph() {
                     navController.navigate(Screen.Auth.Recovery.route)
                 },
                 onBackClick = {
-                    navController.popBackStack()
+                    navController.navigate(Screen.Auth.Welcome.route)
                 }
             )
         }
