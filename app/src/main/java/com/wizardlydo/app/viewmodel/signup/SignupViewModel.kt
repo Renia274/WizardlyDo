@@ -2,13 +2,14 @@ package com.wizardlydo.app.viewmodel.signup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.wizardlydo.app.data.models.WizardSignUpState
 import com.wizardlydo.app.data.wizard.WizardClass
 import com.wizardlydo.app.data.wizard.WizardProfile
 import com.wizardlydo.app.providers.SignInProvider
 import com.wizardlydo.app.repository.wizard.WizardRepository
+import com.wizardlydo.app.utilities.RememberMeManager
 import com.wizardlydo.app.utilities.security.SecurityProvider
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -22,7 +23,8 @@ import java.util.regex.Pattern
 class SignupViewModel(
     private val auth: FirebaseAuth,
     private val wizardRepository: WizardRepository,
-    private val securityProvider: SecurityProvider
+    private val securityProvider: SecurityProvider,
+    private val rememberMeManager: RememberMeManager
 ) : ViewModel() {
 
     private val state = MutableStateFlow(WizardSignUpState())
@@ -97,7 +99,6 @@ class SignupViewModel(
         provider: SignInProvider,
         email: String = state.value.email
     ) {
-
         val encryptedPassword = if (provider == SignInProvider.EMAIL) {
             encryptPassword(state.value.password)
         } else {
@@ -115,6 +116,10 @@ class SignupViewModel(
 
         wizardRepository.createWizardProfile(profile).fold(
             onSuccess = {
+                // Auto-save email for future logins
+                rememberMeManager.saveEmail(email)
+                rememberMeManager.setRememberMe(true)
+
                 state.update { it.copy(
                     isLoading = false,
                     isProfileComplete = true

@@ -1,7 +1,9 @@
 package com.wizardlydo.app.screens.login
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +38,6 @@ import com.wizardlydo.app.screens.login.comps.LoginHeader
 import com.wizardlydo.app.ui.theme.WizardlyDoTheme
 import com.wizardlydo.app.viewmodel.login.LoginViewModel
 import org.koin.androidx.compose.koinViewModel
-
 
 @Composable
 fun LoginScreen(
@@ -66,9 +69,10 @@ fun LoginScreen(
             passwordError = state.passwordError,
             isPasswordVisible = state.isPasswordVisible,
             onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
-            onBackClick = onBackClick
+            onBackClick = onBackClick,
+            rememberMe = state.rememberMe,
+            onRememberMeChange = viewModel::setRememberMe
         )
-
 
         state.error?.let { error ->
             LoginErrorDialog(
@@ -94,7 +98,9 @@ fun LoginContent(
     passwordError: String? = null,
     isPasswordVisible: Boolean,
     onTogglePasswordVisibility: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    rememberMe: Boolean = false,
+    onRememberMeChange: (Boolean) -> Unit = {}
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -167,15 +173,41 @@ fun LoginContent(
 
                 Spacer(modifier = Modifier.height(spacing * 0.3f))
 
-                Box(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.CenterEnd
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Remember Me Checkbox
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f, fill = false)
+                    ) {
+                        Checkbox(
+                            checked = rememberMe,
+                            onCheckedChange = onRememberMeChange,
+                            enabled = !isLoading,
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Text(
+                            text = "Remember me",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+
+                    // Forgot Password
                     TextButton(
                         onClick = onForgotPasswordClick,
                         enabled = !isLoading
                     ) {
-                        Text("Forgot Password?")
+                        Text(
+                            "Forgot Password?",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
 
@@ -184,7 +216,7 @@ fun LoginContent(
                 LoginButton(
                     onClick = onLoginClick,
                     isLoading = isLoading,
-                    enabled = !isLoading
+                    enabled = !isLoading && isFormValid
                 )
 
                 if (isLandscape) {
@@ -194,7 +226,6 @@ fun LoginContent(
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
@@ -214,7 +245,9 @@ fun LoginContentPreview() {
             passwordError = null,
             isPasswordVisible = false,
             onTogglePasswordVisibility = {},
-            onBackClick = {}
+            onBackClick = {},
+            rememberMe = true,
+            onRememberMeChange = {}
         )
     }
 }

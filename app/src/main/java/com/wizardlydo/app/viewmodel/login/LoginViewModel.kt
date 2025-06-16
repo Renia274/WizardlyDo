@@ -2,9 +2,10 @@ package com.wizardlydo.app.viewmodel.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.wizardlydo.app.data.models.LoginState
 import com.wizardlydo.app.repository.wizard.WizardRepository
-import com.google.firebase.auth.FirebaseAuth
+import com.wizardlydo.app.utilities.RememberMeManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -16,7 +17,8 @@ import java.util.regex.Pattern
 @KoinViewModel
 class LoginViewModel(
     private val auth: FirebaseAuth,
-    private val wizardRepository: WizardRepository
+    private val wizardRepository: WizardRepository,
+    private val rememberMeManager: RememberMeManager
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(LoginState())
     val state = mutableState.asStateFlow()
@@ -24,11 +26,31 @@ class LoginViewModel(
     // Email validation pattern
     private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
 
+    private val passwordPattern = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{12,}$")
+
     val isFormValid: Boolean
         get() = state.value.emailError == null &&
                 state.value.passwordError == null &&
                 state.value.email.isNotBlank() &&
                 state.value.password.isNotBlank()
+
+    init {
+        loadRememberedCredentials()
+    }
+
+    private fun loadRememberedCredentials() {
+        if (rememberMeManager.isRememberMeEnabled()) {
+            rememberMeManager.getRememberedEmail()?.let { email ->
+                mutableState.update {
+                    it.copy(
+                        email = email,
+                        rememberMe = true,
+                        emailError = null // Clear any previous email error
+                    )
+                }
+            }
+        }
+    }
 
     fun updateEmail(email: String) {
         val error = when {
@@ -39,9 +61,6 @@ class LoginViewModel(
 
         mutableState.update { it.copy(email = email, emailError = error) }
     }
-
-    // Password pattern requiring at least 8 chars, 1 uppercase, 1 lowercase, 1 number, and 1 special character
-    private val passwordPattern = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$")
 
     fun updatePassword(password: String) {
         val error = when {
@@ -56,6 +75,10 @@ class LoginViewModel(
 
     fun togglePasswordVisibility() {
         mutableState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
+    }
+
+    fun setRememberMe(remember: Boolean) {
+        mutableState.update { it.copy(rememberMe = remember) }
     }
 
     fun login() {
@@ -79,10 +102,14 @@ class LoginViewModel(
 
                 wizardRepository.getWizardProfile(userId).fold(
                     onSuccess = { profile ->
-                        mutableState.update {
-                            if (profile != null) {
+                        if (profile != null) {
+                            handleRememberMe()
+
+                            mutableState.update {
                                 it.copy(isLoading = false, loginSuccess = true)
-                            } else {
+                            }
+                        } else {
+                            mutableState.update {
                                 it.copy(
                                     isLoading = false,
                                     error = "Profile not found. Please complete registration."
@@ -107,6 +134,16 @@ class LoginViewModel(
                     )
                 }
             }
+        }
+    }
+
+    private fun handleRememberMe() {
+        if (state.value.rememberMe) {
+            rememberMeManager.saveEmail(state.value.email)
+            rememberMeManager.setRememberMe(true)
+        } else {
+            rememberMeManager.clearRememberedEmail()
+            rememberMeManager.setRememberMe(false)
         }
     }
 

@@ -6,12 +6,17 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.work.WorkManager
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.wizardlydo.app.repository.inventory.InventoryRepository
 import com.wizardlydo.app.repository.pin.PinRepository
 import com.wizardlydo.app.repository.tasks.TaskRepository
 import com.wizardlydo.app.repository.wizard.WizardRepository
 import com.wizardlydo.app.room.WizardDatabase
 import com.wizardlydo.app.room.WizardTypeConverters
+import com.wizardlydo.app.utilities.RememberMeManager
 import com.wizardlydo.app.utilities.TaskNotificationService
 import com.wizardlydo.app.utilities.security.SecurityProvider
 import com.wizardlydo.app.viewmodel.customization.CustomizationViewModel
@@ -22,10 +27,6 @@ import com.wizardlydo.app.viewmodel.recovery.RecoveryViewModel
 import com.wizardlydo.app.viewmodel.settings.SettingsViewModel
 import com.wizardlydo.app.viewmodel.signup.SignupViewModel
 import com.wizardlydo.app.viewmodel.tasks.TaskViewModel
-import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
@@ -95,6 +96,7 @@ val appModule = module {
     // Utilities
     single { WizardTypeConverters() }
     single { SecurityProvider(androidContext()) }
+    single { RememberMeManager(androidContext()) }
 
     // ViewModels
     viewModelOf(::SignupViewModel)
