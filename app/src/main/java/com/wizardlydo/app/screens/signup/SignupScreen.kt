@@ -171,7 +171,100 @@ fun SignupContent(
         Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
     }
 }
+@Composable
+fun SignupContent(
+    wizardName: String,
+    onNameChange: (String) -> Unit,
+    wizardClass: WizardClass,
+    onClassSelected: (WizardClass) -> Unit,
+    email: String,
+    onEmailChange: (String) -> Unit,
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    onSignupClick: () -> Unit,
+    onLoginClick: () -> Unit,
+    nameError: String?,
+    emailError: String?,
+    passwordError: String?,
+    isLoading: Boolean,
+    isPasswordVisible: Boolean,
+    onTogglePasswordVisibility: () -> Unit,
+    isCheckingUsername: Boolean = false // Add this parameter
+) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
 
+    val padding = (screenWidth * 0.06f).coerceIn(24.dp, 40.dp)
+    val spacing = (screenHeight * 0.02f).coerceIn(16.dp, 32.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = padding)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
+
+        SignupHeader()
+        Spacer(modifier = Modifier.height(spacing))
+
+        WizardNameField(
+            name = wizardName,
+            onNameChange = onNameChange,
+            error = nameError,
+            enabled = !isLoading,
+            isCheckingAvailability = isCheckingUsername
+        )
+
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
+
+        WizardClassSelector(
+            selectedClass = wizardClass,
+            onClassSelected = onClassSelected,
+            enabled = !isLoading
+        )
+
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
+
+        EmailField(
+            email = email,
+            onEmailChange = onEmailChange,
+            emailError = emailError,
+            enabled = !isLoading
+        )
+
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
+
+        PasswordField(
+            password = password,
+            onPasswordChange = onPasswordChange,
+            passwordError = passwordError,
+            enabled = !isLoading,
+            isPasswordVisible = isPasswordVisible,
+            onTogglePasswordVisibility = onTogglePasswordVisibility
+        )
+
+        Spacer(modifier = Modifier.height(spacing))
+
+        SignupButton(
+            onClick = onSignupClick,
+            isLoading = isLoading,
+            enabled = !isLoading && !isCheckingUsername
+        )
+
+        Spacer(modifier = Modifier.height((spacing * 0.8f)))
+
+        LoginRedirectButton(
+            onClick = onLoginClick,
+            enabled = !isLoading
+        )
+
+        Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
+    }
+}
 
 @Composable
 @Preview(showBackground = true)

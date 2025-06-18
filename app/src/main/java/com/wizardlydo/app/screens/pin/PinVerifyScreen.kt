@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,13 +29,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wizardlydo.app.comps.errors.ErrorDialog
 import com.wizardlydo.app.screens.pin.comps.ForgotPinButton
 import com.wizardlydo.app.screens.pin.comps.PinInputSection
+import com.wizardlydo.app.screens.pin.comps.PinProgressIndicator
 import com.wizardlydo.app.screens.pin.comps.PinVerifyButton
 import com.wizardlydo.app.screens.pin.comps.PinVerifyHeader
 import com.wizardlydo.app.ui.theme.WizardlyDoTheme
 import com.wizardlydo.app.viewmodel.pin.PinViewModel
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
-
-
 
 @Composable
 fun PinVerifyScreen(
@@ -92,6 +94,14 @@ fun PinVerifyContent(
     error: String?,
     onDismissError: () -> Unit
 ) {
+    // Auto-verify PIN when it's complete
+    LaunchedEffect(pin) {
+        if (pin.length == 4) {
+            delay(300)
+            onVerifyPin()
+        }
+    }
+
     Column(
         modifier = Modifier
             .padding(horizontal = 24.dp)
@@ -109,11 +119,38 @@ fun PinVerifyContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        PinVerifyButton(
-            pin = pin,
-            onVerifyPin = onVerifyPin,
-            isLoading = isLoading
-        )
+        when {
+            pin.length == 4 && isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(40.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Verifying PIN...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            pin.length == 4 -> {
+                PinVerifyButton(
+                    pin = pin,
+                    onVerifyPin = onVerifyPin,
+                    isLoading = isLoading
+                )
+            }
+            else -> {
+                Button(
+                    onClick = onVerifyPin,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    enabled = false
+                ) {
+                    Text("Enter your PIN")
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -121,8 +158,8 @@ fun PinVerifyContent(
             onForgotPin = onForgotPin
         )
 
-        // Show signup option for returning users
         onSignupClick?.let { signupClick ->
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Card(
@@ -161,6 +198,13 @@ fun PinVerifyContent(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        PinProgressIndicator(
+            currentLength = pin.length,
+            totalLength = 4
+        )
     }
 
     error?.let {
@@ -170,6 +214,7 @@ fun PinVerifyContent(
         )
     }
 }
+
 @Composable
 @Preview(showBackground = true)
 fun PinVerifyContentPreview() {
@@ -182,7 +227,8 @@ fun PinVerifyContentPreview() {
             hasError = false,
             error = null,
             onDismissError = {},
-            onForgotPin = {}
+            onForgotPin = {},
+            onSignupClick = {}
         )
     }
 }

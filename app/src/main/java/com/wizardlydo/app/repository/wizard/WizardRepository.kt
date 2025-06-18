@@ -1,10 +1,10 @@
 package com.wizardlydo.app.repository.wizard
 
+import com.google.firebase.auth.FirebaseAuth
 import com.wizardlydo.app.data.wizard.WizardProfile
 import com.wizardlydo.app.room.wizard.WizardDao
 import com.wizardlydo.app.room.wizard.WizardEntity
 import com.wizardlydo.app.utilities.security.SecurityProvider
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 
 
@@ -196,8 +196,6 @@ class WizardRepository(
 
     }
 
-
-
     suspend fun isWizardNameTaken(wizardName: String): Result<Boolean> = runCatching {
         wizardDao.isWizardNameExists(wizardName)
     }
@@ -206,10 +204,4 @@ class WizardRepository(
     suspend fun deleteWizardProfile(userId: String): Result<Unit> = runCatching {
         wizardDao.deleteWizardById(userId)
     }
-
-
-
-
-
-
 }

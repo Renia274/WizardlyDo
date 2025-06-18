@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,9 +30,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wizardlydo.app.comps.errors.ErrorDialog
 import com.wizardlydo.app.screens.pin.comps.ForgotPinHeader
 import com.wizardlydo.app.screens.pin.comps.PinInputSection
+import com.wizardlydo.app.screens.pin.comps.PinProgressIndicator
 import com.wizardlydo.app.screens.pin.comps.ResetPinButton
 import com.wizardlydo.app.ui.theme.WizardlyDoTheme
 import com.wizardlydo.app.viewmodel.pin.PinViewModel
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -88,6 +93,14 @@ fun ForgotPinContent(
     val padding = (screenWidth * 0.06f).coerceIn(24.dp, 40.dp)
     val spacing = (screenHeight * 0.02f).coerceIn(16.dp, 32.dp)
 
+    // Auto-reset PIN when it's complete
+    LaunchedEffect(pin) {
+        if (pin.length == 4) {
+            delay(500)
+            onResetPin()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -108,19 +121,61 @@ fun ForgotPinContent(
 
         Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
-        ResetPinButton(
-            pin = pin,
-            onResetPin = onResetPin,
-            isLoading = isLoading
-        )
+        when {
+            pin.length == 4 && isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(40.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Resetting PIN...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            pin.length == 4 -> {
+                ResetPinButton(
+                    pin = pin,
+                    onResetPin = onResetPin,
+                    isLoading = isLoading
+                )
+            }
+            else -> {
+                Button(
+                    onClick = onResetPin,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    enabled = false
+                ) {
+                    Text("Enter new 4-digit PIN")
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height((spacing * 0.8f)))
 
         Text(
-            text = "Enter your new 4-digit PIN",
+            text = if (pin.length < 4) {
+                "Enter your new 4-digit PIN"
+            } else {
+                "New PIN ready to save"
+            },
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (pin.length == 4) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        PinProgressIndicator(
+            currentLength = pin.length,
+            totalLength = 4
         )
 
         Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
@@ -133,9 +188,6 @@ fun ForgotPinContent(
         )
     }
 }
-
-
-
 
 @RequiresApi(Build.VERSION_CODES.R)
 @Preview(showBackground = true)
