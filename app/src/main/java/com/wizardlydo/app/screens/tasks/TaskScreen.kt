@@ -2,19 +2,17 @@ package com.wizardlydo.app.screens.tasks
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -22,11 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -35,11 +29,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.wizardlydo.app.comps.ErrorMessage
@@ -60,10 +52,8 @@ import com.wizardlydo.app.screens.tasks.comps.taskScreensComps.TaskListSection
 import com.wizardlydo.app.screens.tasks.comps.taskScreensComps.TaskSearchBar
 import com.wizardlydo.app.screens.tasks.comps.taskScreensComps.stats.CharacterStatsSection
 import com.wizardlydo.app.ui.theme.WizardlyDoTheme
-import com.wizardlydo.app.utilities.TaskNotificationService
 import com.wizardlydo.app.viewmodel.inventory.InventoryViewModel
 import com.wizardlydo.app.viewmodel.tasks.TaskViewModel
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -81,41 +71,15 @@ fun TaskScreen(
     onDonation: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val taskNotificationService = remember { TaskNotificationService(context) }
+    val equippedItems by inventoryViewModel.equippedItemsFlow.collectAsState()
+    val wizardProfile = state.wizardProfile?.getOrNull()
+    val isLandscape = LocalConfiguration.current.screenWidthDp > LocalConfiguration.current.screenHeightDp
 
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
 
-    val equippedItems by inventoryViewModel.equippedItemsFlow.collectAsState()
-
-    val wizardProfile = state.wizardProfile?.getOrNull()
-
-    val currentHealth = wizardProfile?.health ?: 100
-    val currentMaxHealth = wizardProfile?.maxHealth ?: WizardProfile.calculateMaxHealth(1)
-    val currentStamina = wizardProfile?.stamina ?: 50
-    val currentMaxStamina = wizardProfile?.maxStamina ?: WizardProfile.calculateMaxStamina(1)
-    val currentLevel = wizardProfile?.level ?: 1
-    val currentExp = wizardProfile?.experience ?: 0
-
-    var isFabVisible by remember { mutableStateOf(true) }
-    var isBottomBarVisible by remember { mutableStateOf(true) }
-
-    val (completedTasksForLevel, totalTasksForLevel) = remember(wizardProfile) {
-        wizardProfile?.let { profile ->
-            val completed = viewModel.getTasksCompletedForLevel(profile)
-            val total = viewModel.getTasksRequiredForLevel(profile.level)
-            Pair(completed, total)
-        } ?: Pair(0, 10)
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.loadData()
-        viewModel.setNotificationService(taskNotificationService)
-    }
+    LaunchedEffect(Unit) { viewModel.loadData() }
 
     LaunchedEffect(searchQuery, selectedPriority, state.currentFilter) {
         if (isSearchVisible) {
@@ -135,7 +99,6 @@ fun TaskScreen(
         }
     }
 
-    // Show Level 30 Dialog
     if (state.showLevel30Dialog) {
         Level30CompletionDialog(
             onDismiss = { viewModel.hideLevel30Dialog() },
@@ -145,7 +108,6 @@ fun TaskScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             if (isSearchVisible) {
                 TaskSearchBar(
@@ -175,112 +137,133 @@ fun TaskScreen(
             }
         },
         bottomBar = {
-            AnimatedVisibility(
-                visible = isBottomBarVisible,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300)),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                TaskBottomBar(
-                    onHome = onHome,
-                    onSearch = {
-                        isSearchVisible = true
+            TaskBottomBar(
+                onHome = onHome,
+                onSearch = {
+                    // Toggle search visibility
+                    isSearchVisible = !isSearchVisible
+                    if (isSearchVisible) {
                         viewModel.activateSearch()
-                    },
-                    onSettings = onSettings,
-                    onInventory = onInventory,
-                    onDonation = onDonation
-                )
-            }
+                    } else {
+                        // Clear search when closing
+                        searchQuery = ""
+                        selectedPriority = null
+                        viewModel.deactivateSearch()
+                    }
+                },
+                onSettings = onSettings,
+                onInventory = onInventory,
+                onDonation = onDonation
+            )
         },
         floatingActionButton = {
-            AnimatedVisibility(
-                visible = isFabVisible,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300)),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                ExtendedFloatingActionButton(
-                    onClick = onCreateTask,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) {
-                    Icon(Icons.Default.Add, "Create Task")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("New Task")
-                }
+            ExtendedFloatingActionButton(onClick = onCreateTask) {
+                Icon(Icons.Default.Add, "Create Task")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("New Task")
             }
         }
     ) { padding ->
-        TaskContent(
-            modifier = Modifier.padding(padding),
-            state = state,
-            wizardProfile = wizardProfile,
-            health = currentHealth,
-            maxHealth = currentMaxHealth,
-            stamina = currentStamina,
-            maxStamina = currentMaxStamina,
-            experience = currentExp,
-            tasksCompleted = completedTasksForLevel,
-            totalTasksForLevel = totalTasksForLevel,
-            equippedItems = equippedItems,
-            onCompleteTask = { taskId ->
-                coroutineScope.launch {
-                    // Check if the wizard is defeated
-                    if (viewModel.isWizardDefeated()) {
-                        // Use the revival progress function
-                        viewModel.updateRevivalProgress(taskId) { restoredHealth ->
-                            // This callback is called when revival succeeds
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = "Your wizard has been revived with $restoredHealth HP!",
-                                    duration = SnackbarDuration.Long
-                                )
-                            }
+
+        if (isLandscape) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(modifier = Modifier.weight(0.4f).verticalScroll(rememberScrollState())) {
+                    CharacterStatsSection(
+                        wizardResult = state.wizardProfile,
+                        health = wizardProfile?.health ?: 100,
+                        maxHealth = wizardProfile?.maxHealth ?: 100,
+                        stamina = wizardProfile?.stamina ?: 50,
+                        maxStamina = wizardProfile?.maxStamina ?: 100,
+                        experience = wizardProfile?.experience ?: 0,
+                        tasksCompleted = 0,
+                        totalTasksForLevel = 10,
+                        equippedItems = equippedItems
+                    )
+                    wizardProfile?.let { LevelUpIndicator(it.level) }
+                }
+
+                Column(modifier = Modifier.weight(0.6f)) {
+                    if (!isSearchVisible) {
+                        TaskFilterChips(state.currentFilter) { viewModel.setFilter(it) }
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        when {
+                            state.error != null -> ErrorMessage(error = state.error)
+                            state.isLoading -> FullScreenLoading()
+                            state.filteredTasks.isEmpty() -> EmptyTaskList()
+                            else -> TaskListSection(
+                                tasks = state.filteredTasks,
+                                currentPage = state.currentPage,
+                                totalPages = state.totalPages,
+                                onNextPage = { viewModel.nextPage() },
+                                onPreviousPage = { viewModel.previousPage() },
+                                onCompleteTask = { taskId ->
+                                    if (viewModel.isWizardDefeated()) {
+                                        viewModel.updateRevivalProgress(taskId) {}
+                                    } else {
+                                        viewModel.completeTask(taskId, null)
+                                    }
+                                },
+                                onEditTask = onEditTask,
+                                onDeleteTask = { viewModel.deleteTask(it) {} },
+                                onNavigationBarVisibilityChange = {}
+                            )
                         }
-                    } else {
-                        // Normal completion when wizard is alive
-                        viewModel.completeTask(taskId, taskNotificationService)
                     }
                 }
-            },
-            onEditTask = onEditTask,
-            onDeleteTask = { taskId ->
-                viewModel.deleteTask(taskId) {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Task deleted",
-                            duration = SnackbarDuration.Short
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CharacterStatsSection(
+                    wizardResult = state.wizardProfile,
+                    health = wizardProfile?.health ?: 100,
+                    maxHealth = wizardProfile?.maxHealth ?: 100,
+                    stamina = wizardProfile?.stamina ?: 50,
+                    maxStamina = wizardProfile?.maxStamina ?: 100,
+                    experience = wizardProfile?.experience ?: 0,
+                    tasksCompleted = 0,
+                    totalTasksForLevel = 10,
+                    equippedItems = equippedItems
+                )
+
+                wizardProfile?.let { LevelUpIndicator(it.level) }
+
+                if (!isSearchVisible) {
+                    TaskFilterChips(state.currentFilter) { viewModel.setFilter(it) }
+                }
+
+                Box(modifier = Modifier.weight(1f)) {
+                    when {
+                        state.error != null -> ErrorMessage(error = state.error)
+                        state.isLoading -> FullScreenLoading()
+                        state.filteredTasks.isEmpty() -> EmptyTaskList()
+                        else -> TaskListSection(
+                            tasks = state.filteredTasks,
+                            currentPage = state.currentPage,
+                            totalPages = state.totalPages,
+                            onNextPage = { viewModel.nextPage() },
+                            onPreviousPage = { viewModel.previousPage() },
+                            onCompleteTask = { taskId ->
+                                if (viewModel.isWizardDefeated()) {
+                                    viewModel.updateRevivalProgress(taskId) {}
+                                } else {
+                                    viewModel.completeTask(taskId, null)
+                                }
+                            },
+                            onEditTask = onEditTask,
+                            onDeleteTask = { viewModel.deleteTask(it) {} },
+                            onNavigationBarVisibilityChange = {}
                         )
                     }
-                    taskNotificationService.cancelTaskNotification(taskId)
                 }
-            },
-            onNextPage = { viewModel.nextPage() },
-            onPreviousPage = { viewModel.previousPage() },
-            onDamageTaken = { damage, currentHealth ->
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "Lost $damage HP! Current HP: $currentHealth",
-                        duration = SnackbarDuration.Short
-                    )
-                }
-            },
-            onNavigationBarVisibilityChange = { visible ->
-                isFabVisible = visible
-                isBottomBarVisible = visible
             }
-        )
+        }
     }
 }
 
