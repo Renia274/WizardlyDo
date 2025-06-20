@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,8 +54,9 @@ fun CharacterStatsSection(
     val wizardProfile = wizardResult?.getOrNull()
     val isWizardDead = health <= 0
     val hasBackground = equippedItems?.background != null
+    val isSystemInDarkTheme = isSystemInDarkTheme()
 
-    val primaryColor = if (hasBackground) {
+    val primaryColor = if (hasBackground || isSystemInDarkTheme) {
         Color.White
     } else {
         MaterialTheme.colorScheme.primary
@@ -66,7 +68,7 @@ fun CharacterStatsSection(
         MaterialTheme.colorScheme.surfaceVariant
     }
 
-    val onSurfaceVariantColor = if (hasBackground) {
+    val onSurfaceVariantColor = if (hasBackground || isSystemInDarkTheme) {
         Color.White
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
@@ -222,11 +224,9 @@ fun CharacterStatsSection(
                         maxValue = maxHealth,
                         color = when {
                             isWizardDead -> Color.Gray
-                            hasBackground -> Color.Red
+                            hasBackground || isSystemInDarkTheme -> Color.Red
                             else -> Color(0xFFE53935)
-                        },
-                        textColor = if (hasBackground) Color.White else Color.Black
-                    )
+                        })
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -238,10 +238,9 @@ fun CharacterStatsSection(
                         maxValue = maxStamina,
                         color = when {
                             isWizardDead -> Color.Gray
-                            hasBackground -> Color.Green
+                            hasBackground || isSystemInDarkTheme -> Color.Green
                             else -> Color(0xFF43A047)
-                        },
-                        textColor = if (hasBackground) Color.White else Color.Black
+                        }
                     )
                 }
 
@@ -252,7 +251,6 @@ fun CharacterStatsSection(
                     experience = animatedExp,
                     tasksCompleted = tasksCompleted,
                     totalTasksForLevel = totalTasksForLevel,
-                    textColor = if (hasBackground) Color.White else Color.Black
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -260,17 +258,13 @@ fun CharacterStatsSection(
                 if (!isWizardDead) {
                     TaskProgressSection(
                         tasksCompleted = tasksCompleted,
-                        totalTasksForLevel = totalTasksForLevel,
-                        textColor = if (hasBackground) Color.White else Color.Black
-                    )
+                        totalTasksForLevel = totalTasksForLevel)
                 } else {
                     val revivalProgress = taskViewModel?.getRevivalProgress() ?: Pair(wizardProfile?.consecutiveTasksCompleted ?: 0, 3)
 
                     RevivalProgressSection(
                         tasksCompleted = revivalProgress.first,
-                        tasksNeededForRevival = revivalProgress.second,
-                        textColor = if (hasBackground) Color.White else Color.Black
-                    )
+                        tasksNeededForRevival = revivalProgress.second)
                 }
             }
         }

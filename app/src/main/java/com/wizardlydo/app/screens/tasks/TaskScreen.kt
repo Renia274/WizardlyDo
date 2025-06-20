@@ -410,7 +410,6 @@ fun TaskContent(
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
 
-    // Calculate responsive horizontal padding
     val horizontalPadding = (screenWidth * 0.04f).coerceIn(8.dp, 16.dp)
     val verticalSpacing = (screenHeight * 0.01f).coerceIn(4.dp, 8.dp)
 

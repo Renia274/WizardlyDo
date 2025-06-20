@@ -1,6 +1,7 @@
 package com.wizardlydo.app.screens.tasks.comps.taskScreensComps.stats
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,8 +27,16 @@ fun StatBar(
     value: Int,
     maxValue: Int,
     color: Color,
-    textColor: Color = MaterialTheme.colorScheme.onSurface
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
+    val isSystemInDarkTheme = isSystemInDarkTheme()
+
+    val finalTextColor = if (isSystemInDarkTheme) {
+        Color.White
+    } else {
+        textColor
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -37,13 +46,13 @@ fun StatBar(
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = textColor,
+                color = finalTextColor,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = "$value/$maxValue",
                 style = MaterialTheme.typography.bodyMedium,
-                color = textColor,
+                color = finalTextColor,
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -55,7 +64,12 @@ fun StatBar(
                 .fillMaxWidth()
                 .height(12.dp)
                 .clip(MaterialTheme.shapes.small)
-                .background(color.copy(alpha = 0.2f))
+                .background(
+                    if (isSystemInDarkTheme)
+                        Color.White.copy(alpha = 0.2f)
+                    else
+                        color.copy(alpha = 0.2f)
+                )
         ) {
             Box(
                 modifier = Modifier
