@@ -2,24 +2,39 @@ package com.wizardlydo.app.screens.tasks
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -30,7 +45,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,6 +74,7 @@ import com.wizardlydo.app.viewmodel.inventory.InventoryViewModel
 import com.wizardlydo.app.viewmodel.tasks.TaskViewModel
 import org.koin.androidx.compose.koinViewModel
 
+
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +97,8 @@ fun TaskScreen(
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
+
+    var isUIVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) { viewModel.loadData() }
 
@@ -137,30 +158,42 @@ fun TaskScreen(
             }
         },
         bottomBar = {
-            TaskBottomBar(
-                onHome = onHome,
-                onSearch = {
-                    // Toggle search visibility
-                    isSearchVisible = !isSearchVisible
-                    if (isSearchVisible) {
-                        viewModel.activateSearch()
-                    } else {
-                        // Clear search when closing
-                        searchQuery = ""
-                        selectedPriority = null
-                        viewModel.deactivateSearch()
-                    }
-                },
-                onSettings = onSettings,
-                onInventory = onInventory,
-                onDonation = onDonation
-            )
+            // Hide bottom bar when UI is not visible
+            AnimatedVisibility(
+                visible = isUIVisible,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it })
+            ) {
+                TaskBottomBar(
+                    onHome = onHome,
+                    onSearch = {
+                        isSearchVisible = !isSearchVisible
+                        if (isSearchVisible) {
+                            viewModel.activateSearch()
+                        } else {
+                            searchQuery = ""
+                            selectedPriority = null
+                            viewModel.deactivateSearch()
+                        }
+                    },
+                    onSettings = onSettings,
+                    onInventory = onInventory,
+                    onDonation = onDonation
+                )
+            }
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(onClick = onCreateTask) {
-                Icon(Icons.Default.Add, "Create Task")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("New Task")
+            // Hide FAB when UI is not visible
+            AnimatedVisibility(
+                visible = isUIVisible,
+                enter = scaleIn(),
+                exit = scaleOut()
+            ) {
+                ExtendedFloatingActionButton(onClick = onCreateTask) {
+                    Icon(Icons.Default.Add, "Create Task")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("New Task")
+                }
             }
         }
     ) { padding ->
@@ -217,25 +250,108 @@ fun TaskScreen(
             }
         } else {
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.fillMaxSize().padding(padding)
             ) {
-                CharacterStatsSection(
-                    wizardResult = state.wizardProfile,
-                    health = wizardProfile?.health ?: 100,
-                    maxHealth = wizardProfile?.maxHealth ?: 100,
-                    stamina = wizardProfile?.stamina ?: 50,
-                    maxStamina = wizardProfile?.maxStamina ?: 100,
-                    experience = wizardProfile?.experience ?: 0,
-                    tasksCompleted = 0,
-                    totalTasksForLevel = 10,
-                    equippedItems = equippedItems
-                )
+                Column {
+                    AnimatedVisibility(
+                        visible = isUIVisible,
+                        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+                    ) {
+                        Column {
+                            Box {
+                                var isBeingSwiped by remember { mutableStateOf(false) }
 
-                wizardProfile?.let { LevelUpIndicator(it.level) }
+                                CharacterStatsSection(
+                                    wizardResult = state.wizardProfile,
+                                    health = wizardProfile?.health ?: 100,
+                                    maxHealth = wizardProfile?.maxHealth ?: 100,
+                                    stamina = wizardProfile?.stamina ?: 50,
+                                    maxStamina = wizardProfile?.maxStamina ?: 100,
+                                    experience = wizardProfile?.experience ?: 0,
+                                    tasksCompleted = 0,
+                                    totalTasksForLevel = 10,
+                                    equippedItems = equippedItems,
+                                    modifier = Modifier
+                                        .padding(16.dp)
+                                        .border(
+                                            width = if (isBeingSwiped) 3.dp else 0.dp,
+                                            color = if (isBeingSwiped)
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                            else Color.Transparent,
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .background(
+                                            color = if (isBeingSwiped)
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                            else Color.Transparent,
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .pointerInput(Unit) {
+                                            detectDragGestures(
+                                                onDragStart = {
+                                                    isBeingSwiped = true
+                                                },
+                                                onDragEnd = {
+                                                    isBeingSwiped = false
+                                                    // Hide on upward swipe
+                                                    isUIVisible = false
+                                                }
+                                            ) { change, dragAmount ->
+                                                // Only respond to upward swipes
+                                                if (dragAmount.y < 0) {
+                                                    change.consume()
+                                                }
+                                            }
+                                        }
+                                )
+                            }
 
-                if (!isSearchVisible) {
-                    TaskFilterChips(state.currentFilter) { viewModel.setFilter(it) }
+                            wizardProfile?.let {
+                                LevelUpIndicator(level = it.level)
+                            }
+
+                            if (!isSearchVisible) {
+                                TaskFilterChips(
+                                    currentFilter = state.currentFilter,
+                                    onFilterChange = { viewModel.setFilter(it) }
+                                )
+                            }
+                        }
+                    }
+
+                    // Swipe indicator when stats are hidden
+                    if (!isUIVisible) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(20.dp)
+                                .pointerInput(Unit) {
+                                    detectDragGestures(
+                                        onDragEnd = {
+                                            // Toggle on any downward swipe from the top area
+                                            isUIVisible = true
+                                        }
+                                    ) { change, dragAmount ->
+                                        // Only respond to downward swipes
+                                        if (dragAmount.y > 0) {
+                                            change.consume()
+                                        }
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Card(
+                                modifier = Modifier
+                                    .width(60.dp)
+                                    .height(4.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                ),
+                                shape = RoundedCornerShape(2.dp)
+                            ) {}
+                        }
+                    }
                 }
 
                 Box(modifier = Modifier.weight(1f)) {
@@ -258,7 +374,9 @@ fun TaskScreen(
                             },
                             onEditTask = onEditTask,
                             onDeleteTask = { viewModel.deleteTask(it) {} },
-                            onNavigationBarVisibilityChange = {}
+                            onNavigationBarVisibilityChange = { visible ->
+                                isUIVisible = visible
+                            }
                         )
                     }
                 }
@@ -299,7 +417,7 @@ fun TaskContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = horizontalPadding) // Apply horizontal padding to the main column
+            .padding(horizontal = horizontalPadding)
     ) {
         CharacterStatsSection(
             wizardResult = state.wizardProfile,
