@@ -17,8 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -38,7 +36,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,8 +68,6 @@ fun EditTaskScreen(
     val editState by viewModel.editTaskState.collectAsState()
     val context = LocalContext.current
 
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
     LaunchedEffect(taskId) {
         viewModel.loadTaskForEditing(taskId)
     }
@@ -88,42 +83,6 @@ fun EditTaskScreen(
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
             viewModel.clearEditTaskError()
         }
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Task") },
-            text = {
-                Column {
-                    Text("Are you sure you want to delete this task?")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "This action cannot be undone.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteTask(taskId) {
-                            Toast.makeText(context, "Task deleted", Toast.LENGTH_SHORT).show()
-                            onBack()
-                        }
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
@@ -166,15 +125,6 @@ fun EditTaskScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Task",
-                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -319,4 +269,3 @@ fun EditTaskScreenContentPreview() {
         )
     }
 }
-

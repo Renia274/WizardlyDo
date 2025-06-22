@@ -74,7 +74,6 @@ import com.wizardlydo.app.viewmodel.inventory.InventoryViewModel
 import com.wizardlydo.app.viewmodel.tasks.TaskViewModel
 import org.koin.androidx.compose.koinViewModel
 
-
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +81,6 @@ fun TaskScreen(
     viewModel: TaskViewModel = koinViewModel(),
     inventoryViewModel: InventoryViewModel = koinViewModel(),
     onBack: () -> Unit,
-    onHome: () -> Unit,
     onCreateTask: () -> Unit,
     onEditTask: (Int) -> Unit,
     onSettings: () -> Unit,
@@ -99,6 +97,9 @@ fun TaskScreen(
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
 
     var isUIVisible by remember { mutableStateOf(true) }
+
+    // Track the first task ID for the Edit button
+    val firstTaskId = state.filteredTasks.firstOrNull()?.id
 
     LaunchedEffect(Unit) { viewModel.loadData() }
 
@@ -165,7 +166,12 @@ fun TaskScreen(
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
                 TaskBottomBar(
-                    onHome = onHome,
+                    onEdit = {
+                        // Navigate to edit first task if available
+                        firstTaskId?.let { taskId ->
+                            onEditTask(taskId)
+                        }
+                    },
                     onSearch = {
                         isSearchVisible = !isSearchVisible
                         if (isSearchVisible) {
@@ -242,7 +248,6 @@ fun TaskScreen(
                                 },
                                 onEditTask = onEditTask,
                                 onDeleteTask = { viewModel.deleteTask(it) {} },
-                                onNavigationBarVisibilityChange = {}
                             )
                         }
                     }
@@ -374,9 +379,6 @@ fun TaskScreen(
                             },
                             onEditTask = onEditTask,
                             onDeleteTask = { viewModel.deleteTask(it) {} },
-                            onNavigationBarVisibilityChange = { visible ->
-                                isUIVisible = visible
-                            }
                         )
                     }
                 }
@@ -404,7 +406,6 @@ fun TaskContent(
     onNextPage: () -> Unit = {},
     onPreviousPage: () -> Unit = {},
     onDamageTaken: (damage: Int, currentHealth: Int) -> Unit = { _, _ -> },
-    onNavigationBarVisibilityChange: (Boolean) -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -470,7 +471,6 @@ fun TaskContent(
                             onDamageTaken(damage, currentHealth - damage)
                         }
                     },
-                    onNavigationBarVisibilityChange = onNavigationBarVisibilityChange
                 )
             }
         }
@@ -544,7 +544,6 @@ fun TaskContentPreview() {
             stamina = 75,
             experience = 250,
             onPreviousPage = {},
-            onNavigationBarVisibilityChange = { },
             maxStamina = 120
         )
     }

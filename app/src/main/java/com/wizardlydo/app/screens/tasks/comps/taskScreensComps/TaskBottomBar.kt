@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun TaskBottomBar(
-    onHome: () -> Unit,
+    onEdit: () -> Unit,
     onSettings: () -> Unit,
     onSearch: () -> Unit,
     onInventory: () -> Unit,
@@ -41,11 +41,11 @@ fun TaskBottomBar(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(onClick = onHome) {
-                    Icon(Icons.Default.Home, contentDescription = "Home")
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit")
                 }
                 Text(
-                    text = "Home",
+                    text = "Edit",
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(top = 2.dp)
                 )

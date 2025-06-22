@@ -25,21 +25,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.wizardlydo.app.comps.PageIndicator
 import com.wizardlydo.app.data.tasks.Task
-
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @Composable
@@ -51,8 +46,7 @@ fun TaskListSection(
     onPreviousPage: () -> Unit,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
-    onDeleteTask: (Int) -> Unit,
-    onNavigationBarVisibilityChange: (Boolean) -> Unit
+    onDeleteTask: (Int) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState(
@@ -60,35 +54,7 @@ fun TaskListSection(
         initialFirstVisibleItemScrollOffset = 0
     )
 
-    // Track loading state for pagination
     var isLoadingPage by remember { mutableStateOf(false) }
-
-    // Detect scroll position to show/hide FAB and BottomBar
-    val navigationVisibilityState = remember { mutableStateOf(true) }
-
-    LaunchedEffect(lazyListState) {
-        var previousPendingFirstIndex = 0
-        snapshotFlow { lazyListState.firstVisibleItemIndex }.collect { currentFirstIndex ->
-            when {
-                currentFirstIndex > previousPendingFirstIndex -> {
-                    // Scrolling down - hide FAB and BottomBar
-                    if (navigationVisibilityState.value) {
-                        navigationVisibilityState.value = false
-                        onNavigationBarVisibilityChange(false)
-                    }
-                }
-
-                currentFirstIndex < previousPendingFirstIndex -> {
-                    // Scrolling up - show FAB and BottomBar
-                    if (!navigationVisibilityState.value) {
-                        navigationVisibilityState.value = true
-                        onNavigationBarVisibilityChange(true)
-                    }
-                }
-            }
-            previousPendingFirstIndex = currentFirstIndex
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -121,18 +87,18 @@ fun TaskListSection(
 
             // Auto-load next page when reaching bottom
             if (tasks.isNotEmpty()) {
-                LaunchedEffect(lazyListState) {
-                    snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-                        .distinctUntilChanged()
-                        .collect { lastVisibleIndex ->
-                            if (lastVisibleIndex == tasks.size - 1 && !isLoadingPage && currentPage < totalPages) {
-                                isLoadingPage = true
-                                onNextPage()
-                                delay(500)
-                                isLoadingPage = false
-                            }
-                        }
-                }
+//                LaunchedEffect(lazyListState) {
+//                    snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+//                        .distinctUntilChanged()
+//                        .collect { lastVisibleIndex ->
+//                            if (lastVisibleIndex == tasks.size - 1 && !isLoadingPage && currentPage < totalPages) {
+//                                isLoadingPage = true
+//                                onNextPage()
+//                                delay(500)
+//                                isLoadingPage = false
+//                            }
+//                        }
+//                }
 
                 // Show loading indicator when fetching next page
                 if (isLoadingPage && currentPage < totalPages) {

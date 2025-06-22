@@ -1,7 +1,6 @@
 package com.wizardlydo.app.screens.donation
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +27,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -50,11 +50,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.wizardlydo.app.R
 import com.wizardlydo.app.comps.textFile.readDonationText
 import com.wizardlydo.app.comps.textFile.readPayPalUsername
 import com.wizardlydo.app.data.currency.Currency
-import com.wizardlydo.app.screens.donation.comps.QuickAmountButton
 import com.wizardlydo.app.ui.theme.WizardlyDoTheme
 
 @Composable
@@ -97,7 +97,6 @@ fun DonationContent(
     val scrollState = rememberScrollState()
 
     val paypalBlue = Color(0xFF0070BA)
-    val backgroundColor = Color(0xFFF7F9FA)
 
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp
@@ -130,7 +129,7 @@ fun DonationContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundColor)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
                 .padding(horizontal = horizontalPadding)
                 .verticalScroll(scrollState),
@@ -150,7 +149,8 @@ fun DonationContent(
                 text = titleText,
                 fontSize = titleSize,
                 fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(verticalSpacing / 2))
@@ -159,11 +159,11 @@ fun DonationContent(
                 text = descriptionText,
                 fontSize = descriptionSize,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = horizontalPadding / 2)
+                modifier = Modifier.padding(horizontal = horizontalPadding / 2),
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(verticalSpacing))
-
 
             Row(
                 modifier = Modifier
@@ -175,7 +175,8 @@ fun DonationContent(
                 Text(
                     text = "Currency:",
                     fontSize = labelSize,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Box {
@@ -218,7 +219,8 @@ fun DonationContent(
             Text(
                 text = "Enter Donation Amount",
                 fontSize = labelSize,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(verticalSpacing / 2))
@@ -251,43 +253,6 @@ fun DonationContent(
 
             Spacer(modifier = Modifier.height(verticalSpacing))
 
-            if (screenWidth > 600) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    QuickAmountButton(amount = "5.00") { donationAmount = it }
-                    QuickAmountButton(amount = "10.00") { donationAmount = it }
-                    QuickAmountButton(amount = "25.00") { donationAmount = it }
-                    QuickAmountButton(amount = "50.00") { donationAmount = it }
-                    QuickAmountButton(amount = "100.00") { donationAmount = it }
-                    QuickAmountButton(amount = "Custom") { donationAmount = it }
-                }
-            } else {
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    QuickAmountButton(amount = "5.00") { donationAmount = it }
-                    QuickAmountButton(amount = "10.00") { donationAmount = it }
-                    QuickAmountButton(amount = "25.00") { donationAmount = it }
-                }
-
-                Spacer(modifier = Modifier.height((screenHeight * 0.01f).coerceIn(4f, 12f).dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    QuickAmountButton(amount = "50.00") { donationAmount = it }
-                    QuickAmountButton(amount = "100.00") { donationAmount = it }
-                    QuickAmountButton(amount = "Custom") { donationAmount = it }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(verticalSpacing))
-
             Button(
                 onClick = {
                     if (donationAmount.isEmpty() || donationAmount.toFloatOrNull() == null || donationAmount.toFloat() <= 0) {
@@ -295,7 +260,8 @@ fun DonationContent(
                     } else {
                         // Open PayPal.me link with the amount
                         val amount = donationAmount.toFloat()
-                        val paypalUri = Uri.parse("https://www.paypal.me/$paypalUsername/$amount/${selectedCurrency.code}")
+                        val paypalUri =
+                            "https://www.paypal.me/$paypalUsername/$amount/${selectedCurrency.code}".toUri()
                         val intent = Intent(Intent.ACTION_VIEW, paypalUri)
                         context.startActivity(intent)
                     }
@@ -322,7 +288,7 @@ fun DonationContent(
                 text = "You will be redirected to PayPal to complete your donation securely in ${selectedCurrency.name}.",
                 fontSize = (descriptionSize.value * 0.9f).sp,
                 textAlign = TextAlign.Center,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = horizontalPadding)
             )
 
@@ -330,6 +296,7 @@ fun DonationContent(
         }
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun DonationContentPreview() {

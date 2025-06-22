@@ -163,9 +163,6 @@ fun NavigationGraph() {
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },
-                onHome = {
-                    navController.popBackStack(Screen.Tasks.Main.route, inclusive = false)
-                },
                 onCreateTask = {
                     navController.navigate(Screen.Tasks.Create.route)
                 },
