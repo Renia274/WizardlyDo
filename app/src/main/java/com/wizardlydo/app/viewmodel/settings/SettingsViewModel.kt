@@ -1,6 +1,7 @@
 package com.wizardlydo.app.viewmodel.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,9 +30,19 @@ class SettingsViewModel(
     private val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     private val DARK_MODE_KEY = "dark_mode"
 
+    // Add a listener for SharedPreferences changes
+    private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+        if (key == DARK_MODE_KEY) {
+            val newDarkMode = prefs.getBoolean(DARK_MODE_KEY, false)
+            if (stateFlow.value.darkModeEnabled != newDarkMode) {
+                stateFlow.value = stateFlow.value.copy(darkModeEnabled = newDarkMode)
+            }
+        }
+    }
+
     private val stateFlow = MutableStateFlow(
         SettingsState(
-            email = null, // Start with null, will be loaded from wizard profile
+            email = null,
             wizardName = "",
             darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
         )
@@ -51,13 +62,15 @@ class SettingsViewModel(
     val warningDescription: StateFlow<String> = warningDescriptionFlow.asStateFlow()
 
     init {
+        // Register preference listener
+        sharedPreferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
+
         loadSettings()
         loadAboutText()
 
         // Add auth state listener to handle late Firebase Auth restoration
         auth.addAuthStateListener { firebaseAuth ->
             if (firebaseAuth.currentUser != null && stateFlow.value.email == null) {
-                // Auth state restored, reload settings
                 loadSettings()
             }
         }
@@ -70,34 +83,39 @@ class SettingsViewModel(
                 wizardRepository.getWizardProfile(currentUser.uid).fold(
                     onSuccess = { profile ->
                         if (profile != null) {
-                            // Save dark mode from profile to shared preferences
-                            profile.darkModeEnabled.let { darkMode ->
-                                sharedPreferences.edit { putBoolean(DARK_MODE_KEY, darkMode) }
+                            val darkModeFromPrefs = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
+
+                            // If profile has different dark mode setting, update it to match SharedPreferences
+                            if (profile.darkModeEnabled != darkModeFromPrefs) {
+                                viewModelScope.launch {
+                                    val updatedProfile = profile.copy(darkModeEnabled = darkModeFromPrefs)
+                                    wizardRepository.updateWizardProfile(currentUser.uid, updatedProfile)
+                                }
                             }
 
                             stateFlow.value = stateFlow.value.copy(
-                                email = profile.email, // Use email from wizard profile
+                                email = profile.email,
                                 wizardName = profile.wizardName,
-                                darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
+                                darkModeEnabled = darkModeFromPrefs
                             )
                         } else {
-                            // Profile not found, use Firebase Auth email as fallback
                             stateFlow.value = stateFlow.value.copy(
-                                email = currentUser.email ?: "No email found"
+                                email = currentUser.email ?: "No email found",
+                                darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
                             )
                         }
                     },
                     onFailure = {
-                        // Repository failed, use Firebase Auth email as fallback
                         stateFlow.value = stateFlow.value.copy(
-                            email = currentUser.email ?: "No email found"
+                            email = currentUser.email ?: "No email found",
+                            darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
                         )
                     }
                 )
             } else {
-                // No current user
                 stateFlow.value = stateFlow.value.copy(
-                    email = "Not logged in"
+                    email = "Not logged in",
+                    darkModeEnabled = sharedPreferences.getBoolean(DARK_MODE_KEY, false)
                 )
             }
         }
@@ -122,7 +140,6 @@ class SettingsViewModel(
                     warningDescriptionFlow.value = lines[3]
                 }
             } catch (e: Exception) {
-                // Set default values if the file can't be read
                 aboutTitleFlow.value = "WizardlyDo: A Gamified To-Do List App"
                 aboutDescriptionFlow.value = "WizardlyDo turns your boring task list into an exciting adventure! Complete tasks to gain experience and level up your wizard character."
                 warningTitleFlow.value = "⚠️ Task Warning System ⚠️"
@@ -144,13 +161,13 @@ class SettingsViewModel(
     }
 
     fun toggleDarkMode(enabled: Boolean) {
-        // Save to preferences
+        // Update SharedPreferences for darkmode
         sharedPreferences.edit { putBoolean(DARK_MODE_KEY, enabled) }
 
-        // Update local state
+        // Update local state based on lightmode or darkmode
         stateFlow.value = stateFlow.value.copy(darkModeEnabled = enabled)
 
-        // update wizard profile
+        // Update wizard profile in background
         viewModelScope.launch {
             auth.currentUser?.uid?.let { userId ->
                 wizardRepository.getWizardProfile(userId).getOrNull()?.let { profile ->
@@ -234,20 +251,16 @@ class SettingsViewModel(
             return
         }
 
-        // Re-authenticate user before deletion
         val credential = EmailAuthProvider.getCredential(email, currentPassword)
         user.reauthenticate(credential).addOnCompleteListener { authTask ->
             if (authTask.isSuccessful) {
                 viewModelScope.launch {
                     try {
-                        // Delete wizard profile and all associated data
                         val deleteResult = wizardRepository.deleteWizardProfile(user.uid)
 
                         if (deleteResult.isSuccess) {
-                            // Clear shared preferences
                             sharedPreferences.edit { clear() }
 
-                            // Delete Firebase Auth user
                             user.delete().addOnCompleteListener { deleteTask ->
                                 if (deleteTask.isSuccessful) {
                                     onSuccess()
@@ -290,5 +303,7 @@ class SettingsViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        // Unregister preference listener
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
     }
 }
