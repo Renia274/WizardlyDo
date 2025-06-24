@@ -25,7 +25,6 @@ import com.wizardlydo.app.R
 import com.wizardlydo.app.data.models.CustomizationState
 import com.wizardlydo.app.data.wizard.WizardClass
 
-
 // WizardPreview Customization based on wizard class
 @Composable
 fun WizardPreview(
@@ -65,25 +64,22 @@ fun WizardPreview(
                             .offset(x = (-12).dp, y = 28.dp)
                     )
 
-                    // Outfit logic (simplified)
-                    val outfitResourceId = when {
-                        // MYSTWEAVER - Special handling
-                        state.wizardClass == WizardClass.MYSTWEAVER -> {
-                            getMystweaverOutfitResource(state.outfit, state.gender)
+                    val outfitResourceId = run {
+                        val (defaultMale, defaultFemale) = when (state.wizardClass) {
+                            WizardClass.MYSTWEAVER -> R.drawable.mystweaver_robe_male to R.drawable.mystweaver_robe_female
+                            WizardClass.CHRONOMANCER -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female
+                            WizardClass.LUMINARI -> R.drawable.luminari_robe_male to R.drawable.luminari_robe_female
+                            WizardClass.DRACONIST -> R.drawable.draconist_robe_male to R.drawable.draconist_robe_female
                         }
-                        // All other classes - unified handling
-                        else -> {
-                            val (defaultMale, defaultFemale) = when (state.wizardClass) {
-                                WizardClass.CHRONOMANCER -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female
-                                WizardClass.LUMINARI -> R.drawable.luminari_robe_male to R.drawable.luminari_robe_female
-                                WizardClass.DRACONIST -> R.drawable.draconist_robe_male to R.drawable.draconist_robe_female
-                                else -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female
-                            }
 
-                            when (state.outfit) {
-                                "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
-                                else -> if (state.gender == "Male") defaultMale else defaultFemale
-                            }
+                        when (state.outfit.trim().lowercase()) {
+                            "winter_coat" -> if (state.gender == "Male") R.drawable.winter_coat_male else R.drawable.winter_coat_female
+                            "casual_shirt" -> if (state.gender == "Male") R.drawable.casual_shirt_male else R.drawable.casual_shirt_female
+                            "mystic_robe" -> if (state.gender == "Male") R.drawable.mystweaver_robe_male else R.drawable.mystweaver_robe_female
+                            "astronomer_robe" -> if (state.gender == "Male") R.drawable.chronomancer_robe_male else R.drawable.chronomancer_robe_female
+                            "crystal_robe" -> if (state.gender == "Male") R.drawable.luminari_robe_male else R.drawable.luminari_robe_female
+                            "flame_robe" -> if (state.gender == "Male") R.drawable.draconist_robe_male else R.drawable.draconist_robe_female
+                            else -> if (state.gender == "Male") defaultMale else defaultFemale // fallback to class default
                         }
                     }
 

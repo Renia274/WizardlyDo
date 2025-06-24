@@ -1,5 +1,6 @@
 package com.wizardlydo.app.wizardCustomization
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -21,8 +22,6 @@ import com.wizardlydo.app.R
 import com.wizardlydo.app.data.wizard.WizardClass
 import com.wizardlydo.app.data.wizard.WizardProfile
 import com.wizardlydo.app.data.wizard.items.EquippedItems
-
-
 
 @Composable
 fun WizardAvatar(
@@ -70,27 +69,47 @@ fun WizardAvatar(
                             .offset(x = (-10).dp, y = (-6).dp)
                     )
 
-                    val outfitResourceId = when {
-                        // Equipped items for wizard
-                        equippedItems?.outfit != null -> equippedItems.outfit.resourceId
 
-                        // MYSTWEAVER
-                        wizardProfile.wizardClass == WizardClass.MYSTWEAVER -> {
-                            getMystweaverOutfitResource(wizardProfile.outfit, wizardProfile.gender)
+                    val outfitResourceId = when {
+                        // Check if equipped outfit is different from the class default
+                        equippedItems?.outfit != null && !isDefaultClassOutfit(equippedItems.outfit.resourceId, wizardProfile.wizardClass, wizardProfile.gender) -> {
+                            Log.d("WizardAvatar", "Using explicitly equipped outfit: ${equippedItems.outfit}")
+                            equippedItems.outfit.resourceId
                         }
 
-                        // CHRONOMANCER,LUMINARI,DRACONIST
+
                         else -> {
                             val (defaultMale, defaultFemale) = when (wizardProfile.wizardClass) {
+                                WizardClass.MYSTWEAVER -> R.drawable.mystweaver_robe_male to R.drawable.mystweaver_robe_female
                                 WizardClass.CHRONOMANCER -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female
                                 WizardClass.LUMINARI -> R.drawable.luminari_robe_male to R.drawable.luminari_robe_female
                                 WizardClass.DRACONIST -> R.drawable.draconist_robe_male to R.drawable.draconist_robe_female
-                                else -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female // fallback
                             }
 
-                            when (wizardProfile.outfit) {
-                                "winter_coat" -> genderSelect(wizardProfile.gender, R.drawable.winter_coat_male, R.drawable.winter_coat_female)
-                                else -> genderSelect(wizardProfile.gender, defaultMale, defaultFemale)
+                            when (wizardProfile.outfit.trim().lowercase()) {
+                                "winter_coat" -> {
+                                    Log.d("WizardAvatar", "Selected winter coat")
+                                    genderSelect(wizardProfile.gender, R.drawable.winter_coat_male, R.drawable.winter_coat_female)
+                                }
+                                "casual_shirt" -> {
+                                    Log.d("WizardAvatar", "Selected casual shirt")
+                                    genderSelect(wizardProfile.gender, R.drawable.casual_shirt_male, R.drawable.casual_shirt_female)
+                                }
+                                "mystic_robe" -> {
+                                    genderSelect(wizardProfile.gender, R.drawable.mystweaver_robe_male, R.drawable.mystweaver_robe_female)
+                                }
+                                "astronomer_robe" -> {
+                                    genderSelect(wizardProfile.gender, R.drawable.chronomancer_robe_male, R.drawable.chronomancer_robe_female)
+                                }
+                                "crystal_robe" -> {
+                                    genderSelect(wizardProfile.gender, R.drawable.luminari_robe_male, R.drawable.luminari_robe_female)
+                                }
+                                "flame_robe" -> {
+                                    genderSelect(wizardProfile.gender, R.drawable.draconist_robe_male, R.drawable.draconist_robe_female)
+                                }
+                                else -> {
+                                    genderSelect(wizardProfile.gender, defaultMale, defaultFemale)
+                                }
                             }
                         }
                     }
@@ -195,3 +214,22 @@ fun WizardAvatar(
 
 private fun genderSelect(gender: String, male: Int, female: Int) =
     if (gender == "Male") male else female
+
+// Helper function to check if the equipped outfit
+private fun isDefaultClassOutfit(resourceId: Int, wizardClass: WizardClass, gender: String): Boolean {
+    val defaultMale = when (wizardClass) {
+        WizardClass.MYSTWEAVER -> R.drawable.mystweaver_robe_male
+        WizardClass.CHRONOMANCER -> R.drawable.chronomancer_robe_male
+        WizardClass.LUMINARI -> R.drawable.luminari_robe_male
+        WizardClass.DRACONIST -> R.drawable.draconist_robe_male
+    }
+
+    val defaultFemale = when (wizardClass) {
+        WizardClass.MYSTWEAVER -> R.drawable.mystweaver_robe_female
+        WizardClass.CHRONOMANCER -> R.drawable.chronomancer_robe_female
+        WizardClass.LUMINARI -> R.drawable.luminari_robe_female
+        WizardClass.DRACONIST -> R.drawable.draconist_robe_female
+    }
+
+    return resourceId == if (gender == "Male") defaultMale else defaultFemale
+}
