@@ -91,13 +91,14 @@ fun WizardPreview(
                             .offset(x = (-12).dp, y = 30.dp)
                     )
 
-                    // Character Hair
+                    // Character Hair - simplified system
                     val hairResourceId = getHairResourceId(
                         gender = state.gender,
                         hairStyle = state.hairStyle,
                         hairColor = state.hairColor
                     )
 
+                    // Always show hair (no special cases)
                     Image(
                         painter = painterResource(id = hairResourceId),
                         contentDescription = "Character Hair",

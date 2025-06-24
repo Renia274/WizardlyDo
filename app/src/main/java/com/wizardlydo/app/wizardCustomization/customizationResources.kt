@@ -16,63 +16,56 @@ fun getSkinResourceId(skinColor: String): Int {
 
 
 fun getHairResourceId(gender: String, hairStyle: Int, hairColor: String): Int {
-    val colorSuffix = when (hairColor) {
-        "blond" -> "blond"
-        "brown" -> "brown"
-        "red" -> "red"
-        "white" -> "white"
-        else -> "white"
-    }
 
     return when (hairStyle) {
-        0 -> when (colorSuffix) {
-            "blond" -> R.drawable.hair_style_1_blond
-            "brown" -> R.drawable.hair_style_1_brown
-            "red" -> R.drawable.hair_style_1_red
-            "white" -> R.drawable.hair_style_1_white
-            else -> R.drawable.hair_style_1_white
-        }
-        1 -> when (colorSuffix) {
-            "blond" -> R.drawable.hair_style_2_blond
-            "brown" -> R.drawable.hair_style_2_brown
-            "red" -> R.drawable.hair_style_2_red
-            "white" -> R.drawable.hair_style_2_white
-            else -> R.drawable.hair_style_2_white
-        }
-        2 -> when (colorSuffix) {
-            "blond" -> R.drawable.hair_style_3_blond
-            "brown" -> R.drawable.hair_style_3_brown
-            "red" -> R.drawable.hair_style_3_red
-            "white" -> R.drawable.hair_style_3_white
-            else -> R.drawable.hair_style_3_white
-        }
-        else -> R.drawable.hair_style_1_white
-    }
-}
+        0 -> {
+            val colorSuffix = when (hairColor) {
+                "blond" -> "blond"
+                "brown" -> "brown"
+                "red" -> "red"
+                "white" -> "white"
+                else -> "white"
+            }
 
+            val resourceId = when (colorSuffix) {
+                "blond" -> R.drawable.hair_style_1_blond
+                "brown" -> R.drawable.hair_style_1_brown
+                "red" -> R.drawable.hair_style_1_red
+                "white" -> R.drawable.hair_style_1_white
+                else -> R.drawable.hair_style_1_white
+            }
 
-
-fun getMystweaverOutfitResource(outfit: String, gender: String): Int {
-    val trimmedOutfit = outfit.trim()
-    val isMale = gender == "Male"
-
-    return when {
-        trimmedOutfit.equals("Winter Coat", ignoreCase = true) -> {
-            if (isMale) R.drawable.winter_coat_male
-            else R.drawable.winter_coat_female
+            resourceId
         }
-        trimmedOutfit.equals("Casual Shirt", ignoreCase = true) -> {
-            if (isMale) R.drawable.casual_shirt_male
-            else R.drawable.casual_shirt_female
-        }
-        trimmedOutfit.equals("Mystic Robe", ignoreCase = true) -> {
-            if (isMale) R.drawable.mystweaver_robe_male
-            else R.drawable.mystweaver_robe_female
+        1 -> {
+            val resourceId = if (gender == "Male") {
+                R.drawable.hair_style_spikes
+            } else {
+                val colorSuffix = when (hairColor) {
+                    "blond" -> "blond"
+                    "brown" -> "brown"
+                    "red" -> "red"
+                    "white" -> "white"
+                    else -> "white"
+                }
+
+                val femaleResourceId = when (colorSuffix) {
+                    "blond" -> R.drawable.hair_style_2_blond
+                    "brown" -> R.drawable.hair_style_2_brown
+                    "red" -> R.drawable.hair_style_2_red
+                    "white" -> R.drawable.hair_style_2_white
+                    else -> R.drawable.hair_style_2_white
+                }
+
+                femaleResourceId
+            }
+
+            resourceId
         }
         else -> {
-            // If unknown outfit, default to Winter Coat
-            if (isMale) R.drawable.winter_coat_male
-            else R.drawable.winter_coat_female
+            R.drawable.hair_style_1_white // Default fallback
         }
     }
 }
+
+

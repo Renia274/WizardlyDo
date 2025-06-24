@@ -69,7 +69,6 @@ fun WizardAvatar(
                             .offset(x = (-10).dp, y = (-6).dp)
                     )
 
-
                     val outfitResourceId = when {
                         // Check if equipped outfit is different from the class default
                         equippedItems?.outfit != null && !isDefaultClassOutfit(equippedItems.outfit.resourceId, wizardProfile.wizardClass, wizardProfile.gender) -> {
@@ -77,8 +76,8 @@ fun WizardAvatar(
                             equippedItems.outfit.resourceId
                         }
 
-
                         else -> {
+                            Log.d("WizardAvatar", "Using customization outfit: '${wizardProfile.outfit}'")
                             val (defaultMale, defaultFemale) = when (wizardProfile.wizardClass) {
                                 WizardClass.MYSTWEAVER -> R.drawable.mystweaver_robe_male to R.drawable.mystweaver_robe_female
                                 WizardClass.CHRONOMANCER -> R.drawable.chronomancer_robe_male to R.drawable.chronomancer_robe_female
@@ -88,11 +87,9 @@ fun WizardAvatar(
 
                             when (wizardProfile.outfit.trim().lowercase()) {
                                 "winter_coat" -> {
-                                    Log.d("WizardAvatar", "Selected winter coat")
                                     genderSelect(wizardProfile.gender, R.drawable.winter_coat_male, R.drawable.winter_coat_female)
                                 }
                                 "casual_shirt" -> {
-                                    Log.d("WizardAvatar", "Selected casual shirt")
                                     genderSelect(wizardProfile.gender, R.drawable.casual_shirt_male, R.drawable.casual_shirt_female)
                                 }
                                 "mystic_robe" -> {
@@ -215,7 +212,7 @@ fun WizardAvatar(
 private fun genderSelect(gender: String, male: Int, female: Int) =
     if (gender == "Male") male else female
 
-// Helper function to check if the equipped outfit
+// Helper function to check if the equipped outfit is  the default class outfit
 private fun isDefaultClassOutfit(resourceId: Int, wizardClass: WizardClass, gender: String): Boolean {
     val defaultMale = when (wizardClass) {
         WizardClass.MYSTWEAVER -> R.drawable.mystweaver_robe_male
