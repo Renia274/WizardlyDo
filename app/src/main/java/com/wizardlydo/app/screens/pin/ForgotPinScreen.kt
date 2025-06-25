@@ -2,7 +2,6 @@ package com.wizardlydo.app.screens.pin
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,27 +51,15 @@ fun ForgotPinScreen(
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            ForgotPinContent(
-                pin = state.pin,
-                onPinChange = viewModel::updatePin,
-                onResetPin = viewModel::resetPin,
-                isLoading = state.isLoading,
-                hasError = state.error != null,
-                error = state.error,
-                onDismissError = viewModel::clearError
-            )
-        }
-    }
+    ForgotPinContent(
+        pin = state.pin,
+        onPinChange = viewModel::updatePin,
+        onResetPin = viewModel::resetPin,
+        isLoading = state.isLoading,
+        hasError = state.error != null,
+        error = state.error,
+        onDismissError = viewModel::clearError
+    )
 }
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -103,7 +90,7 @@ fun ForgotPinContent(
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(horizontal = padding)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -188,7 +175,6 @@ fun ForgotPinContent(
         )
     }
 }
-
 @RequiresApi(Build.VERSION_CODES.R)
 @Preview(showBackground = true)
 @Composable
