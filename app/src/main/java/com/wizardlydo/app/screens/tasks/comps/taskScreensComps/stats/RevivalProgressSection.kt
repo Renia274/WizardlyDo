@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RevivalProgressSection(
     tasksCompleted: Int,
-    tasksNeededForRevival: Int = 3, // Default to 3
+    tasksNeededForRevival: Int = 3,
     textColor: Color = MaterialTheme.colorScheme.onErrorContainer
 ) {
     val progress = (tasksCompleted.toFloat() / tasksNeededForRevival).coerceIn(0f, 1f)

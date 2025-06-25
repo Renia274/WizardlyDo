@@ -92,13 +92,16 @@ fun TaskScreen(
     val wizardProfile = state.wizardProfile?.getOrNull()
     val isLandscape = LocalConfiguration.current.screenWidthDp > LocalConfiguration.current.screenHeightDp
 
+    // Calculate XP-based task progress
+    val (xpBasedTasksCompleted, xpBasedTotalTasks) = wizardProfile?.let { profile ->
+        viewModel.getXPBasedTaskProgress(profile)
+    } ?: Pair(0, 10)
+
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
-
     var isUIVisible by remember { mutableStateOf(true) }
 
-    // Track the first task ID for the Edit button
     val firstTaskId = state.filteredTasks.firstOrNull()?.id
 
     LaunchedEffect(Unit) { viewModel.loadData() }
@@ -159,7 +162,6 @@ fun TaskScreen(
             }
         },
         bottomBar = {
-            // Hide bottom bar when UI is not visible
             AnimatedVisibility(
                 visible = isUIVisible,
                 enter = slideInVertically(initialOffsetY = { it }),
@@ -167,7 +169,6 @@ fun TaskScreen(
             ) {
                 TaskBottomBar(
                     onEdit = {
-                        // Navigate to edit first task if available
                         firstTaskId?.let { taskId ->
                             onEditTask(taskId)
                         }
@@ -189,7 +190,6 @@ fun TaskScreen(
             }
         },
         floatingActionButton = {
-            // Hide FAB when UI is not visible
             AnimatedVisibility(
                 visible = isUIVisible,
                 enter = scaleIn(),
@@ -217,8 +217,7 @@ fun TaskScreen(
                         stamina = wizardProfile?.stamina ?: 50,
                         maxStamina = wizardProfile?.maxStamina ?: 100,
                         experience = wizardProfile?.experience ?: 0,
-                        tasksCompleted = 0,
-                        totalTasksForLevel = 10,
+                        level = wizardProfile?.level ?: 1,
                         equippedItems = equippedItems
                     )
                     wizardProfile?.let { LevelUpIndicator(it.level) }
@@ -274,8 +273,7 @@ fun TaskScreen(
                                     stamina = wizardProfile?.stamina ?: 50,
                                     maxStamina = wizardProfile?.maxStamina ?: 100,
                                     experience = wizardProfile?.experience ?: 0,
-                                    tasksCompleted = 0,
-                                    totalTasksForLevel = 10,
+                                    level = wizardProfile?.level ?: 1,
                                     equippedItems = equippedItems,
                                     modifier = Modifier
                                         .padding(16.dp)
@@ -299,11 +297,9 @@ fun TaskScreen(
                                                 },
                                                 onDragEnd = {
                                                     isBeingSwiped = false
-                                                    // Hide on upward swipe
                                                     isUIVisible = false
                                                 }
                                             ) { change, dragAmount ->
-                                                // Only respond to upward swipes
                                                 if (dragAmount.y < 0) {
                                                     change.consume()
                                                 }
@@ -325,7 +321,6 @@ fun TaskScreen(
                         }
                     }
 
-                    // Swipe indicator when stats are hidden
                     if (!isUIVisible) {
                         Box(
                             modifier = Modifier
@@ -334,11 +329,9 @@ fun TaskScreen(
                                 .pointerInput(Unit) {
                                     detectDragGestures(
                                         onDragEnd = {
-                                            // Toggle on any downward swipe from the top area
                                             isUIVisible = true
                                         }
                                     ) { change, dragAmount ->
-                                        // Only respond to downward swipes
                                         if (dragAmount.y > 0) {
                                             change.consume()
                                         }
@@ -397,8 +390,7 @@ fun TaskContent(
     stamina: Int,
     maxStamina: Int,
     experience: Int,
-    tasksCompleted: Int,
-    totalTasksForLevel: Int,
+    level: Int,
     equippedItems: EquippedItems? = null,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
@@ -427,8 +419,7 @@ fun TaskContent(
             stamina = stamina,
             maxStamina = maxStamina,
             experience = experience,
-            tasksCompleted = tasksCompleted,
-            totalTasksForLevel = totalTasksForLevel,
+            level = level,
             equippedItems = equippedItems
         )
 
@@ -485,8 +476,9 @@ fun TaskContentPreview() {
         level = 5,
         experience = 250,
         health = 100,
-        maxHealth = 100,
+        maxHealth = 150,
         stamina = 75,
+        maxStamina = 120,
         totalTasksCompleted = 15,
         consecutiveTasksCompleted = 0,
         wizardClass = WizardClass.MYSTWEAVER
@@ -519,6 +511,7 @@ fun TaskContentPreview() {
 
     WizardlyDoTheme {
         TaskContent(
+            modifier = Modifier,
             state = TaskUiState(
                 isLoading = false,
                 wizardProfile = Result.success(wizardProfile),
@@ -530,24 +523,21 @@ fun TaskContentPreview() {
                 totalPages = 3
             ),
             wizardProfile = wizardProfile,
-            tasksCompleted = 2,
-            totalTasksForLevel = 10,
+            health = 100,
+            maxHealth = 150,
+            stamina = 75,
+            maxStamina = 120,
+            experience = 250,
+            level = 5, // Added level parameter
+            equippedItems = null,
             onCompleteTask = {},
             onEditTask = {},
             onDeleteTask = {},
             onNextPage = {},
-
-            onDamageTaken = { _, _ -> },
-            modifier = Modifier,
-            health = 100,
-            maxHealth = 150,
-            stamina = 75,
-            experience = 250,
             onPreviousPage = {},
-            maxStamina = 120
+            onDamageTaken = { _, _ -> }
         )
     }
 }
-
 
 

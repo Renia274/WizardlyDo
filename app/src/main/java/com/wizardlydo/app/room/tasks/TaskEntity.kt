@@ -10,7 +10,7 @@ import com.wizardlydo.app.data.tasks.Task
 data class TaskEntity(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "task_id")
-    val id: Int,
+    val id: Int = 0,
 
     @ColumnInfo(name = "user_id")
     val userId: String,
@@ -19,7 +19,7 @@ data class TaskEntity(
     val description: String,
 
     @ColumnInfo(name = "is_completed")
-    val isCompleted: Boolean,
+    val isCompleted: Boolean = false,
 
     @ColumnInfo(name = "due_date")
     val dueDate: Long? = null,
@@ -30,11 +30,12 @@ data class TaskEntity(
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
 
-
-
     @ColumnInfo(name = "category")
     val category: String? = null
 ) {
+    /**
+     * Convert TaskEntity to Task domain model
+     */
     fun toDomain() = Task(
         id = id,
         userId = userId,
@@ -46,4 +47,5 @@ data class TaskEntity(
         createdAt = createdAt,
         category = category
     )
+
 }
