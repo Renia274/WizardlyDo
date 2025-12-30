@@ -31,7 +31,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wizardlydo.app.R
-import com.wizardlydo.app.data.models.TaskFilter
 import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.viewmodel.tasks.TaskViewModel
 
@@ -41,8 +40,6 @@ fun TaskSearchBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onCloseSearch: () -> Unit,
-    selectedFilter: TaskFilter,
-    onFilterChange: (TaskFilter) -> Unit,
     selectedPriority: Priority?,
     onPriorityChange: (Priority?) -> Unit,
     viewModel: TaskViewModel,
@@ -65,7 +62,6 @@ fun TaskSearchBar(
             onQueryChange = { newText ->
                 inputText = newText
                 onSearchQueryChange(newText)
-                // Activate search when user starts typing
                 if (newText.isNotEmpty()) {
                     viewModel.activateSearch()
                 }
@@ -98,20 +94,23 @@ fun TaskSearchBar(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_filter),
                             contentDescription = "Toggle Filters",
-                            tint = if (showFilters) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (showFilters || selectedPriority != null)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
                     IconButton(onClick = {
                         inputText = ""
                         onSearchQueryChange("")
+                        onPriorityChange(null)
                         showFilters = false
-                        viewModel.deactivateSearch()
+                        onCloseSearch()
                     }) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Clear Query",
+                            contentDescription = "Close Search",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -119,7 +118,6 @@ fun TaskSearchBar(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-
         }
 
         if (showFilters) {
@@ -131,7 +129,7 @@ fun TaskSearchBar(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Priority",
+                    text = "Filter by Priority",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
@@ -141,6 +139,7 @@ fun TaskSearchBar(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // "Any" priority option
                     FilterChip(
                         selected = selectedPriority == null,
                         onClick = {
@@ -154,7 +153,9 @@ fun TaskSearchBar(
                         FilterChip(
                             selected = selectedPriority == priority,
                             onClick = {
-                                onPriorityChange(priority)
+                                onPriorityChange(
+                                    if (selectedPriority == priority) null else priority
+                                )
                                 viewModel.activateSearch()
                             },
                             label = { Text(priority.name) },
@@ -164,37 +165,14 @@ fun TaskSearchBar(
                                         .size(8.dp)
                                         .background(
                                             color = when (priority) {
-                                                Priority.LOW -> Color.Green
-                                                Priority.MEDIUM -> Color(0xFFFFA500)
-                                                Priority.HIGH -> Color.Red
+                                                Priority.LOW -> Color(0xFF4CAF50) // Green
+                                                Priority.MEDIUM -> Color(0xFFFFA726) // Orange
+                                                Priority.HIGH -> Color(0xFFEF5350) // Red
                                             },
                                             shape = CircleShape
                                         )
                                 )
                             }
-                        )
-                    }
-                }
-
-                Text(
-                    text = "Task Type",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    TaskFilter.entries.forEach { filter ->
-                        FilterChip(
-                            selected = selectedFilter == filter,
-                            onClick = {
-                                onFilterChange(filter)
-                                viewModel.activateSearch()
-                            },
-                            label = { Text(filter.name) }
                         )
                     }
                 }

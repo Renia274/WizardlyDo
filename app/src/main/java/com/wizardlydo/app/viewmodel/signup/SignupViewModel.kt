@@ -29,13 +29,24 @@ class SignupViewModel(
     private val rememberMeManager: RememberMeManager
 ) : ViewModel() {
 
-    private val state = MutableStateFlow(WizardSignUpState(isCheckingUsername = true))
+    private val state = MutableStateFlow(WizardSignUpState(isCheckingUsername = false))
     val uiState = state.asStateFlow()
 
     private var usernameCheckJob: Job? = null
 
     private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
     private val passwordPattern = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$")
+
+    // Wizard-themed suffixes and prefixes
+    private val wizardPrefixes = listOf(
+        "Dark", "Mystic", "Ancient", "Elder", "Grand", "Wise", "Shadow",
+        "Arcane", "Star", "Moon", "Sun", "Storm", "Frost", "Fire"
+    )
+
+    private val wizardSuffixes = listOf(
+        "Sage", "Mage", "Sorcerer", "Wizard", "Enchanter", "Keeper",
+        "Walker", "Weaver", "Binder", "Caller", "Master", "Seeker"
+    )
 
     val isUsernameValid: Boolean
         get() = state.value.wizardName.isNotBlank() &&
@@ -55,6 +66,93 @@ class SignupViewModel(
         return securityProvider.encrypt(plainPassword)
     }
 
+    private suspend fun generateUsernameSuggestions(baseName: String): List<String> {
+        val suggestions = mutableSetOf<String>() // Use Set to avoid duplicates
+        val cleanBaseName = baseName.trim()
+
+        try {
+            // Strategy 1: Add numbers (1-99)
+            var numberAttempts = 0
+            var currentNumber = 1
+            while (suggestions.size < 3 && numberAttempts < 50) {
+                val suggestion = "$cleanBaseName$currentNumber"
+                if (suggestion.length <= 20) {
+                    val isTaken = checkIfUsernameExists(suggestion)
+                    if (!isTaken) {
+                        suggestions.add(suggestion)
+                    }
+                }
+                currentNumber++
+                numberAttempts++
+            }
+
+            // Strategy 2: Add wizard-themed prefixes
+            if (suggestions.size < 3) {
+                for (prefix in wizardPrefixes.shuffled()) {
+                    if (suggestions.size >= 3) break
+                    val suggestion = "$prefix$cleanBaseName"
+                    if (suggestion.length <= 20) {
+                        val isTaken = checkIfUsernameExists(suggestion)
+                        if (!isTaken) {
+                            suggestions.add(suggestion)
+                        }
+                    }
+                }
+            }
+
+            // Strategy 3: Add wizard-themed suffixes
+            if (suggestions.size < 3) {
+                for (suffix in wizardSuffixes.shuffled()) {
+                    if (suggestions.size >= 3) break
+                    val suggestion = "$cleanBaseName$suffix"
+                    if (suggestion.length <= 20) {
+                        val isTaken = checkIfUsernameExists(suggestion)
+                        if (!isTaken) {
+                            suggestions.add(suggestion)
+                        }
+                    }
+                }
+            }
+
+            // Strategy 4: Combine prefix + base + number (if still needed)
+            if (suggestions.size < 3) {
+                for (prefix in wizardPrefixes.shuffled().take(5)) {
+                    if (suggestions.size >= 3) break
+                    for (num in 1..20) {
+                        if (suggestions.size >= 3) break
+                        val suggestion = "$prefix$cleanBaseName$num"
+                        if (suggestion.length <= 20) {
+                            val isTaken = checkIfUsernameExists(suggestion)
+                            if (!isTaken) {
+                                suggestions.add(suggestion)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Strategy 5: Just use random numbers if nothing works
+            if (suggestions.size < 3) {
+                for (num in 100..9999) {
+                    if (suggestions.size >= 3) break
+                    val suggestion = "$cleanBaseName$num"
+                    if (suggestion.length <= 20) {
+                        val isTaken = checkIfUsernameExists(suggestion)
+                        if (!isTaken) {
+                            suggestions.add(suggestion)
+                        }
+                    }
+                }
+            }
+
+        } catch (e: Exception) {
+            // If something fails, return what we have
+            return suggestions.take(3)
+        }
+
+        return suggestions.take(3)
+    }
+
     fun signUpWithEmail() {
         if (!validateForm()) return
 
@@ -63,9 +161,11 @@ class SignupViewModel(
             try {
                 // Double-check username availability before proceeding
                 if (checkIfUsernameExists(state.value.wizardName)) {
+                    val suggestions = generateUsernameSuggestions(state.value.wizardName)
                     state.update {
                         it.copy(
                             usernameError = "This wizard name is already taken",
+                            usernameSuggestions = suggestions,
                             isLoading = false
                         )
                     }
@@ -136,26 +236,54 @@ class SignupViewModel(
         return wizardRepository.isWizardNameTaken(username).getOrDefault(false)
     }
 
-
     private fun checkUsernameAvailability(username: String) {
         // Cancel previous check
         usernameCheckJob?.cancel()
 
         usernameCheckJob = viewModelScope.launch {
-            delay(500)
-            if (username.length >= 3 && username.length <= 20) {
+            delay(500) // Debounce
+
+            if (username.length in 3..20) {
                 state.update { it.copy(isCheckingUsername = true) }
 
                 try {
                     val isTaken = checkIfUsernameExists(username)
-                    state.update { currentState ->
-                        currentState.copy(
-                            usernameError = if (isTaken) "This wizard name is already taken" else null,
-                            isCheckingUsername = false
-                        )
+
+                    if (isTaken) {
+                        // Generate suggestions when username is taken
+                        val suggestions = generateUsernameSuggestions(username)
+                        state.update { currentState ->
+                            currentState.copy(
+                                usernameError = "This wizard name is already taken",
+                                usernameSuggestions = suggestions,
+                                isCheckingUsername = false
+                            )
+                        }
+                    } else {
+                        // Username is available
+                        state.update { currentState ->
+                            currentState.copy(
+                                usernameError = null,
+                                usernameSuggestions = emptyList(),
+                                isCheckingUsername = false
+                            )
+                        }
                     }
                 } catch (e: Exception) {
-                    state.update { it.copy(isCheckingUsername = false) }
+                    // Error during check
+                    state.update {
+                        it.copy(
+                            isCheckingUsername = false,
+                            usernameError = "Could not check availability"
+                        )
+                    }
+                }
+            } else {
+                // Clear suggestions if username doesn't meet length requirements
+                state.update {
+                    it.copy(
+                        usernameSuggestions = emptyList()
+                    )
                 }
             }
         }
@@ -176,7 +304,11 @@ class SignupViewModel(
             else -> null
         }
 
-        state.update { it.copy(wizardName = name, usernameError = error) }
+        state.update { it.copy(
+            wizardName = name,
+            usernameError = error,
+            usernameSuggestions = emptyList() // Clear suggestions when user types
+        ) }
 
         // Only check availability if basic validation passes
         if (error == null) {

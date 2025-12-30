@@ -16,7 +16,6 @@ import com.google.firebase.ktx.Firebase
 import com.wizardlydo.app.R
 import com.wizardlydo.app.data.models.EditTaskField
 import com.wizardlydo.app.data.models.EditTaskState
-import com.wizardlydo.app.data.models.TaskFilter
 import com.wizardlydo.app.data.models.TaskUiState
 import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.data.tasks.Task
@@ -26,6 +25,7 @@ import com.wizardlydo.app.repository.wizard.WizardRepository
 import com.wizardlydo.app.room.WizardDatabase
 import com.wizardlydo.app.utilities.TaskNotificationService
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -52,7 +52,7 @@ class TaskViewModel(
 
     private val searchQuery = MutableStateFlow("")
     private val selectedPriority = MutableStateFlow<Priority?>(null)
-    private val taskType = MutableStateFlow(TaskFilter.ALL)
+    private val selectedCategory = MutableStateFlow<String?>(null)
     private val searchActive = MutableStateFlow(false)
 
     private var taskRecentlyCreated = false
@@ -63,9 +63,10 @@ class TaskViewModel(
 
     private val pageSize = 10
     private val currentPage = MutableStateFlow(1)
-    val currentPageState = currentPage.asStateFlow()
 
     private var allTasks = listOf<Task>()
+
+    private val completedTutorialTasks = mutableSetOf<Int>()
 
     private val soundPool: SoundPool by lazy {
         val audioAttributes = AudioAttributes.Builder()
@@ -91,6 +92,115 @@ class TaskViewModel(
         private const val BASE_STAMINA_GAIN = 3
     }
 
+    /**
+     * Get all unique categories from tasks
+     */
+    fun getAvailableCategories(): List<String> {
+        return allTasks
+            .mapNotNull { it.category }
+            .distinct()
+            .sorted()
+    }
+
+    /**
+     * Set category filter
+     */
+    fun setCategory(category: String?) {
+        selectedCategory.value = category
+        currentPage.value = 1
+        updateFilteredTasks()
+    }
+
+    /**
+     * Get actual tasks completed in current level set
+     * This counts real tasks completed, not XP-based estimates
+     */
+
+
+    fun getActualTaskProgress(profile: WizardProfile): Pair<Int, Int> {
+        val currentLevel = profile.level
+        val totalTasksCompleted = profile.totalTasksCompleted
+
+        Log.d("TaskViewModel", "getActualTaskProgress - Level: $currentLevel, TotalTasks: $totalTasksCompleted")
+
+        // Define task requirements for each level set (TOTAL for the entire set)
+        val tasksPerSet = when (currentLevel) {
+            in 1..4 -> 20   // Levels 1-4: 20 tasks TOTAL for all 4 levels
+            in 5..8 -> 20   // Levels 5-8: 20 tasks TOTAL for all 4 levels
+            in 9..14 -> 20  // Levels 9-14: 20 tasks TOTAL for all 6 levels
+            in 15..19 -> 25 // Levels 15-19: 25 tasks TOTAL for all 5 levels
+            in 20..24 -> 30 // Levels 20-24: 30 tasks TOTAL for all 5 levels
+            in 25..29 -> 35 // Levels 25-29: 35 tasks TOTAL for all 5 levels
+            else -> 40      // Level 30: 40 tasks TOTAL
+        }
+
+        // Calculate tasks completed in CURRENT set only
+        val tasksInCurrentSet = when (currentLevel) {
+            in 1..4 -> {
+                // First set (levels 1-4) - no previous tasks to subtract
+                totalTasksCompleted.coerceIn(0, tasksPerSet)
+            }
+            in 5..8 -> {
+                // Second set (levels 5-8) - subtract 20 tasks from set 1
+                (totalTasksCompleted - 20).coerceIn(0, tasksPerSet)
+            }
+            in 9..14 -> {
+                // Third set (levels 9-14) - subtract 40 tasks from sets 1-2
+                (totalTasksCompleted - 40).coerceIn(0, tasksPerSet)
+            }
+            in 15..19 -> {
+                // Fourth set (levels 15-19) - subtract 60 tasks from sets 1-3
+                (totalTasksCompleted - 60).coerceIn(0, tasksPerSet)
+            }
+            in 20..24 -> {
+                // Fifth set (levels 20-24) - subtract 85 tasks from sets 1-4
+                (totalTasksCompleted - 85).coerceIn(0, tasksPerSet)
+            }
+            in 25..29 -> {
+                // Sixth set (levels 25-29) - subtract 115 tasks from sets 1-5
+                (totalTasksCompleted - 115).coerceIn(0, tasksPerSet)
+            }
+            else -> {
+                // Level 30 - subtract 150 tasks from sets 1-6
+                (totalTasksCompleted - 150).coerceIn(0, tasksPerSet)
+            }
+        }
+
+        Log.d("TaskViewModel", "Result: $tasksInCurrentSet / $tasksPerSet")
+
+        return Pair(tasksInCurrentSet, tasksPerSet)
+    }
+    /**
+     * Update toast to show actual task progress
+     */
+    fun showTaskProgressToast(profile: WizardProfile) {
+        val (tasksCompleted, tasksNeeded) = getActualTaskProgress(profile)
+        val currentLevel = profile.level
+
+        val levelRange = when (currentLevel) {
+            in 1..4 -> "1-4"
+            in 5..8 -> "5-8"
+            in 9..14 -> "9-14"
+            in 15..19 -> "15-19"
+            in 20..24 -> "20-24"
+            in 25..29 -> "25-29"
+            else -> "30"
+        }
+
+        val message = buildString {
+            append("Level Set $levelRange Progress:\n")
+            append("Tasks completed: $tasksCompleted / $tasksNeeded\n")
+            append("Current Level: $currentLevel\n")
+            append("Total XP: ${profile.experience} / 1000\n")
+            if (tasksCompleted < tasksNeeded) {
+                append("\nComplete ${tasksNeeded - tasksCompleted} more tasks to advance!")
+            } else {
+                append("\nReady for next level set!")
+            }
+        }
+
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    }
 
     /**
      * Calculate XP needed for next task progress milestone
@@ -99,20 +209,15 @@ class TaskViewModel(
         val currentLevel = profile.level
         val currentExperience = profile.experience
 
-        // Get tasks required for current level
         val tasksRequiredForLevel = getTasksRequiredForLevel(currentLevel)
-
-        // Calculate XP per task for current level
         val expPerTask = if (tasksRequiredForLevel > 0) EXP_PER_LEVEL / tasksRequiredForLevel else 0
 
-        // Calculate current tasks completed
         val currentTasksCompleted = if (expPerTask > 0) {
             (currentExperience / expPerTask).coerceAtMost(tasksRequiredForLevel)
         } else {
             0
         }
 
-        // Calculate XP needed for next task milestone
         val nextTaskMilestone = currentTasksCompleted + 1
         val xpNeededForNextTask = if (nextTaskMilestone <= tasksRequiredForLevel) {
             (nextTaskMilestone * expPerTask) - currentExperience
@@ -132,13 +237,15 @@ class TaskViewModel(
 
         val message = when {
             currentTasks >= totalTasks -> {
-                "Complete all ${totalTasks} tasks to level up!"
+                "Complete all $totalTasks tasks to level up!"
             }
+
             xpNeeded <= 0 -> {
                 "You've reached ${currentTasks}/${totalTasks} tasks for this level!"
             }
+
             else -> {
-                "You need ${xpNeeded} more XP to reach ${nextMilestone}/${totalTasks} tasks"
+                "You need $xpNeeded more XP to reach ${nextMilestone}/${totalTasks} tasks"
             }
         }
 
@@ -153,7 +260,8 @@ class TaskViewModel(
         val currentExperience = profile.experience
         val tasksRequired = getTasksRequiredForLevel(currentLevel)
         val expPerTask = if (tasksRequired > 0) EXP_PER_LEVEL / tasksRequired else 0
-        val currentTasks = if (expPerTask > 0) (currentExperience / expPerTask).coerceAtMost(tasksRequired) else 0
+        val currentTasks =
+            if (expPerTask > 0) (currentExperience / expPerTask).coerceAtMost(tasksRequired) else 0
         val (xpNeeded, nextMilestone, totalTasks) = getXPNeededForNextTaskProgress(profile)
 
         val message = buildString {
@@ -161,7 +269,7 @@ class TaskViewModel(
             append("Current: ${currentTasks}/${totalTasks} tasks (${currentExperience}/${EXP_PER_LEVEL} XP)\n")
             append("Each task gives ~${expPerTask} XP\n")
             if (xpNeeded > 0 && currentTasks < totalTasks) {
-                append("Need ${xpNeeded} XP for ${nextMilestone}/${totalTasks}")
+                append("Need $xpNeeded XP for ${nextMilestone}/${totalTasks}")
             } else {
                 append("Ready to level up!")
             }
@@ -170,8 +278,7 @@ class TaskViewModel(
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
 
-
-    private  fun clearDatabaseOnce() {
+    private fun clearDatabaseOnce() {
         val sharedPrefs = context.getSharedPreferences("wizard_app_prefs", Context.MODE_PRIVATE)
         val hasCleared = sharedPrefs.getBoolean("database_cleared_v1", false)
 
@@ -193,7 +300,7 @@ class TaskViewModel(
 
     init {
         viewModelScope.launch {
-            clearDatabaseOnce()
+            //clearDatabaseOnce()
             loadData()
         }
     }
@@ -235,10 +342,10 @@ class TaskViewModel(
         updateState()
     }
 
-    fun applySearchFilters(query: String, priority: Priority?, type: TaskFilter) {
+    fun applySearchFilters(query: String, priority: Priority?, category: String?) {
         searchQuery.value = query
         selectedPriority.value = priority
-        taskType.value = type
+        selectedCategory.value = category
         searchActive.value = true
 
         currentPage.value = 1
@@ -248,7 +355,7 @@ class TaskViewModel(
     fun resetSearchFilters() {
         searchQuery.value = ""
         selectedPriority.value = null
-        taskType.value = TaskFilter.ALL
+        selectedCategory.value = null
 
         currentPage.value = 1
         updateFilteredTasks()
@@ -260,45 +367,43 @@ class TaskViewModel(
                 searchActive = searchActive.value,
                 searchQuery = searchQuery.value,
                 selectedPriority = selectedPriority.value,
-                taskType = taskType.value
+                selectedCategory = selectedCategory.value
             )
         }
     }
 
     private fun updateFilteredTasks() {
-        val searchFilters = applySearchFiltersToTasks(allTasks)
-        val currentFilterTasks = filterTasks(searchFilters, uiState.value.currentFilter)
+        val filteredTasks = applySearchFiltersToTasks(allTasks)
 
-        val totalPages = (currentFilterTasks.size + pageSize - 1) / pageSize
+        val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
         val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
         val start = (currentPageValue - 1) * pageSize
-        val end = minOf(start + pageSize, currentFilterTasks.size)
+        val end = minOf(start + pageSize, filteredTasks.size)
 
-        val paginatedTasks = if (currentFilterTasks.isEmpty()) {
+        val paginatedTasks = if (filteredTasks.isEmpty()) {
             emptyList()
         } else {
-            currentFilterTasks.subList(start, end)
+            filteredTasks.subList(start, end)
         }
 
-        mutableState.update { it.copy(
-            filteredTasks = paginatedTasks,
-            totalPages = totalPages,
-            currentPage = currentPageValue,
-            searchActive = searchActive.value,
-            searchQuery = searchQuery.value,
-            selectedPriority = selectedPriority.value,
-            taskType = taskType.value
-        ) }
+        mutableState.update {
+            it.copy(
+                filteredTasks = paginatedTasks,
+                totalPages = totalPages,
+                currentPage = currentPageValue,
+                searchActive = searchActive.value,
+                searchQuery = searchQuery.value,
+                selectedPriority = selectedPriority.value,
+                selectedCategory = selectedCategory.value
+            )
+        }
     }
 
     private fun applySearchFiltersToTasks(tasks: List<Task>): List<Task> {
-        if (!searchActive.value) {
-            return tasks
-        }
-
         var filteredTasks = tasks
 
+        // Apply text search
         if (searchQuery.value.isNotBlank()) {
             val searchTerms = searchQuery.value.lowercase().trim()
             filteredTasks = filteredTasks.filter { task ->
@@ -308,14 +413,14 @@ class TaskViewModel(
             }
         }
 
+        // Apply priority filter
         selectedPriority.value?.let { priority ->
             filteredTasks = filteredTasks.filter { it.priority == priority }
         }
 
-        filteredTasks = when (taskType.value) {
-            TaskFilter.ALL -> filteredTasks
-            TaskFilter.ACTIVE -> filteredTasks.filter { !it.isCompleted }
-            TaskFilter.COMPLETED -> filteredTasks.filter { it.isCompleted }
+        // Apply category filter
+        selectedCategory.value?.let { category ->
+            filteredTasks = filteredTasks.filter { it.category == category }
         }
 
         return filteredTasks
@@ -387,19 +492,18 @@ class TaskViewModel(
 
                 allTasks = tasks
 
-                val searchFiltered = applySearchFiltersToTasks(tasks)
-                val currentFilterTasks = filterTasks(searchFiltered, uiState.value.currentFilter)
+                val filteredTasks = applySearchFiltersToTasks(tasks)
 
-                val totalPages = (currentFilterTasks.size + pageSize - 1) / pageSize
+                val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
                 val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
                 val start = (currentPageValue - 1) * pageSize
-                val end = minOf(start + pageSize, currentFilterTasks.size)
+                val end = minOf(start + pageSize, filteredTasks.size)
 
-                val paginatedTasks = if (currentFilterTasks.isEmpty()) {
+                val paginatedTasks = if (filteredTasks.isEmpty()) {
                     emptyList()
                 } else {
-                    currentFilterTasks.subList(start, end)
+                    filteredTasks.subList(start, end)
                 }
 
                 val currentProfile = mutableState.value.wizardProfile?.getOrNull()
@@ -422,11 +526,10 @@ class TaskViewModel(
                         totalPages = totalPages,
                         currentPage = currentPageValue,
                         isLoading = false,
-                        onFilterChange = { filter -> setFilter(filter) },
                         searchActive = searchActive.value,
                         searchQuery = searchQuery.value,
                         selectedPriority = selectedPriority.value,
-                        taskType = taskType.value
+                        selectedCategory = selectedCategory.value
                     )
                 }
 
@@ -443,6 +546,35 @@ class TaskViewModel(
 
     fun hideLevel30Dialog() {
         mutableState.update { it.copy(showLevel30Dialog = false) }
+    }
+
+    fun getTutorialTasks(): List<Task> {
+        val today = System.currentTimeMillis()
+
+        return listOf(
+            Task(
+                id = -1,
+                title = "Clean your bed",
+                description = "Make your bed and tidy up your bedroom",
+                priority = Priority.MEDIUM,
+                userId = "",
+                isCompleted = false,
+                createdAt = today,
+                category = "Chores",
+                dueDate = today
+            ),
+            Task(
+                id = -2,
+                title = "Do the dishes",
+                description = "Wash and put away all dirty dishes",
+                priority = Priority.MEDIUM,
+                userId = "",
+                isCompleted = false,
+                createdAt = today,
+                category = "Chores",
+                dueDate = today
+            )
+        )
     }
 
     fun completeTask(taskId: Int, notificationService: TaskNotificationService? = null) {
@@ -467,6 +599,9 @@ class TaskViewModel(
                     return@launch
                 }
 
+                Log.d("TaskViewModel", "BEFORE COMPLETION - totalTasksCompleted: ${wizardProfile.totalTasksCompleted}")
+
+                // Calculate task effects - ONLY GAINS for on-time completion
                 val (hpGain, staminaGain, expGain) = calculateTaskEffects(
                     priority = task.priority,
                     isOnTime = task.dueDate?.let { System.currentTimeMillis() <= it } ?: true,
@@ -474,9 +609,12 @@ class TaskViewModel(
                     currentStamina = wizardProfile.stamina
                 )
 
-                var newHealth = wizardProfile.health + hpGain
-                var newStamina = wizardProfile.stamina + staminaGain
-                var newExperience = wizardProfile.experience + expGain
+                // Check if this is late completion (negative rewards)
+                val isLateCompletion = hpGain < 0
+
+                var newHealth: Int
+                var newStamina: Int
+                var newExperience: Int
                 var newLevel = wizardProfile.level
                 var newMaxHealth = wizardProfile.maxHealth
                 var newMaxStamina = wizardProfile.maxStamina
@@ -484,6 +622,25 @@ class TaskViewModel(
                 val actualHpGain: Int
                 val actualStaminaGain: Int
 
+                if (isLateCompletion) {
+                    // Late completion - apply penalties but still gain XP
+                    newHealth = (wizardProfile.health + hpGain).coerceAtLeast(0)
+                    newStamina = (wizardProfile.stamina + staminaGain).coerceAtLeast(0)
+                    newExperience = wizardProfile.experience + expGain
+
+                    actualHpGain = hpGain
+                    actualStaminaGain = staminaGain
+                } else {
+                    // On-time completion - only gains
+                    newHealth = (wizardProfile.health + hpGain).coerceAtMost(wizardProfile.maxHealth)
+                    newStamina = (wizardProfile.stamina + staminaGain).coerceAtMost(wizardProfile.maxStamina)
+                    newExperience = wizardProfile.experience + expGain
+
+                    actualHpGain = hpGain
+                    actualStaminaGain = staminaGain
+                }
+
+                // Check for level up
                 val isLevelUp = newExperience >= EXP_PER_LEVEL
                 if (isLevelUp && newLevel < MAX_LEVEL) {
                     newLevel++
@@ -492,24 +649,18 @@ class TaskViewModel(
                     newMaxHealth = WizardProfile.calculateMaxHealth(newLevel)
                     newMaxStamina = WizardProfile.calculateMaxStamina(newLevel)
 
-                    actualHpGain = newMaxHealth - wizardProfile.health
+                    // On level up, fully restore HP and boost stamina
                     newHealth = newMaxHealth
-
-                    actualStaminaGain = 10
                     newStamina = (wizardProfile.stamina + 10).coerceAtMost(newMaxStamina)
 
                     if (newLevel == 30) {
                         checkForLevel30Achievement(newLevel)
                     }
-                } else {
-                    newHealth = newHealth.coerceAtMost(wizardProfile.maxHealth)
-                    newStamina = newStamina.coerceAtMost(wizardProfile.maxStamina)
-
-                    actualHpGain = hpGain
-                    actualStaminaGain = staminaGain
                 }
 
                 val newTotalTasksCompleted = wizardProfile.totalTasksCompleted + 1
+
+                Log.d("TaskViewModel", "AFTER COMPLETION - newTotalTasksCompleted: $newTotalTasksCompleted")
 
                 val updatedProfile = wizardProfile.copy(
                     level = newLevel,
@@ -523,9 +674,12 @@ class TaskViewModel(
                     lastTaskCompleted = Timestamp.now()
                 )
 
-                taskRepository.updateTaskCompletionStatus(taskId, true)
+                Log.d("TaskViewModel", "UPDATED PROFILE - totalTasksCompleted: ${updatedProfile.totalTasksCompleted}")
 
+                taskRepository.updateTaskCompletionStatus(taskId, true)
                 wizardRepository.updateWizardProfile(userId, updatedProfile)
+
+                Log.d("TaskViewModel", "Profile updated in repository")
 
                 notificationService?.showTaskCompletionNotification(
                     task = task,
@@ -535,10 +689,12 @@ class TaskViewModel(
                 )
 
                 mutableState.update { currentState ->
-                    currentState.copy(
+                    val newState = currentState.copy(
                         wizardProfile = Result.success(updatedProfile),
                         isLoading = false
                     )
+                    Log.d("TaskViewModel", "State updated - profile totalTasks: ${newState.wizardProfile?.getOrNull()?.totalTasksCompleted}")
+                    newState
                 }
 
                 loadTasksOnly(userId)
@@ -554,10 +710,14 @@ class TaskViewModel(
             }
         }
     }
+    fun completeTutorialTask(taskId: Int) {
+        if (taskId < 0) {
+            completedTutorialTasks.add(taskId)
+        }
+    }
 
-    override fun onCleared() {
-        super.onCleared()
-        soundPool.release()
+    fun getIncompleteTutorialTasks(): List<Task> {
+        return getTutorialTasks().filter { it.id !in completedTutorialTasks }
     }
 
     private suspend fun loadTasksOnly(userId: String) {
@@ -566,19 +726,18 @@ class TaskViewModel(
 
             allTasks = tasks
 
-            val searchFiltered = applySearchFiltersToTasks(tasks)
-            val currentFilterTasks = filterTasks(searchFiltered, uiState.value.currentFilter)
+            val filteredTasks = applySearchFiltersToTasks(tasks)
 
-            val totalPages = (currentFilterTasks.size + pageSize - 1) / pageSize
+            val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
             val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
             val start = (currentPageValue - 1) * pageSize
-            val end = minOf(start + pageSize, currentFilterTasks.size)
+            val end = minOf(start + pageSize, filteredTasks.size)
 
-            val paginatedTasks = if (currentFilterTasks.isEmpty()) {
+            val paginatedTasks = if (filteredTasks.isEmpty()) {
                 emptyList()
             } else {
-                currentFilterTasks.subList(start, end)
+                filteredTasks.subList(start, end)
             }
 
             mutableState.update { state ->
@@ -616,23 +775,100 @@ class TaskViewModel(
                     (BASE_STAMINA_GAIN * 2 * staminaEfficiency).toInt(),
                     (BASE_XP_GAIN * 1.5).toInt()
                 )
+
                 Priority.MEDIUM -> Triple(
                     (BASE_HP_GAIN * levelFactor).toInt(),
                     (BASE_STAMINA_GAIN * 1.5 * staminaEfficiency).toInt(),
                     BASE_XP_GAIN
                 )
+
                 Priority.LOW -> Triple(
                     (BASE_HP_GAIN * 0.5 * levelFactor).toInt(),
                     (BASE_STAMINA_GAIN * staminaEfficiency).toInt(),
                     (BASE_XP_GAIN * 0.7).toInt()
                 )
             }
+
             else -> when (priority) {
                 Priority.HIGH -> Triple(-15, -5, 3)
                 Priority.MEDIUM -> Triple(-10, -3, 2)
                 Priority.LOW -> Triple(-5, -1, 1)
             }
         }
+    }
+
+    /**
+     * Calculate damage taken when deleting a task
+     */
+    fun calculateDeletionDamage(priority: Priority): Int {
+        return when (priority) {
+            Priority.HIGH -> 20
+            Priority.MEDIUM -> 15
+            Priority.LOW -> 10
+        }
+    }
+
+    /**
+     * Delete task and apply HP damage to wizard
+     */
+    fun deleteTaskWithDamage(taskId: Int, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val userId = wizardRepository.getCurrentUserId() ?: run {
+                    mutableState.update { it.copy(error = "Not logged in") }
+                    return@launch
+                }
+
+                val task = uiState.value.tasks.find { it.id == taskId }
+                    ?: taskRepository.getTaskById(taskId)
+
+                if (task != null) {
+                    val damage = calculateDeletionDamage(task.priority)
+
+                    val wizardProfile = wizardRepository.getWizardProfile(userId).getOrNull()
+
+                    if (wizardProfile != null) {
+                        val newHealth = (wizardProfile.health - damage).coerceAtLeast(0)
+
+                        val updatedProfile = wizardProfile.copy(
+                            health = newHealth
+                        )
+
+                        wizardRepository.updateWizardProfile(userId, updatedProfile)
+
+                        mutableState.update { state ->
+                            state.copy(
+                                wizardProfile = Result.success(updatedProfile),
+                                recentDamage = damage
+                            )
+                        }
+
+                        Toast.makeText(
+                            context,
+                            "Task deleted! Took $damage HP damage!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        viewModelScope.launch {
+                            delay(2000)
+                            mutableState.update { it.copy(recentDamage = null) }
+                        }
+                    }
+
+                    taskRepository.deleteTask(task)
+                    loadData()
+                    onSuccess()
+                } else {
+                    mutableState.update { it.copy(error = "Task not found") }
+                }
+            } catch (e: Exception) {
+                mutableState.update { it.copy(error = "Failed to delete task: ${e.message}") }
+            }
+        }
+    }
+
+    fun deleteTask(taskId: Int, onSuccess: () -> Unit) {
+        deleteTaskWithDamage(taskId, onSuccess)
     }
 
     fun loadTaskForEditing(taskId: Int) {
@@ -736,50 +972,6 @@ class TaskViewModel(
         }
     }
 
-    fun deleteTask(taskId: Int, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            try {
-                val task = uiState.value.tasks.find { it.id == taskId }
-                    ?: taskRepository.getTaskById(taskId)
-
-                if (task != null) {
-                    taskRepository.deleteTask(task)
-                    loadData()
-                    onSuccess()
-                } else {
-                    mutableState.update { it.copy(error = "Task not found") }
-                }
-            } catch (e: Exception) {
-                mutableState.update { it.copy(error = "Failed to delete task: ${e.message}") }
-            }
-        }
-    }
-
-    fun setFilter(filter: TaskFilter) {
-        currentPage.value = 1
-        mutableState.update { state ->
-            val searchFiltered = applySearchFiltersToTasks(allTasks)
-            val filteredTasks = filterTasks(searchFiltered, filter)
-
-            val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
-            val start = 0
-            val end = minOf(pageSize, filteredTasks.size)
-
-            val paginatedTasks = if (filteredTasks.isEmpty()) {
-                emptyList()
-            } else {
-                filteredTasks.subList(start, end)
-            }
-
-            state.copy(
-                currentFilter = filter,
-                filteredTasks = paginatedTasks,
-                totalPages = totalPages,
-                currentPage = 1
-            )
-        }
-    }
-
     fun clearError() {
         mutableState.update { it.copy(error = null) }
     }
@@ -790,14 +982,6 @@ class TaskViewModel(
 
     fun resetEditTaskState() {
         mutableEditTaskState.value = EditTaskState()
-    }
-
-    private fun filterTasks(tasks: List<Task>, filter: TaskFilter): List<Task> {
-        return when (filter) {
-            TaskFilter.ALL -> tasks
-            TaskFilter.ACTIVE -> tasks.filter { !it.isCompleted }
-            TaskFilter.COMPLETED -> tasks.filter { it.isCompleted }
-        }
     }
 
     /**
@@ -863,7 +1047,8 @@ class TaskViewModel(
      * Get number of tasks completed toward revival
      */
     fun getRevivalProgress(): Pair<Int, Int> {
-        val tasksCompleted = mutableState.value.wizardProfile?.getOrNull()?.consecutiveTasksCompleted ?: 0
+        val tasksCompleted =
+            mutableState.value.wizardProfile?.getOrNull()?.consecutiveTasksCompleted ?: 0
         return Pair(tasksCompleted, 3)
     }
 
@@ -957,5 +1142,10 @@ class TaskViewModel(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundPool.release()
     }
 }

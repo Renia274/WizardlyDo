@@ -20,7 +20,6 @@ class WizardRepository(
     }
 
 
-
     suspend fun createWizardProfile(profile: WizardProfile): Result<Unit> = runCatching {
         if (profile.passwordHash.isNotEmpty()) {
             // Check if it's already encrypted

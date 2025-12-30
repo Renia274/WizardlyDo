@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,7 +47,8 @@ fun TaskListSection(
     onPreviousPage: () -> Unit,
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
-    onDeleteTask: (Int) -> Unit
+    onDeleteTask: (Int) -> Unit,
+    tutorialTasks: List<Task> = emptyList()
 ) {
     val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState(
@@ -55,6 +57,15 @@ fun TaskListSection(
     )
 
     var isLoadingPage by remember { mutableStateOf(false) }
+    var editingTaskId by remember { mutableStateOf<Int?>(null) }
+
+    // Combine tutorial tasks + user tasks
+    val allTasks = tutorialTasks + tasks
+
+    // Reset editing state when returning from edit screen (tasks list changes)
+    LaunchedEffect(allTasks.size) {
+        editingTaskId = null
+    }
 
     Column(
         modifier = Modifier
@@ -71,12 +82,33 @@ fun TaskListSection(
                 contentPadding = PaddingValues(bottom = 80.dp),
                 userScrollEnabled = true
             ) {
-                items(tasks) { taskEntity ->
+                items(
+                    items = allTasks,
+                    key = { task -> task.id }
+                ) { taskEntity ->
+                    val isTutorial = taskEntity.id < 0
+
                     TaskItem(
                         taskEntity = taskEntity,
-                        onComplete = { onCompleteTask(taskEntity.id) },
-                        onEdit = { onEditTask(taskEntity.id) },
-                        onDelete = { onDeleteTask(taskEntity.id) }
+                        onComplete = {
+                            onCompleteTask(taskEntity.id)
+                            editingTaskId = null
+                        },
+                        onEdit = {
+                            // Don't allow editing tutorial tasks
+                            if (!isTutorial) {
+                                editingTaskId = taskEntity.id
+                                onEditTask(taskEntity.id)
+                            }
+                        },
+                        onDelete = {
+                            // Don't allow deleting tutorial tasks
+                            if (!isTutorial) {
+                                onDeleteTask(taskEntity.id)
+                                editingTaskId = null
+                            }
+                        },
+                        isEditing = editingTaskId == taskEntity.id
                     )
                 }
 
@@ -86,12 +118,12 @@ fun TaskListSection(
             }
 
             // Auto-load next page when reaching bottom
-            if (tasks.isNotEmpty()) {
+            if (allTasks.isNotEmpty()) {
 //                LaunchedEffect(lazyListState) {
 //                    snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
 //                        .distinctUntilChanged()
 //                        .collect { lastVisibleIndex ->
-//                            if (lastVisibleIndex == tasks.size - 1 && !isLoadingPage && currentPage < totalPages) {
+//                            if (lastVisibleIndex == allTasks.size - 1 && !isLoadingPage && currentPage < totalPages) {
 //                                isLoadingPage = true
 //                                onNextPage()
 //                                delay(500)

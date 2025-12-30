@@ -2,6 +2,8 @@ package com.wizardlydo.app.screens.pin
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -77,8 +80,11 @@ fun ForgotPinContent(
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
 
-    val padding = (screenWidth * 0.06f).coerceIn(24.dp, 40.dp)
-    val spacing = (screenHeight * 0.02f).coerceIn(16.dp, 32.dp)
+    // Responsive sizing calculations
+    val horizontalPadding = (screenWidth * 0.08f).coerceIn(24.dp, 48.dp)
+    val maxContentWidth = (screenWidth * 0.85f).coerceIn(300.dp, 500.dp)
+    val verticalSpacing = (screenHeight * 0.025f).coerceIn(16.dp, 32.dp)
+    val headerSize = (screenWidth * 0.15f).coerceIn(60.dp, 100.dp)
 
     // Auto-reset PIN when it's complete
     LaunchedEffect(pin) {
@@ -88,84 +94,98 @@ fun ForgotPinContent(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = padding)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = horizontalPadding),
+        contentAlignment = Alignment.Center
     ) {
-        Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
+        Column(
+            modifier = Modifier
+                .widthIn(max = maxContentWidth)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Add some top spacing for smaller screens
+            Spacer(modifier = Modifier.height(verticalSpacing))
 
-        ForgotPinHeader()
+            ForgotPinHeader()
 
-        Spacer(modifier = Modifier.height(spacing))
+            Spacer(modifier = Modifier.height(verticalSpacing * 1.5f))
 
-        PinInputSection(
-            pin = pin,
-            onPinChange = onPinChange
-        )
+            PinInputSection(
+                pin = pin,
+                onPinChange = onPinChange
+            )
 
-        Spacer(modifier = Modifier.height((spacing * 0.8f)))
+            Spacer(modifier = Modifier.height(verticalSpacing * 1.2f))
 
-        when {
-            pin.length == 4 && isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(40.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Resetting PIN...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            pin.length == 4 -> {
-                ResetPinButton(
-                    pin = pin,
-                    onResetPin = onResetPin,
-                    isLoading = isLoading
-                )
-            }
-            else -> {
-                Button(
-                    onClick = onResetPin,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    enabled = false
-                ) {
-                    Text("Enter new 4-digit PIN")
+            when {
+                pin.length == 4 && isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size((screenWidth * 0.1f).coerceIn(36.dp, 48.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Resetting PIN...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                pin.length == 4 -> {
+                    ResetPinButton(
+                        pin = pin,
+                        onResetPin = onResetPin,
+                        isLoading = isLoading
+                    )
+                }
+                else -> {
+                    Button(
+                        onClick = onResetPin,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height((screenHeight * 0.065f).coerceIn(48.dp, 60.dp)),
+                        enabled = false
+                    ) {
+                        Text(
+                            text = "Enter new 4-digit PIN",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(verticalSpacing))
+
+            Text(
+                text = if (pin.length < 4) {
+                    "Enter your new 4-digit PIN"
+                } else {
+                    "New PIN ready to save"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (pin.length == 4) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(verticalSpacing * 0.75f))
+
+            PinProgressIndicator(
+                currentLength = pin.length,
+                totalLength = 4
+            )
+
+            // Add some bottom spacing for smaller screens
+            Spacer(modifier = Modifier.height(verticalSpacing))
         }
-
-        Spacer(modifier = Modifier.height((spacing * 0.8f)))
-
-        Text(
-            text = if (pin.length < 4) {
-                "Enter your new 4-digit PIN"
-            } else {
-                "New PIN ready to save"
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (pin.length == 4) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        PinProgressIndicator(
-            currentLength = pin.length,
-            totalLength = 4
-        )
-
-        Spacer(modifier = Modifier.height((screenHeight * 0.05f).coerceIn(20.dp, 50.dp)))
     }
 
     error?.let {
@@ -175,6 +195,7 @@ fun ForgotPinContent(
         )
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.R)
 @Preview(showBackground = true)
 @Composable

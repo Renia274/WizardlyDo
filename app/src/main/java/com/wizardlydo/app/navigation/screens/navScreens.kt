@@ -34,6 +34,7 @@ sealed class Screen(val route: String) {
             fun createRoute(taskId: String) = "tasks/edit/$taskId"
         }
         data object Settings : Tasks("tasks/settings")
+        data object Guide : Tasks("tasks/guide")
     }
 
     // Other Screens

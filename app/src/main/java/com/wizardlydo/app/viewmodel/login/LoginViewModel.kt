@@ -139,7 +139,7 @@ class LoginViewModel(
 
     private fun handleRememberMe() {
         if (state.value.rememberMe) {
-            rememberMeManager.saveEmail(state.value.email)
+            rememberMeManager.saveCredentialsForAutofill(state.value.email)
             rememberMeManager.setRememberMe(true)
         } else {
             rememberMeManager.clearRememberedEmail()

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,13 +26,17 @@ import com.wizardlydo.app.screens.splash.SplashScreen
 import com.wizardlydo.app.screens.tasks.CreateTaskScreen
 import com.wizardlydo.app.screens.tasks.EditTaskScreen
 import com.wizardlydo.app.screens.tasks.InventoryScreen
+import com.wizardlydo.app.screens.tasks.TaskGuideScreen
 import com.wizardlydo.app.screens.tasks.TaskScreen
+import com.wizardlydo.app.utilities.GuidePreferences
 
 @SuppressLint("NewApi")
 @RequiresApi(Build.VERSION_CODES.R)
 @Composable
 fun NavigationGraph() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val guidePrefs = GuidePreferences(context)
 
     NavHost(
         navController = navController,
@@ -136,8 +141,17 @@ fun NavigationGraph() {
         composable(Screen.Pin.Verify.route) {
             PinVerifyScreen(
                 onPinSuccess = {
-                    navController.navigate(Screen.Tasks.Main.route) {
-                        popUpTo(Screen.Pin.Verify.route) { inclusive = true }
+                    // Check if user has seen the guide
+                    if (guidePrefs.hasSeenGuide()) {
+                        // Go directly to tasks
+                        navController.navigate(Screen.Tasks.Main.route) {
+                            popUpTo(Screen.Pin.Verify.route) { inclusive = true }
+                        }
+                    } else {
+                        // Show guide first (only once)
+                        navController.navigate(Screen.Tasks.Guide.route) {
+                            popUpTo(Screen.Pin.Verify.route) { inclusive = true }
+                        }
                     }
                 },
                 onForgotPin = {
@@ -151,6 +165,19 @@ fun NavigationGraph() {
                 onPinResetComplete = {
                     navController.navigate(Screen.Pin.Verify.route) {
                         popUpTo(Screen.Pin.Forgot.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Tasks.Guide.route) {
+            TaskGuideScreen(
+                onFinish = {
+                    // Mark guide as shown
+                    guidePrefs.markGuideAsShown()
+                    // Go to tasks(Main Screen)
+                    navController.navigate(Screen.Tasks.Main.route) {
+                        popUpTo(Screen.Tasks.Guide.route) { inclusive = true }
                     }
                 }
             )

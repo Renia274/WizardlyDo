@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.wizardlydo.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.wizardlydo.app"
-        minSdk = 25
-        targetSdk = 35
+        minSdk = 26
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.androidx.compose.material)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.tools.core)
+    implementation(libs.androidx.compose.ui)
 
     // Testing
     testImplementation(libs.junit)

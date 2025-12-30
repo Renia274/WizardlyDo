@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.34.0"
 accompanistPermissionsVersion = "0.30.1"
-agp = "8.10.1"
+agp = "8.13.2"
 bcrypt = "0.10.2"
 biometric = "1.2.0-alpha04"
 braintree = "3.21.1"
@@ -38,6 +38,7 @@ roomRuntime = "2.6.1"
 workRuntimeKtx = "2.10.1"
 workRuntimeKtxVersion = "2.8.0"
 toolsCore = "1.0.0-alpha13"
+ui = "1.10.0"
 
 [libraries]
 # AndroidX
@@ -94,6 +95,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "composeMaterial" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 androidx-tools-core = { group = "androidx.privacysandbox.tools", name = "tools-core", version.ref = "toolsCore" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

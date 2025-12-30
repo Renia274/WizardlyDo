@@ -1,6 +1,7 @@
 package com.wizardlydo.app.screens.tasks.comps.taskScreensComps
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,14 +13,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,11 +41,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.data.tasks.Task
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,11 +53,11 @@ fun TaskItem(
     taskEntity: Task,
     onComplete: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isEditing: Boolean = false
 ) {
     var showCompletionDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val daysRemaining = taskEntity.getDaysRemaining()
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
@@ -89,18 +88,6 @@ fun TaskItem(
             text = {
                 Column {
                     Text("Mark this task as completed?")
-                    daysRemaining?.let { days ->
-                        Text(
-                            text = if (days > 0) "Due in $days day${if (days > 1) "s" else ""}"
-                            else "This task is overdue!",
-                            color = when {
-                                days <= 0 -> MaterialTheme.colorScheme.error
-                                days <= 3 -> MaterialTheme.colorScheme.tertiary
-                                else -> MaterialTheme.colorScheme.primary
-                            },
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Completing tasks gives you XP and rewards!",
@@ -188,25 +175,40 @@ fun TaskItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onEdit)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = taskEntity.isCompleted,
-                        onCheckedChange = { _ ->
-                            if (!taskEntity.isCompleted) {
-                                showCompletionDialog = true
-                            }
+                    .then(
+                        if (isEditing) {
+                            Modifier.border(
+                                width = 3.dp,
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = MaterialTheme.shapes.medium
+                            )
+                        } else {
+                            Modifier
                         }
                     )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Priority border on the left
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(80.dp)
+                            .background(
+                                when (taskEntity.priority) {
+                                    Priority.LOW -> Color.Green
+                                    Priority.MEDIUM -> Color(0xFFFFA500) // Orange
+                                    Priority.HIGH -> Color.Red
+                                }
+                            )
+                    )
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .weight(1f)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = taskEntity.title,
@@ -214,23 +216,6 @@ fun TaskItem(
                                 textDecoration = if (taskEntity.isCompleted) TextDecoration.LineThrough else null,
                                 modifier = Modifier.weight(1f)
                             )
-
-                            daysRemaining?.takeIf { it >= 0 }?.let { days ->
-                                Surface(
-                                    shape = CircleShape,
-                                    color = getDaysRemainingColor(days).copy(alpha = 0.2f),
-                                    contentColor = getDaysRemainingColor(days),
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = "$days",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
                         }
 
                         if (taskEntity.description.isNotBlank()) {
@@ -271,8 +256,6 @@ fun TaskItem(
                             }
                         }
                     }
-
-                    PriorityIndicator(priority = taskEntity.priority)
                 }
             }
         }
@@ -327,23 +310,5 @@ private fun SwipeBackground(
             tint = Color.White,
             modifier = Modifier.size(32.dp)
         )
-    }
-}
-
-@Composable
-private fun getDaysRemainingColor(days: Int): Color {
-    return when {
-        days <= 0 -> MaterialTheme.colorScheme.error // Overdue
-        days <= 1 -> MaterialTheme.colorScheme.error // Due today/tomorrow
-        days <= 3 -> MaterialTheme.colorScheme.tertiary // Due in 2-3 days
-        else -> MaterialTheme.colorScheme.primary // Due later
-    }
-}
-
-fun Task.getDaysRemaining(): Int? {
-    return dueDate?.let { dueDateMillis ->
-        val currentTime = System.currentTimeMillis()
-        val diff = dueDateMillis - currentTime
-        TimeUnit.MILLISECONDS.toDays(diff).toInt() + 1 // +1 to count current partial day
     }
 }

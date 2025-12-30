@@ -1,54 +1,84 @@
 package com.wizardlydo.app.screens.tasks.comps.taskScreensComps
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.wizardlydo.app.data.tasks.getTaskCategories
 
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CategorySelector(
-    category: String,
+    selectedCategory: String,
     categories: List<String>,
     onCategorySelected: (String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    val taskCategories = remember { getTaskCategories() }
 
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it }
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        OutlinedTextField(
-            value = category,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Category (optional)") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor()
+        Text(
+            text = "Category",
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            categories.forEach { categoryOption ->
-                DropdownMenuItem(
-                    text = { Text(categoryOption) },
-                    onClick = {
-                        onCategorySelected(categoryOption)
-                        expanded = false
+            taskCategories.forEach { category ->
+                FilterChip(
+                    selected = selectedCategory == category.name,
+                    onClick = { onCategorySelected(category.name) },
+                    label = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(id = category.iconRes),
+                                contentDescription = category.name,
+                                modifier = Modifier.size(18.dp),
+                                tint = if (selectedCategory == category.name) Color.White else category.color
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = category.name,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = category.color,
+                        selectedLabelColor = Color.White,
+                        containerColor = category.color.copy(alpha = 0.1f),
+                        labelColor = category.color
+                    ),
+                    border = if (selectedCategory == category.name) {
+                        BorderStroke(2.dp, category.color)
+                    } else {
+                        BorderStroke(1.dp, category.color.copy(alpha = 0.3f))
                     }
                 )
             }

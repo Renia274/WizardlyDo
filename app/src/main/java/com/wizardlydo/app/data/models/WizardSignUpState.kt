@@ -14,5 +14,6 @@ data class WizardSignUpState(
     val emailError: String? = null,
     val passwordError: String? = null,
     val isPasswordVisible: Boolean = false,
-    val isCheckingUsername: Boolean
+    val isCheckingUsername: Boolean = false,
+    val usernameSuggestions: List<String> = emptyList()
 )

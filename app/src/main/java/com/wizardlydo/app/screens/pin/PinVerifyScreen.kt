@@ -52,7 +52,7 @@ fun PinVerifyScreen(
         }
     }
 
-    // Reset state when screen is displayed
+    // Reset PIN state when screen is displayed (not wizard data)
     LaunchedEffect(Unit) {
         viewModel.resetState()
     }

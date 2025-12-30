@@ -1,11 +1,15 @@
 package com.wizardlydo.app.screens.tasks.comps.taskScreensComps.stats
 
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,12 +21,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,9 +55,14 @@ fun CharacterStatsSection(
     experience: Int,
     level: Int,
     equippedItems: EquippedItems? = null,
-    taskViewModel: TaskViewModel? = LocalTaskViewModel.current
+    taskViewModel: TaskViewModel? = LocalTaskViewModel.current,
+    recentDamage: Int? = null
 ) {
     val wizardProfile = wizardResult?.getOrNull()
+
+    // Debug logging
+    Log.d("CharacterStatsSection", "Rendering with: totalTasks=${wizardProfile?.totalTasksCompleted}, xp=$experience, level=$level")
+
     val isWizardDead = health <= 0
     val hasBackground = equippedItems?.background != null
     val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -191,6 +196,38 @@ fun CharacterStatsSection(
                     }
                 }
 
+                // Damage indicator
+                AnimatedVisibility(
+                    visible = recentDamage != null && recentDamage > 0,
+                    enter = fadeIn() + scaleIn(),
+                    exit = fadeOut() + scaleOut()
+                ) {
+                    recentDamage?.let { damage ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "⚠️ -$damage HP",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Death message when HP is zero
                 if (isWizardDead) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -260,12 +297,22 @@ fun CharacterStatsSection(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (!isWizardDead) {
-                    XPBasedTaskProgressSection(
-                        level = level,
-                        experience = animatedExp,
-                        taskViewModel = taskViewModel,
-                        wizardProfile = wizardProfile
-                    )
+                    // Use TaskProgressSection with actual task counts
+                    wizardProfile?.let { profile ->
+                        Log.d("CharacterStatsSection", "Calling getActualTaskProgress with totalTasks=${profile.totalTasksCompleted}")
+
+                        val (tasksCompleted, totalTasks) = taskViewModel?.getActualTaskProgress(profile) ?: Pair(0, 20)
+
+                        Log.d("CharacterStatsSection", "TaskProgress Result: $tasksCompleted / $totalTasks")
+
+                        TaskProgressSection(
+                            tasksCompleted = tasksCompleted,
+                            totalTasksForLevel = totalTasks,
+                            textColor = onSurfaceVariantColor,
+                            wizardProfile = profile,
+                            taskViewModel = taskViewModel
+                        )
+                    }
                 } else {
                     val revivalProgress = taskViewModel?.getRevivalProgress() ?: Pair(wizardProfile?.consecutiveTasksCompleted ?: 0, 3)
 
@@ -275,126 +322,6 @@ fun CharacterStatsSection(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun XPBasedTaskProgressSection(
-    level: Int,
-    experience: Int,
-    taskViewModel: TaskViewModel? = LocalTaskViewModel.current,
-    wizardProfile: WizardProfile? = null,
-    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
-) {
-    // Calculate tasks required for current level
-    val tasksRequiredForLevel = when (level) {
-        in 1..4 -> 10
-        in 5..8 -> 15
-        in 9..14 -> 20
-        in 15..19 -> 25
-        in 20..24 -> 30
-        in 25..29 -> 35
-        else -> 40
-    }
-
-    // Calculate XP per task for current level
-    val expPerLevel = 1000
-    val expPerTask = if (tasksRequiredForLevel > 0) expPerLevel / tasksRequiredForLevel else 0
-
-    // Calculate tasks completed based on current XP
-    val tasksCompleted = if (expPerTask > 0) {
-        (experience / expPerTask).coerceAtMost(tasksRequiredForLevel)
-    } else {
-        0
-    }
-
-    // Calculate progress
-    val taskProgress = if (tasksRequiredForLevel > 0) {
-        tasksCompleted.toFloat() / tasksRequiredForLevel.toFloat()
-    } else {
-        0f
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                // Show toast when card is clicked
-                wizardProfile?.let { profile ->
-                    taskViewModel?.showXPProgressToast(profile)
-                }
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Task Set Progress",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                // Info icon to indicate clickable
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = "Tap for XP details",
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LinearProgressIndicator(
-                progress = { taskProgress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(10.dp),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = textColor.copy(alpha = 0.2f)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "$tasksCompleted/$tasksRequiredForLevel completed",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textColor
-                )
-
-                Text(
-                    text = "${experience}/${expPerLevel} XP",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Tap for XP details • Complete all tasks to level up",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
         }
     }
 }

@@ -8,13 +8,10 @@ data class TaskUiState(
     val wizardProfile: Result<WizardProfile?>? = null,
     val tasks: List<Task> = emptyList(),
     val filteredTasks: List<Task> = emptyList(),
-    val currentFilter: TaskFilter = TaskFilter.ALL,
     val isLoading: Boolean = false,
     val error: String? = null,
     val recentlyCreatedTask: Task? = null,
-    val onFilterChange: ((TaskFilter) -> Unit)? = null,
     val showLevel30Dialog: Boolean = false,
-
 
     // Pagination support
     val currentPage: Int = 1,
@@ -24,7 +21,9 @@ data class TaskUiState(
     val searchActive: Boolean = false,
     val searchQuery: String = "",
     val selectedPriority: Priority? = null,
-    val taskType: TaskFilter = TaskFilter.ALL
+    val selectedCategory: String? = null,
+
+    // Damage tracking
+    val recentDamage: Int? = null
 )
 
-enum class TaskFilter { ALL, ACTIVE, COMPLETED}

@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.wizardlydo.app.data.tasks.Priority
 
 
@@ -34,14 +35,14 @@ fun PrioritySelector(
                 label = { Text(priorityOption.name) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = when (priorityOption) {
-                        Priority.HIGH -> MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
-                        Priority.MEDIUM -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        Priority.LOW -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                        Priority.HIGH -> Color.Red.copy(alpha = 0.2f)
+                        Priority.MEDIUM -> Color(0xFFFFA500).copy(alpha = 0.2f) // Orange
+                        Priority.LOW -> Color.Green.copy(alpha = 0.2f)
                     },
                     selectedLabelColor = when (priorityOption) {
-                        Priority.HIGH -> MaterialTheme.colorScheme.error
-                        Priority.MEDIUM -> MaterialTheme.colorScheme.primary
-                        Priority.LOW -> MaterialTheme.colorScheme.tertiary
+                        Priority.HIGH -> Color.Red
+                        Priority.MEDIUM -> Color(0xFFFFA500) // Orange
+                        Priority.LOW -> Color.Green
                     }
                 )
             )
