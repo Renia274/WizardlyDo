@@ -68,6 +68,10 @@ class TaskViewModel(
 
     private val completedTutorialTasks = mutableSetOf<Int>()
 
+    // Flag to prevent profile reload after task completion
+    private var profileRecentlyUpdated = false
+    private var lastProfileUpdateTime = 0L
+
     private val soundPool: SoundPool by lazy {
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
@@ -87,89 +91,121 @@ class TaskViewModel(
     companion object {
         private const val EXP_PER_LEVEL = 1000
         private const val MAX_LEVEL = 30
-        private const val BASE_XP_GAIN = 25
+        private const val BASE_XP_GAIN = 50
         private const val BASE_HP_GAIN = 5
         private const val BASE_STAMINA_GAIN = 3
     }
 
     /**
-     * Get all unique categories from tasks
+     * Calculate task progress for current level based on XP earned.
+     *
+     * Since tasks give different XP (LOW=35, MEDIUM=50, HIGH=75), we use 50 XP as the
+     * baseline to estimate task count. Uses floor division so 1 completed task shows as 1,
+     * not 2 (even for HIGH priority). The XP bar shows exact progress; task count gives
+     * users a clear goal.
+     *
+     * Progression is designed to gradually increase difficulty:
+     * - Early game (1-4): Learn the system with 20 tasks per level
+     * - Mid game (5-14): Build habits with 25-30 tasks per level
+     * - Late game (15-24): Challenge yourself with 40-50 tasks per level
+     * - End game (25-29): Master level with 60 tasks per level
+     * - Final level (30): Ultimate challenge with 100 tasks
+     *
+     * Total tasks to reach Level 30: ~1,210 tasks (challenging but achievable)
+     *
+     * Examples:
+     * - 75 XP (1 HIGH) → 75÷50 = 1 task shown ✅
+     * - 150 XP (2 HIGH) → 150÷50 = 3 tasks shown (bonus progress!)
+     * - 410 XP → 410÷50 = 8 tasks shown
+     *
+     * @return Pair(tasksCompleted, totalTasksNeeded) for current level
      */
-    fun getAvailableCategories(): List<String> {
-        return allTasks
-            .mapNotNull { it.category }
-            .distinct()
-            .sorted()
-    }
-
-    /**
-     * Set category filter
-     */
-    fun setCategory(category: String?) {
-        selectedCategory.value = category
-        currentPage.value = 1
-        updateFilteredTasks()
-    }
-
-    /**
-     * Get actual tasks completed in current level set
-     * This counts real tasks completed, not XP-based estimates
-     */
-
-
     fun getActualTaskProgress(profile: WizardProfile): Pair<Int, Int> {
         val currentLevel = profile.level
-        val totalTasksCompleted = profile.totalTasksCompleted
+        val currentXP = profile.experience  // Resets to 0 after each level up
 
-        Log.d("TaskViewModel", "getActualTaskProgress - Level: $currentLevel, TotalTasks: $totalTasksCompleted")
+        Log.d("TaskViewModel", "getActualTaskProgress - Level: $currentLevel, XP: $currentXP")
 
-        // Define task requirements for each level set (TOTAL for the entire set)
-        val tasksPerSet = when (currentLevel) {
-            in 1..4 -> 20   // Levels 1-4: 20 tasks TOTAL for all 4 levels
-            in 5..8 -> 20   // Levels 5-8: 20 tasks TOTAL for all 4 levels
-            in 9..14 -> 20  // Levels 9-14: 20 tasks TOTAL for all 6 levels
-            in 15..19 -> 25 // Levels 15-19: 25 tasks TOTAL for all 5 levels
-            in 20..24 -> 30 // Levels 20-24: 30 tasks TOTAL for all 5 levels
-            in 25..29 -> 35 // Levels 25-29: 35 tasks TOTAL for all 5 levels
-            else -> 40      // Level 30: 40 tasks TOTAL
+        // Tasks needed per level set (progressively harder for balanced late-game challenge)
+        val tasksPerLevel = when (currentLevel) {
+            in 1..4 -> 20      // Levels 1-4: Easy introduction (20 tasks × 4 levels = 80 total)
+            in 5..8 -> 25      // Levels 5-8: Building momentum (25 tasks × 4 levels = 100 total)
+            in 9..14 -> 30     // Levels 9-14: Mid-game grind (30 tasks × 6 levels = 180 total)
+            in 15..19 -> 40    // Levels 15-19: Getting serious (40 tasks × 5 levels = 200 total)
+            in 20..24 -> 50    // Levels 20-24: Advanced challenge (50 tasks × 5 levels = 250 total)
+            in 25..29 -> 60    // Levels 25-29: Master level (60 tasks × 5 levels = 300 total)
+            else -> 100        // Level 30: Ultimate endgame (100 tasks for final achievement!)
         }
 
-        // Calculate tasks completed in CURRENT set only
-        val tasksInCurrentSet = when (currentLevel) {
-            in 1..4 -> {
-                // First set (levels 1-4) - no previous tasks to subtract
-                totalTasksCompleted.coerceIn(0, tasksPerSet)
-            }
-            in 5..8 -> {
-                // Second set (levels 5-8) - subtract 20 tasks from set 1
-                (totalTasksCompleted - 20).coerceIn(0, tasksPerSet)
-            }
-            in 9..14 -> {
-                // Third set (levels 9-14) - subtract 40 tasks from sets 1-2
-                (totalTasksCompleted - 40).coerceIn(0, tasksPerSet)
-            }
-            in 15..19 -> {
-                // Fourth set (levels 15-19) - subtract 60 tasks from sets 1-3
-                (totalTasksCompleted - 60).coerceIn(0, tasksPerSet)
-            }
-            in 20..24 -> {
-                // Fifth set (levels 20-24) - subtract 85 tasks from sets 1-4
-                (totalTasksCompleted - 85).coerceIn(0, tasksPerSet)
-            }
-            in 25..29 -> {
-                // Sixth set (levels 25-29) - subtract 115 tasks from sets 1-5
-                (totalTasksCompleted - 115).coerceIn(0, tasksPerSet)
-            }
-            else -> {
-                // Level 30 - subtract 150 tasks from sets 1-6
-                (totalTasksCompleted - 150).coerceIn(0, tasksPerSet)
-            }
-        }
+        // Convert XP to approximate task count (50 XP = 1 task baseline)
+        // Floor division ensures 1 completed task shows as 1, not rounded up
+        val tasksCompleted = (currentXP / 50).coerceIn(0, tasksPerLevel)
 
-        Log.d("TaskViewModel", "Result: $tasksInCurrentSet / $tasksPerSet")
+        Log.d("TaskViewModel", "Result: $tasksCompleted / $tasksPerLevel")
 
-        return Pair(tasksInCurrentSet, tasksPerSet)
+        return Pair(tasksCompleted, tasksPerLevel)
     }
+
+    /**
+     * TEMPORARY: Fix XP to match task count
+     * This retroactively calculates what XP should be based on completed tasks
+     */
+    fun fixXPSync() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val userId = wizardRepository.getCurrentUserId() ?: return@launch
+                val wizardProfile =
+                    wizardRepository.getWizardProfile(userId).getOrNull() ?: return@launch
+
+                // Calculate what XP SHOULD be based on task count
+                val tasksCompleted = wizardProfile.totalTasksCompleted
+                val expectedXP = tasksCompleted * 50  // 50 XP per task average
+
+                Log.d(
+                    "TaskViewModel",
+                    "Fixing XP: $tasksCompleted tasks should give $expectedXP XP"
+                )
+
+                // Calculate new level and remaining XP
+                var newLevel = 1
+                var remainingXP = expectedXP
+
+                while (remainingXP >= 1000 && newLevel < 30) {
+                    remainingXP -= 1000
+                    newLevel++
+                }
+
+                Log.d("TaskViewModel", "New Level: $newLevel, Remaining XP: $remainingXP")
+
+                val fixedProfile = wizardProfile.copy(
+                    level = newLevel,
+                    experience = remainingXP,
+                    maxHealth = WizardProfile.calculateMaxHealth(newLevel),
+                    maxStamina = WizardProfile.calculateMaxStamina(newLevel),
+                    health = WizardProfile.calculateMaxHealth(newLevel),
+                    stamina = WizardProfile.calculateMaxStamina(newLevel)
+                )
+
+                wizardRepository.updateWizardProfile(userId, fixedProfile)
+
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "XP synced! $tasksCompleted tasks = Level $newLevel with $remainingXP XP",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    loadData()
+                }
+            } catch (e: Exception) {
+                Log.e("TaskViewModel", "XP fix failed: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Failed to fix XP: ${e.message}", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
+        }
+    }
+
     /**
      * Update toast to show actual task progress
      */
@@ -283,17 +319,19 @@ class TaskViewModel(
         val hasCleared = sharedPrefs.getBoolean("database_cleared_v1", false)
 
         if (!hasCleared) {
-            try {
-                val database = WizardDatabase.getDatabase(context)
-                database.clearAllTables()
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    val database = WizardDatabase.getDatabase(context)
+                    database.clearAllTables()
 
-                sharedPrefs.edit {
-                    putBoolean("database_cleared_v1", true)
+                    sharedPrefs.edit {
+                        putBoolean("database_cleared_v1", true)
+                    }
+
+                    Log.d("TaskViewModel", "Database cleared once successfully")
+                } catch (e: Exception) {
+                    Log.e("TaskViewModel", "Failed to clear database: ${e.message}")
                 }
-
-                Log.d("TaskViewModel", "Database cleared once successfully")
-            } catch (e: Exception) {
-                Log.e("TaskViewModel", "Failed to clear database: ${e.message}")
             }
         }
     }
@@ -469,17 +507,44 @@ class TaskViewModel(
                     return@launch
                 }
 
-                val wizardProfile = try {
-                    wizardRepository.getWizardProfile(userId).getOrThrow()
-                } catch (e: Exception) {
-                    Log.e("TaskViewModel", "Failed to get wizard profile: ${e.message}")
-                    mutableState.update {
-                        it.copy(
-                            error = "Failed to load wizard profile: ${e.message}",
-                            isLoading = false
-                        )
+                // Check if wizard profile was recently updated using flag
+                val currentProfile = mutableState.value.wizardProfile?.getOrNull()
+                val wasRecentlyUpdated = if (profileRecentlyUpdated) {
+                    val now = System.currentTimeMillis()
+                    val timeSinceUpdate = now - lastProfileUpdateTime
+                    val stillRecent = timeSinceUpdate < 3000  // 3 seconds
+
+                    // Reset flag if more than 3 seconds have passed
+                    if (!stillRecent) {
+                        profileRecentlyUpdated = false
                     }
-                    return@launch
+
+                    Log.d("TaskViewModel", "Using flag - timeSinceUpdate: ${timeSinceUpdate}ms, stillRecent: $stillRecent")
+                    stillRecent
+                } else {
+                    false
+                }
+
+                Log.d("TaskViewModel", "loadData - wasRecentlyUpdated: $wasRecentlyUpdated, currentXP: ${currentProfile?.experience}")
+
+                // Only reload wizard profile if it wasn't recently updated
+                val wizardProfile = if (wasRecentlyUpdated && currentProfile != null) {
+                    Log.d("TaskViewModel", "Using existing profile (recently updated) - XP: ${currentProfile.experience}")
+                    currentProfile
+                } else {
+                    Log.d("TaskViewModel", "Loading fresh profile from database")
+                    try {
+                        wizardRepository.getWizardProfile(userId).getOrThrow()
+                    } catch (e: Exception) {
+                        Log.e("TaskViewModel", "Failed to get wizard profile: ${e.message}")
+                        mutableState.update {
+                            it.copy(
+                                error = "Failed to load wizard profile: ${e.message}",
+                                isLoading = false
+                            )
+                        }
+                        return@launch
+                    }
                 }
 
                 val tasks = try {
@@ -506,8 +571,6 @@ class TaskViewModel(
                     filteredTasks.subList(start, end)
                 }
 
-                val currentProfile = mutableState.value.wizardProfile?.getOrNull()
-
                 val profileToUse = if (wizardProfile != null) {
                     if (wizardProfile.outfit.isBlank() && currentProfile?.outfit?.isNotBlank() == true) {
                         wizardProfile.copy(outfit = currentProfile.outfit)
@@ -517,6 +580,8 @@ class TaskViewModel(
                 } else {
                     currentProfile
                 }
+
+                Log.d("TaskViewModel", "loadData final - XP: ${profileToUse?.experience}, totalTasks: ${profileToUse?.totalTasksCompleted}")
 
                 mutableState.update {
                     it.copy(
@@ -599,7 +664,10 @@ class TaskViewModel(
                     return@launch
                 }
 
-                Log.d("TaskViewModel", "BEFORE COMPLETION - totalTasksCompleted: ${wizardProfile.totalTasksCompleted}")
+                Log.d(
+                    "TaskViewModel",
+                    "BEFORE COMPLETION - totalTasksCompleted: ${wizardProfile.totalTasksCompleted}"
+                )
 
                 // Calculate task effects - ONLY GAINS for on-time completion
                 val (hpGain, staminaGain, expGain) = calculateTaskEffects(
@@ -632,8 +700,10 @@ class TaskViewModel(
                     actualStaminaGain = staminaGain
                 } else {
                     // On-time completion - only gains
-                    newHealth = (wizardProfile.health + hpGain).coerceAtMost(wizardProfile.maxHealth)
-                    newStamina = (wizardProfile.stamina + staminaGain).coerceAtMost(wizardProfile.maxStamina)
+                    newHealth =
+                        (wizardProfile.health + hpGain).coerceAtMost(wizardProfile.maxHealth)
+                    newStamina =
+                        (wizardProfile.stamina + staminaGain).coerceAtMost(wizardProfile.maxStamina)
                     newExperience = wizardProfile.experience + expGain
 
                     actualHpGain = hpGain
@@ -660,7 +730,10 @@ class TaskViewModel(
 
                 val newTotalTasksCompleted = wizardProfile.totalTasksCompleted + 1
 
-                Log.d("TaskViewModel", "AFTER COMPLETION - newTotalTasksCompleted: $newTotalTasksCompleted")
+                Log.d(
+                    "TaskViewModel",
+                    "AFTER COMPLETION - newTotalTasksCompleted: $newTotalTasksCompleted"
+                )
 
                 val updatedProfile = wizardProfile.copy(
                     level = newLevel,
@@ -674,13 +747,20 @@ class TaskViewModel(
                     lastTaskCompleted = Timestamp.now()
                 )
 
-                Log.d("TaskViewModel", "UPDATED PROFILE - totalTasksCompleted: ${updatedProfile.totalTasksCompleted}")
+                Log.d(
+                    "TaskViewModel",
+                    "UPDATED PROFILE - totalTasksCompleted: ${updatedProfile.totalTasksCompleted}, XP: ${updatedProfile.experience}"
+                )
 
+                // Update task completion status
                 taskRepository.updateTaskCompletionStatus(taskId, true)
+
+                // Update wizard profile in database (background)
                 wizardRepository.updateWizardProfile(userId, updatedProfile)
 
                 Log.d("TaskViewModel", "Profile updated in repository")
 
+                // Show notification
                 notificationService?.showTaskCompletionNotification(
                     task = task,
                     wizardProfile = updatedProfile,
@@ -688,15 +768,24 @@ class TaskViewModel(
                     staminaGained = actualStaminaGain
                 )
 
+                // UPDATE UI IMMEDIATELY with new profile (don't wait for database)
                 mutableState.update { currentState ->
                     val newState = currentState.copy(
                         wizardProfile = Result.success(updatedProfile),
                         isLoading = false
                     )
-                    Log.d("TaskViewModel", "State updated - profile totalTasks: ${newState.wizardProfile?.getOrNull()?.totalTasksCompleted}")
+                    Log.d(
+                        "TaskViewModel",
+                        "State updated - profile totalTasks: ${newState.wizardProfile?.getOrNull()?.totalTasksCompleted}, XP: ${newState.wizardProfile?.getOrNull()?.experience}"
+                    )
                     newState
                 }
 
+                // SET FLAG to prevent reload
+                profileRecentlyUpdated = true
+                lastProfileUpdateTime = System.currentTimeMillis()
+
+                // Only reload task list (NOT wizard profile)
                 loadTasksOnly(userId)
 
             } catch (e: Exception) {
@@ -710,6 +799,7 @@ class TaskViewModel(
             }
         }
     }
+
     fun completeTutorialTask(taskId: Int) {
         if (taskId < 0) {
             completedTutorialTasks.add(taskId)
@@ -769,30 +859,32 @@ class TaskViewModel(
         }
 
         return when {
+            // ON-TIME COMPLETION = GAINS ONLY
             isOnTime -> when (priority) {
                 Priority.HIGH -> Triple(
                     (BASE_HP_GAIN * 1.5 * levelFactor).toInt(),
                     (BASE_STAMINA_GAIN * 2 * staminaEfficiency).toInt(),
-                    (BASE_XP_GAIN * 1.5).toInt()
+                    (BASE_XP_GAIN * 1.5).toInt()  // 75 XP
                 )
 
                 Priority.MEDIUM -> Triple(
                     (BASE_HP_GAIN * levelFactor).toInt(),
                     (BASE_STAMINA_GAIN * 1.5 * staminaEfficiency).toInt(),
-                    BASE_XP_GAIN
+                    BASE_XP_GAIN  // 50 XP
                 )
 
                 Priority.LOW -> Triple(
                     (BASE_HP_GAIN * 0.5 * levelFactor).toInt(),
                     (BASE_STAMINA_GAIN * staminaEfficiency).toInt(),
-                    (BASE_XP_GAIN * 0.7).toInt()
+                    (BASE_XP_GAIN * 0.7).toInt()  // 35 XP
                 )
             }
 
+            // LATE COMPLETION = PENALTIES BUT STILL GAIN SOME XP
             else -> when (priority) {
-                Priority.HIGH -> Triple(-15, -5, 3)
-                Priority.MEDIUM -> Triple(-10, -3, 2)
-                Priority.LOW -> Triple(-5, -1, 1)
+                Priority.HIGH -> Triple(-15, -5, (BASE_XP_GAIN * 0.3).toInt())  // 15 XP
+                Priority.MEDIUM -> Triple(-10, -3, (BASE_XP_GAIN * 0.2).toInt())  // 10 XP
+                Priority.LOW -> Triple(-5, -1, (BASE_XP_GAIN * 0.1).toInt())  // 5 XP
             }
         }
     }
@@ -1008,13 +1100,13 @@ class TaskViewModel(
      */
     fun getTasksRequiredForLevel(level: Int): Int {
         return when (level) {
-            in 1..4 -> 10
-            in 5..8 -> 15
-            in 9..14 -> 20
-            in 15..19 -> 25
-            in 20..24 -> 30
-            in 25..29 -> 35
-            else -> 40
+            in 1..4 -> 20
+            in 5..8 -> 25
+            in 9..14 -> 30
+            in 15..19 -> 40
+            in 20..24 -> 50
+            in 25..29 -> 60
+            else -> 100
         }
     }
 
