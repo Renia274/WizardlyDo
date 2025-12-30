@@ -1,4 +1,4 @@
-package com.wizardlydo.app.data.models
+package com.wizardlydo.app.models
 
 data class RecoveryState(
     val email: String = "",

@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.wizardlydo.app.data.models.CustomizationState
+import com.wizardlydo.app.models.CustomizationState
 import com.wizardlydo.app.data.wizard.WizardClass
 import com.wizardlydo.app.screens.customization.comps.GenderSelector
 import com.wizardlydo.app.screens.customization.comps.HairColorSelector

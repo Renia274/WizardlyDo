@@ -1,4 +1,4 @@
-package com.wizardlydo.app.data.models
+package com.wizardlydo.app.models
 
 import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.data.tasks.Task

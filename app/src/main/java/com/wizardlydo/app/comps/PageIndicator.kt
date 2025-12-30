@@ -1,79 +1,48 @@
 package com.wizardlydo.app.comps
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun PageIndicator(
     currentPage: Int,
     totalPages: Int,
     modifier: Modifier = Modifier,
-    showSwipeHint: Boolean = false
 ) {
-    Column(
+    Box(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        contentAlignment = Alignment.Center
     ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            repeat(totalPages) { page ->
-                Box(
-                    modifier = Modifier
-                        .size(if (page == currentPage - 1) 10.dp else 6.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (page == currentPage - 1) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                            }
-                        )
-                        .animateContentSize(
-                            animationSpec = tween(300)
-                        )
-                )
-
-                if (page < totalPages - 1) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
-            }
-        }
-
-        // Current page text
-        Text(
-            text = "Page $currentPage of $totalPages",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 4.dp)
+        // Background circle of page indicator
+        CircularProgressIndicator(
+            progress = { 1f },
+            modifier = Modifier.size(60.dp),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+            strokeWidth = 4.dp,
+            strokeCap = StrokeCap.Round
         )
 
-        // Swipe hint (only show if enabled)
-        if (showSwipeHint) {
-            Text(
-                text = "Scroll to auto-load next",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
+        CircularProgressIndicator(
+            progress = { currentPage.toFloat() / totalPages.toFloat() },
+            modifier = Modifier.size(60.dp),
+            color = MaterialTheme.colorScheme.primary,
+            strokeWidth = 4.dp,
+            strokeCap = StrokeCap.Round
+        )
+
+        Text(
+            text = "$currentPage of $totalPages",
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)  // CHANGED: Same gray color for all text
+        )
     }
 }

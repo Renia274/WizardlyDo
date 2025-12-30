@@ -2,7 +2,7 @@ package com.wizardlydo.app.viewmodel.recovery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wizardlydo.app.data.models.RecoveryState
+import com.wizardlydo.app.models.RecoveryState
 import com.wizardlydo.app.repository.wizard.WizardRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow

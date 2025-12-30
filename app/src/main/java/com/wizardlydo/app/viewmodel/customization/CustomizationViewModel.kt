@@ -2,7 +2,7 @@ package com.wizardlydo.app.viewmodel.customization
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wizardlydo.app.data.models.CustomizationState
+import com.wizardlydo.app.models.CustomizationState
 import com.wizardlydo.app.data.wizard.WizardClass
 import com.wizardlydo.app.repository.wizard.WizardRepository
 import kotlinx.coroutines.flow.MutableStateFlow

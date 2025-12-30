@@ -59,7 +59,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.wizardlydo.app.comps.ErrorMessage
 import com.wizardlydo.app.comps.FullScreenLoading
-import com.wizardlydo.app.data.models.TaskUiState
+import com.wizardlydo.app.models.TaskUiState
 import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.data.tasks.Task
 import com.wizardlydo.app.data.wizard.WizardClass
@@ -100,6 +100,9 @@ fun TaskScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf<Priority?>(null) }
     var isUIVisible by remember { mutableStateOf(true) }
+
+    // Track FAB visibility based on scroll
+    var isFabVisible by remember { mutableStateOf(true) }
 
     val firstTaskId = state.filteredTasks.firstOrNull()?.id
 
@@ -203,9 +206,9 @@ fun TaskScreen(
             },
             floatingActionButton = {
                 AnimatedVisibility(
-                    visible = isUIVisible,
-                    enter = scaleIn(),
-                    exit = scaleOut()
+                    visible = isUIVisible && isFabVisible,
+                    enter = scaleIn() + fadeIn(),
+                    exit = scaleOut() + fadeOut()
                 ) {
                     ExtendedFloatingActionButton(onClick = onCreateTask) {
                         Icon(Icons.Default.Add, "Create Task")
@@ -264,7 +267,6 @@ fun TaskScreen(
                                     onPreviousPage = { viewModel.previousPage() },
                                     onCompleteTask = { taskId ->
                                         if (taskId < 0) {
-                                            // Tutorial task
                                             viewModel.completeTutorialTask(taskId)
                                         } else if (viewModel.isWizardDefeated()) {
                                             viewModel.updateRevivalProgress(taskId) {}
@@ -282,6 +284,9 @@ fun TaskScreen(
                                             viewModel.deleteTaskWithDamage(taskId) {}
                                         }
                                     },
+                                    onScrollStateChanged = { isScrollingDown ->
+                                        isFabVisible = !isScrollingDown
+                                    }
                                 )
                             }
                         }
@@ -398,7 +403,6 @@ fun TaskScreen(
                                 onPreviousPage = { viewModel.previousPage() },
                                 onCompleteTask = { taskId ->
                                     if (taskId < 0) {
-                                        // Tutorial task
                                         viewModel.completeTutorialTask(taskId)
                                     } else if (viewModel.isWizardDefeated()) {
                                         viewModel.updateRevivalProgress(taskId) {}
@@ -416,13 +420,16 @@ fun TaskScreen(
                                         viewModel.deleteTaskWithDamage(taskId) {}
                                     }
                                 },
+                                onScrollStateChanged = { isScrollingDown ->
+                                    isFabVisible = !isScrollingDown
+                                }
                             )
                         }
                     }
                 }
             }
         }
-    } // Close CompositionLocalProvider
+    }
 }
 
 @Composable

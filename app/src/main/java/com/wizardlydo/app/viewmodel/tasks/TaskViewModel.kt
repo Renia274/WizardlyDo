@@ -14,9 +14,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.wizardlydo.app.R
-import com.wizardlydo.app.data.models.EditTaskField
-import com.wizardlydo.app.data.models.EditTaskState
-import com.wizardlydo.app.data.models.TaskUiState
+import com.wizardlydo.app.models.EditTaskField
+import com.wizardlydo.app.models.EditTaskState
+import com.wizardlydo.app.models.TaskUiState
 import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.data.tasks.Task
 import com.wizardlydo.app.data.wizard.WizardProfile

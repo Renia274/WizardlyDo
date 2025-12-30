@@ -1,32 +1,28 @@
 package com.wizardlydo.app.screens.tasks.comps.taskScreensComps
 
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.wizardlydo.app.comps.PageIndicator
 import com.wizardlydo.app.data.tasks.Task
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -48,23 +45,60 @@ fun TaskListSection(
     onCompleteTask: (Int) -> Unit,
     onEditTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
-    tutorialTasks: List<Task> = emptyList()
+    tutorialTasks: List<Task> = emptyList(),
+    onScrollStateChanged: (isScrollingDown: Boolean) -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val lazyListState = rememberLazyListState(
-        initialFirstVisibleItemIndex = 0,
-        initialFirstVisibleItemScrollOffset = 0
-    )
+    val lazyListState = rememberLazyListState()
 
-    var isLoadingPage by remember { mutableStateOf(false) }
     var editingTaskId by remember { mutableStateOf<Int?>(null) }
+    var completedTaskIds by remember { mutableStateOf(setOf<Int>()) }
+    var lastScrollIndex by remember { mutableIntStateOf(0) }
+    var isLoadingPage by remember { mutableStateOf(false) }
 
-    // Combine tutorial tasks + user tasks
-    val allTasks = tutorialTasks + tasks
+    // Track scroll direction
+    val isScrollingDown by remember {
+        derivedStateOf {
+            lazyListState.firstVisibleItemIndex > 0 ||
+                    lazyListState.firstVisibleItemScrollOffset > 50
+        }
+    }
 
-    // Reset editing state when returning from edit screen (tasks list changes)
+    // Notify parent about scroll state
+    LaunchedEffect(isScrollingDown) {
+        onScrollStateChanged(isScrollingDown)
+    }
+
+    // Combine and filter tasks
+    val allTasks = (tutorialTasks + tasks).filterNot { it.id in completedTaskIds }
+
+    // Reset editing state when tasks change
     LaunchedEffect(allTasks.size) {
         editingTaskId = null
+    }
+
+    // Clear completed tasks when page changes
+    LaunchedEffect(currentPage) {
+        completedTaskIds = emptySet()
+        isLoadingPage = false
+    }
+
+    // Detect when scrolled to bottom - load next page
+    LaunchedEffect(lazyListState.layoutInfo, allTasks.size) {
+        val layoutInfo = lazyListState.layoutInfo
+        val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+        val totalItems = allTasks.size
+
+        // If scrolled to last 2 items and not already loading and has more pages
+        if (lastVisibleItemIndex >= totalItems - 2 &&
+            !isLoadingPage &&
+            currentPage < totalPages &&
+            totalItems > 0
+        ) {
+            isLoadingPage = true
+            delay(300) // Debounce
+            onNextPage()
+        }
     }
 
     Column(
@@ -72,14 +106,12 @@ fun TaskListSection(
             .fillMaxHeight()
             .padding(horizontal = 16.dp)
     ) {
-        Box(
-            modifier = Modifier.weight(1f)
-        ) {
+        Box(modifier = Modifier.weight(1f)) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = lazyListState,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 80.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
                 userScrollEnabled = true
             ) {
                 items(
@@ -88,68 +120,50 @@ fun TaskListSection(
                 ) { taskEntity ->
                     val isTutorial = taskEntity.id < 0
 
-                    TaskItem(
-                        taskEntity = taskEntity,
-                        onComplete = {
-                            onCompleteTask(taskEntity.id)
-                            editingTaskId = null
-                        },
-                        onEdit = {
-                            // Don't allow editing tutorial tasks
-                            if (!isTutorial) {
-                                editingTaskId = taskEntity.id
-                                onEditTask(taskEntity.id)
-                            }
-                        },
-                        onDelete = {
-                            // Don't allow deleting tutorial tasks
-                            if (!isTutorial) {
-                                onDeleteTask(taskEntity.id)
-                                editingTaskId = null
-                            }
-                        },
-                        isEditing = editingTaskId == taskEntity.id
-                    )
+                    Box {
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = taskEntity.id !in completedTaskIds,
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            TaskItem(
+                                taskEntity = taskEntity,
+                                onComplete = {
+                                    completedTaskIds = completedTaskIds + taskEntity.id
+                                    coroutineScope.launch {
+                                        delay(300)
+                                        onCompleteTask(taskEntity.id)
+                                    }
+                                    editingTaskId = null
+                                },
+                                onEdit = {
+                                    if (!isTutorial) {
+                                        editingTaskId = taskEntity.id
+                                        onEditTask(taskEntity.id)
+                                    }
+                                },
+                                onDelete = {
+                                    if (!isTutorial) {
+                                        completedTaskIds = completedTaskIds + taskEntity.id
+                                        coroutineScope.launch {
+                                            delay(300)
+                                            onDeleteTask(taskEntity.id)
+                                        }
+                                        editingTaskId = null
+                                    }
+                                },
+                                isEditing = editingTaskId == taskEntity.id
+                            )
+                        }
+                    }
                 }
 
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
-
-            // Auto-load next page when reaching bottom
-            if (allTasks.isNotEmpty()) {
-//                LaunchedEffect(lazyListState) {
-//                    snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-//                        .distinctUntilChanged()
-//                        .collect { lastVisibleIndex ->
-//                            if (lastVisibleIndex == allTasks.size - 1 && !isLoadingPage && currentPage < totalPages) {
-//                                isLoadingPage = true
-//                                onNextPage()
-//                                delay(500)
-//                                isLoadingPage = false
-//                            }
-//                        }
-//                }
-
-                // Show loading indicator when fetching next page
-                if (isLoadingPage && currentPage < totalPages) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = 40.dp),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 3.dp
-                        )
-                    }
-                }
-            }
         }
 
+        // Page indicator (always shows current page from ViewModel state)
         if (totalPages > 1) {
             Card(
                 modifier = Modifier
@@ -160,59 +174,16 @@ fun TaskListSection(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
+                    contentAlignment = Alignment.Center
                 ) {
-                    IconButton(
-                        onClick = {
-                            if (currentPage > 1) {
-                                coroutineScope.launch {
-                                    onPreviousPage()
-                                }
-                            }
-                        },
-                        enabled = currentPage > 1
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Previous page",
-                            tint = if (currentPage > 1)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                        )
-                    }
-
                     PageIndicator(
                         currentPage = currentPage,
-                        totalPages = totalPages,
-                        modifier = Modifier.weight(1f),
-                        showSwipeHint = true
+                        totalPages = totalPages
                     )
-
-                    IconButton(
-                        onClick = {
-                            if (currentPage < totalPages) {
-                                coroutineScope.launch {
-                                    onNextPage()
-                                }
-                            }
-                        },
-                        enabled = currentPage < totalPages
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = "Next page",
-                            tint = if (currentPage < totalPages)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                        )
-                    }
                 }
             }
         }

@@ -42,7 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.wizardlydo.app.R
-import com.wizardlydo.app.data.models.SettingsState
+import com.wizardlydo.app.models.SettingsState
 import com.wizardlydo.app.screens.settings.comps.DeleteAccountDialog
 import com.wizardlydo.app.screens.settings.comps.PasswordChangeDialog
 import com.wizardlydo.app.screens.settings.comps.SettingsActionItem

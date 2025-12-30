@@ -3,7 +3,7 @@ package com.wizardlydo.app.viewmodel.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
-import com.wizardlydo.app.data.models.LoginState
+import com.wizardlydo.app.models.LoginState
 import com.wizardlydo.app.repository.wizard.WizardRepository
 import com.wizardlydo.app.utilities.RememberMeManager
 import kotlinx.coroutines.flow.MutableStateFlow

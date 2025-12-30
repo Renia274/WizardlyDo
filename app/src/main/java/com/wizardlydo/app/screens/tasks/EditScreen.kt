@@ -44,7 +44,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.wizardlydo.app.data.models.EditTaskField
+import com.wizardlydo.app.models.EditTaskField
 import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.screens.tasks.comps.taskScreensComps.CategorySelector
 import com.wizardlydo.app.screens.tasks.comps.taskScreensComps.DueDateSelector

@@ -3,7 +3,7 @@ package com.wizardlydo.app.viewmodel.signup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
-import com.wizardlydo.app.data.models.WizardSignUpState
+import com.wizardlydo.app.models.WizardSignUpState
 import com.wizardlydo.app.data.wizard.WizardClass
 import com.wizardlydo.app.data.wizard.WizardProfile
 import com.wizardlydo.app.providers.SignInProvider

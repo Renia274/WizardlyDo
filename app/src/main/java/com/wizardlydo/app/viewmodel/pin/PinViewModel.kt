@@ -2,7 +2,7 @@ package com.wizardlydo.app.viewmodel.pin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wizardlydo.app.data.models.PinState
+import com.wizardlydo.app.models.PinState
 import com.wizardlydo.app.repository.pin.PinRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
