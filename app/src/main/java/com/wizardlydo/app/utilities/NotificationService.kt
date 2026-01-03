@@ -61,7 +61,7 @@ class TaskNotificationService(private val context: Context) {
             .setGroup(TASK_GROUP_KEY)
             .addAction(R.drawable.ic_check, "Complete", completePendingIntent)
 
-        //  high priority tasks
+        // High priority tasks
         if (task.priority == Priority.HIGH) {
             builder.setColorized(true)
                 .setColor(ContextCompat.getColor(context, R.color.high_priority))
@@ -85,12 +85,13 @@ class TaskNotificationService(private val context: Context) {
         notificationManager.notify(task.id, builder.build())
     }
 
-
-    fun showTaskCompletionNotification(
-        task: Task,
+    /**
+     * Show level-up notification with summary of what user accomplished
+     */
+    fun showLevelUpNotification(
+        newLevel: Int,
         wizardProfile: WizardProfile,
-        hpGained: Int?=null,
-        staminaGained: Int?=null
+        tasksCompletedThisLevel: Int
     ) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -98,143 +99,57 @@ class TaskNotificationService(private val context: Context) {
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            task.id + 2000,
+            newLevel + 3000,
             intent,
             PendingIntent.FLAG_IMMUTABLE
         )
 
-
-        val expPerLevel = 1000
-        val currentLevel = wizardProfile.level
-        val currentExp = wizardProfile.experience
-        val expToNextLevel = expPerLevel - currentExp
-        val expPerTask = expPerLevel / getTasksRequiredForLevel(currentLevel)
-        val tasksToNextLevel = (expToNextLevel / expPerTask.toFloat()).toInt().coerceAtLeast(1)
-
+        // Calculate previous level range
+        val previousLevel = newLevel - 1
+        val levelRange = when (previousLevel) {
+            in 1..4 -> "1-4"
+            in 5..8 -> "5-8"
+            in 9..14 -> "9-14"
+            in 15..19 -> "15-19"
+            in 20..24 -> "20-24"
+            in 25..29 -> "25-29"
+            else -> "30"
+        }
 
         val style = NotificationCompat.BigTextStyle()
-            .setBigContentTitle("Task Completed!")
+            .setBigContentTitle("🎉 Level $newLevel Unlocked!")
             .bigText(
                 """
-            ${task.title} has been completed!
+            Congratulations! You've reached Level $newLevel!
             
-          
-            Current HP: ${wizardProfile.health}/${wizardProfile.maxHealth}
-            Current Stamina: ${wizardProfile.stamina}/100
-            Level: $currentLevel (${tasksToNextLevel} set of tasks to next level)
+            Level Set $levelRange Summary:
+            ✓ Completed $tasksCompletedThisLevel tasks
+            ✓ HP: ${wizardProfile.health}/${wizardProfile.maxHealth}
+            ✓ Stamina: ${wizardProfile.stamina}/${wizardProfile.maxStamina}
             
-            Keep up the good work!
+            Keep up the amazing work!
         """.trimIndent()
             )
 
-        // Set notification color based on priority
-        val color = when (task.priority) {
-            Priority.HIGH -> R.color.high_priority
-            Priority.MEDIUM -> R.color.medium_priority
-            Priority.LOW -> R.color.low_priority
-        }
-
         val builder = NotificationCompat.Builder(context, TASK_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_complete)
-            .setContentTitle("Task Completed!")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentTitle("Level $newLevel Achieved!")
+            .setContentText("Tap to see your progress")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setColorized(true)
-            .setColor(ContextCompat.getColor(context, color))
+            .setColor(ContextCompat.getColor(context, R.color.high_priority))
             .setStyle(style)
+            .setVibrate(longArrayOf(0, 500, 200, 500))
 
-        notificationManager.notify(task.id + 200000, builder.build())
-    }
-
-    private fun getTasksRequiredForLevel(level: Int): Int {
-        return when (level) {
-            in 1..4 -> 10
-            in 5..8 -> 15
-            in 9..14 -> 20
-            in 15..19 -> 25
-            in 20..24 -> 30
-            in 25..29 -> 35
-            else -> 40 // Level 30+
-        }
-    }
-
-
-
-
-    fun showTaskCreatedNotification(task: Task) {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra("TASK_ID", task.id)
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            task.id + 1000,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val bigTextStyle = NotificationCompat.BigTextStyle()
-            .bigText("""
-            ${task.description}
-            
-            Priority: ${task.priority.name}
-            ${task.category?.let { "Category: $it" } ?: ""}
-        """.trimIndent())
-            .setBigContentTitle("New Task Created")
-
-        // Add due date information if available
-        task.dueDate?.let {
-            val daysRemaining = task.getDaysRemaining() ?: 0
-            if (daysRemaining > 0) {
-                bigTextStyle.setSummaryText("Due in $daysRemaining day${if (daysRemaining != 1) "s" else ""}")
-            } else {
-                bigTextStyle.setSummaryText("Due today!")
-            }
-        }
-
-        val builder = NotificationCompat.Builder(context, TASK_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification_task)
-            .setContentTitle("New Task: ${task.title}")
-            .setContentText("Task has been successfully created")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setStyle(bigTextStyle)
-
-        // color based on priority
-        when (task.priority) {
-            Priority.HIGH -> {
-                builder.setColorized(true)
-                    .setColor(ContextCompat.getColor(context, R.color.high_priority))
-            }
-
-            Priority.MEDIUM -> {
-                builder.setColorized(true)
-                    .setColor(ContextCompat.getColor(context, R.color.medium_priority))
-            }
-
-            Priority.LOW -> {
-                builder.setColorized(true)
-                    .setColor(ContextCompat.getColor(context, R.color.low_priority))
-            }
-        }
-
-        notificationManager.notify(task.id + 100000, builder.build())
+        notificationManager.notify(newLevel + 400000, builder.build())
     }
 
     fun scheduleTaskNotification(task: Task) {
         task.dueDate?.let { dueDate ->
             val currentTime = System.currentTimeMillis()
-
-            // Calculate the notification times
-            // 1. If due date is more than 3 days away, schedule for 3 days before
-            // 2. If due date is less than 3 days away but more than 1 day, schedule for 1 day before
-            // 3. If due date is less than 1 day away, schedule for 1 hour before
-            // 4. Also schedule for the exact due time
 
             val threeDaysInMillis = 3 * 24 * 60 * 60 * 1000L
             val oneDayInMillis = 24 * 60 * 60 * 1000L
@@ -245,23 +160,20 @@ class TaskNotificationService(private val context: Context) {
             if (timeUntilDue > 0) {
                 val scheduleTimes = mutableListOf<Long>()
 
-                // Add specific reminders based on how far away the due date is
                 if (timeUntilDue > threeDaysInMillis) {
-                    scheduleTimes.add(dueDate - threeDaysInMillis) // 3 days before
+                    scheduleTimes.add(dueDate - threeDaysInMillis)
                 }
 
                 if (timeUntilDue > oneDayInMillis) {
-                    scheduleTimes.add(dueDate - oneDayInMillis) // 1 day before
+                    scheduleTimes.add(dueDate - oneDayInMillis)
                 }
 
                 if (timeUntilDue > oneHourInMillis) {
-                    scheduleTimes.add(dueDate - oneHourInMillis) // 1 hour before
+                    scheduleTimes.add(dueDate - oneHourInMillis)
                 }
 
-                // Add exact due time reminder
                 scheduleTimes.add(dueDate)
 
-                // Schedule each notification
                 scheduleTimes.forEachIndexed { index, scheduleTime ->
                     val delayMillis = scheduleTime - currentTime
                     if (delayMillis > 0) {
@@ -291,7 +203,7 @@ class TaskNotificationService(private val context: Context) {
         return dueDate?.let { dueDateMillis ->
             val currentTime = System.currentTimeMillis()
             val diff = dueDateMillis - currentTime
-            TimeUnit.MILLISECONDS.toDays(diff).toInt().coerceAtLeast(0) + 1 // +1 to count current partial day
+            TimeUnit.MILLISECONDS.toDays(diff).toInt().coerceAtLeast(0) + 1
         }
     }
 

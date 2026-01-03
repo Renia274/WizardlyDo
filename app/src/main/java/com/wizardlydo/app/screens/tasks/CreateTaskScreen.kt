@@ -44,6 +44,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.data.tasks.Task
 import com.wizardlydo.app.screens.tasks.comps.taskScreensComps.CategorySelector
@@ -55,11 +60,6 @@ import com.wizardlydo.app.screens.tasks.comps.taskScreensComps.TaskTitleField
 import com.wizardlydo.app.ui.theme.WizardlyDoTheme
 import com.wizardlydo.app.utilities.TaskNotificationService
 import com.wizardlydo.app.viewmodel.tasks.TaskViewModel
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.PermissionState
-import com.google.accompanist.permissions.PermissionStatus
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
@@ -99,7 +99,6 @@ fun CreateTaskScreen(
                 coroutineScope.launch {
                     viewModel.createTask(task)
 
-                    taskNotificationService.showTaskCreatedNotification(task)
 
                     // If the task has a due date, schedule future reminder notifications
                     if (task.dueDate != null) {

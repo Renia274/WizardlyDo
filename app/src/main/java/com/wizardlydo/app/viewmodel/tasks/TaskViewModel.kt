@@ -6,7 +6,6 @@ import android.media.RingtoneManager
 import android.media.SoundPool
 import android.util.Log
 import android.widget.Toast
-import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
@@ -14,15 +13,14 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.wizardlydo.app.R
-import com.wizardlydo.app.models.EditTaskField
-import com.wizardlydo.app.models.EditTaskState
-import com.wizardlydo.app.models.TaskUiState
 import com.wizardlydo.app.data.tasks.Priority
 import com.wizardlydo.app.data.tasks.Task
 import com.wizardlydo.app.data.wizard.WizardProfile
+import com.wizardlydo.app.models.EditTaskField
+import com.wizardlydo.app.models.EditTaskState
+import com.wizardlydo.app.models.TaskUiState
 import com.wizardlydo.app.repository.tasks.TaskRepository
 import com.wizardlydo.app.repository.wizard.WizardRepository
-import com.wizardlydo.app.room.WizardDatabase
 import com.wizardlydo.app.utilities.TaskNotificationService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -62,6 +60,7 @@ class TaskViewModel(
     private var taskNotificationService: TaskNotificationService? = null
 
     private val pageSize = 10
+    private val paginationThreshold = 50
     private val currentPage = MutableStateFlow(1)
 
     private var allTasks = listOf<Task>()
@@ -114,7 +113,7 @@ class TaskViewModel(
      * Total tasks to reach Level 30: ~1,210 tasks (challenging but achievable)
      *
      * Examples:
-     * - 75 XP (1 HIGH) → 75÷50 = 1 task shown ✅
+     * - 75 XP (1 HIGH) → 75÷50 = 1 task shown
      * - 150 XP (2 HIGH) → 150÷50 = 3 tasks shown (bonus progress!)
      * - 410 XP → 410÷50 = 8 tasks shown
      *
@@ -146,97 +145,7 @@ class TaskViewModel(
         return Pair(tasksCompleted, tasksPerLevel)
     }
 
-    /**
-     * TEMPORARY: Fix XP to match task count
-     * This retroactively calculates what XP should be based on completed tasks
-     */
-    fun fixXPSync() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val userId = wizardRepository.getCurrentUserId() ?: return@launch
-                val wizardProfile =
-                    wizardRepository.getWizardProfile(userId).getOrNull() ?: return@launch
 
-                // Calculate what XP SHOULD be based on task count
-                val tasksCompleted = wizardProfile.totalTasksCompleted
-                val expectedXP = tasksCompleted * 50  // 50 XP per task average
-
-                Log.d(
-                    "TaskViewModel",
-                    "Fixing XP: $tasksCompleted tasks should give $expectedXP XP"
-                )
-
-                // Calculate new level and remaining XP
-                var newLevel = 1
-                var remainingXP = expectedXP
-
-                while (remainingXP >= 1000 && newLevel < 30) {
-                    remainingXP -= 1000
-                    newLevel++
-                }
-
-                Log.d("TaskViewModel", "New Level: $newLevel, Remaining XP: $remainingXP")
-
-                val fixedProfile = wizardProfile.copy(
-                    level = newLevel,
-                    experience = remainingXP,
-                    maxHealth = WizardProfile.calculateMaxHealth(newLevel),
-                    maxStamina = WizardProfile.calculateMaxStamina(newLevel),
-                    health = WizardProfile.calculateMaxHealth(newLevel),
-                    stamina = WizardProfile.calculateMaxStamina(newLevel)
-                )
-
-                wizardRepository.updateWizardProfile(userId, fixedProfile)
-
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        context,
-                        "XP synced! $tasksCompleted tasks = Level $newLevel with $remainingXP XP",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    loadData()
-                }
-            } catch (e: Exception) {
-                Log.e("TaskViewModel", "XP fix failed: ${e.message}")
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Failed to fix XP: ${e.message}", Toast.LENGTH_SHORT)
-                        .show()
-                }
-            }
-        }
-    }
-
-    /**
-     * Update toast to show actual task progress
-     */
-    fun showTaskProgressToast(profile: WizardProfile) {
-        val (tasksCompleted, tasksNeeded) = getActualTaskProgress(profile)
-        val currentLevel = profile.level
-
-        val levelRange = when (currentLevel) {
-            in 1..4 -> "1-4"
-            in 5..8 -> "5-8"
-            in 9..14 -> "9-14"
-            in 15..19 -> "15-19"
-            in 20..24 -> "20-24"
-            in 25..29 -> "25-29"
-            else -> "30"
-        }
-
-        val message = buildString {
-            append("Level Set $levelRange Progress:\n")
-            append("Tasks completed: $tasksCompleted / $tasksNeeded\n")
-            append("Current Level: $currentLevel\n")
-            append("Total XP: ${profile.experience} / 1000\n")
-            if (tasksCompleted < tasksNeeded) {
-                append("\nComplete ${tasksNeeded - tasksCompleted} more tasks to advance!")
-            } else {
-                append("\nReady for next level set!")
-            }
-        }
-
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-    }
 
     /**
      * Calculate XP needed for next task progress milestone
@@ -264,77 +173,7 @@ class TaskViewModel(
         return Triple(xpNeededForNextTask, nextTaskMilestone, tasksRequiredForLevel)
     }
 
-    /**
-     * Show toast message about XP progress
-     */
-    fun showXPProgressToast(profile: WizardProfile) {
-        val (xpNeeded, nextMilestone, totalTasks) = getXPNeededForNextTaskProgress(profile)
-        val currentTasks = getXPBasedTaskProgress(profile).first
 
-        val message = when {
-            currentTasks >= totalTasks -> {
-                "Complete all $totalTasks tasks to level up!"
-            }
-
-            xpNeeded <= 0 -> {
-                "You've reached ${currentTasks}/${totalTasks} tasks for this level!"
-            }
-
-            else -> {
-                "You need $xpNeeded more XP to reach ${nextMilestone}/${totalTasks} tasks"
-            }
-        }
-
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-    }
-
-    /**
-     * Show detailed XP breakdown toast
-     */
-    fun showDetailedXPToast(profile: WizardProfile) {
-        val currentLevel = profile.level
-        val currentExperience = profile.experience
-        val tasksRequired = getTasksRequiredForLevel(currentLevel)
-        val expPerTask = if (tasksRequired > 0) EXP_PER_LEVEL / tasksRequired else 0
-        val currentTasks =
-            if (expPerTask > 0) (currentExperience / expPerTask).coerceAtMost(tasksRequired) else 0
-        val (xpNeeded, nextMilestone, totalTasks) = getXPNeededForNextTaskProgress(profile)
-
-        val message = buildString {
-            append("Level $currentLevel Progress:\n")
-            append("Current: ${currentTasks}/${totalTasks} tasks (${currentExperience}/${EXP_PER_LEVEL} XP)\n")
-            append("Each task gives ~${expPerTask} XP\n")
-            if (xpNeeded > 0 && currentTasks < totalTasks) {
-                append("Need $xpNeeded XP for ${nextMilestone}/${totalTasks}")
-            } else {
-                append("Ready to level up!")
-            }
-        }
-
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-    }
-
-    private fun clearDatabaseOnce() {
-        val sharedPrefs = context.getSharedPreferences("wizard_app_prefs", Context.MODE_PRIVATE)
-        val hasCleared = sharedPrefs.getBoolean("database_cleared_v1", false)
-
-        if (!hasCleared) {
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    val database = WizardDatabase.getDatabase(context)
-                    database.clearAllTables()
-
-                    sharedPrefs.edit {
-                        putBoolean("database_cleared_v1", true)
-                    }
-
-                    Log.d("TaskViewModel", "Database cleared once successfully")
-                } catch (e: Exception) {
-                    Log.e("TaskViewModel", "Failed to clear database: ${e.message}")
-                }
-            }
-        }
-    }
 
     init {
         viewModelScope.launch {
@@ -366,6 +205,8 @@ class TaskViewModel(
         if (currentPage.value > 1) {
             currentPage.value--
             updateFilteredTasks()
+        } else {
+            Log.d("TaskViewModel", "Already at page 1, cannot go back")
         }
     }
 
@@ -413,17 +254,27 @@ class TaskViewModel(
     private fun updateFilteredTasks() {
         val filteredTasks = applySearchFiltersToTasks(allTasks)
 
-        val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
+        // Only paginate if we have more than the threshold
+        val shouldPaginate = filteredTasks.size > paginationThreshold
+
+        val totalPages = if (shouldPaginate) {
+            (filteredTasks.size + pageSize - 1) / pageSize
+        } else {
+            1  // Single page if under threshold
+        }
+
         val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
-        val start = (currentPageValue - 1) * pageSize
-        val end = minOf(start + pageSize, filteredTasks.size)
-
-        val paginatedTasks = if (filteredTasks.isEmpty()) {
-            emptyList()
+        val paginatedTasks = if (shouldPaginate) {
+            // Paginate when over threshold
+            val start = (currentPageValue - 1) * pageSize
+            val end = minOf(start + pageSize, filteredTasks.size)
+            if (filteredTasks.isEmpty()) emptyList() else filteredTasks.subList(start, end)
         } else {
-            filteredTasks.subList(start, end)
+            // Show all tasks when under threshold
+            filteredTasks
         }
+
 
         mutableState.update {
             it.copy(
@@ -451,12 +302,10 @@ class TaskViewModel(
             }
         }
 
-        // Apply priority filter
         selectedPriority.value?.let { priority ->
             filteredTasks = filteredTasks.filter { it.priority == priority }
         }
 
-        // Apply category filter
         selectedCategory.value?.let { category ->
             filteredTasks = filteredTasks.filter { it.category == category }
         }
@@ -519,24 +368,18 @@ class TaskViewModel(
                         profileRecentlyUpdated = false
                     }
 
-                    Log.d("TaskViewModel", "Using flag - timeSinceUpdate: ${timeSinceUpdate}ms, stillRecent: $stillRecent")
                     stillRecent
                 } else {
                     false
                 }
 
-                Log.d("TaskViewModel", "loadData - wasRecentlyUpdated: $wasRecentlyUpdated, currentXP: ${currentProfile?.experience}")
-
                 // Only reload wizard profile if it wasn't recently updated
                 val wizardProfile = if (wasRecentlyUpdated && currentProfile != null) {
-                    Log.d("TaskViewModel", "Using existing profile (recently updated) - XP: ${currentProfile.experience}")
                     currentProfile
                 } else {
-                    Log.d("TaskViewModel", "Loading fresh profile from database")
                     try {
                         wizardRepository.getWizardProfile(userId).getOrThrow()
                     } catch (e: Exception) {
-                        Log.e("TaskViewModel", "Failed to get wizard profile: ${e.message}")
                         mutableState.update {
                             it.copy(
                                 error = "Failed to load wizard profile: ${e.message}",
@@ -550,7 +393,6 @@ class TaskViewModel(
                 val tasks = try {
                     taskRepository.getAllTasks(userId)
                 } catch (e: Exception) {
-                    Log.e("TaskViewModel", "Failed to get tasks: ${e.message}")
                     mutableState.update { it.copy(error = "Failed to load tasks: ${e.message}") }
                     emptyList()
                 }
@@ -559,17 +401,27 @@ class TaskViewModel(
 
                 val filteredTasks = applySearchFiltersToTasks(tasks)
 
-                val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
+                // Only paginate if we have more than the threshold
+                val shouldPaginate = filteredTasks.size > paginationThreshold
+
+                val totalPages = if (shouldPaginate) {
+                    (filteredTasks.size + pageSize - 1) / pageSize
+                } else {
+                    1  // Single page if under threshold
+                }
+
                 val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
-                val start = (currentPageValue - 1) * pageSize
-                val end = minOf(start + pageSize, filteredTasks.size)
-
-                val paginatedTasks = if (filteredTasks.isEmpty()) {
-                    emptyList()
+                val paginatedTasks = if (shouldPaginate) {
+                    // Paginate when over threshold
+                    val start = (currentPageValue - 1) * pageSize
+                    val end = minOf(start + pageSize, filteredTasks.size)
+                    if (filteredTasks.isEmpty()) emptyList() else filteredTasks.subList(start, end)
                 } else {
-                    filteredTasks.subList(start, end)
+                    // Show all tasks when under threshold
+                    filteredTasks
                 }
+
 
                 val profileToUse = if (wizardProfile != null) {
                     if (wizardProfile.outfit.isBlank() && currentProfile?.outfit?.isNotBlank() == true) {
@@ -581,7 +433,6 @@ class TaskViewModel(
                     currentProfile
                 }
 
-                Log.d("TaskViewModel", "loadData final - XP: ${profileToUse?.experience}, totalTasks: ${profileToUse?.totalTasksCompleted}")
 
                 mutableState.update {
                     it.copy(
@@ -726,6 +577,25 @@ class TaskViewModel(
                     if (newLevel == 30) {
                         checkForLevel30Achievement(newLevel)
                     }
+
+                    // Calculate tasks completed in previous level for notification
+                    val tasksCompletedInLevel = getTasksRequiredForLevel(newLevel - 1)
+
+                    // Show level-up notification AFTER updating profile
+                    viewModelScope.launch {
+                        delay(500) // Small delay to ensure profile is updated
+                        taskNotificationService?.showLevelUpNotification(
+                            newLevel = newLevel,
+                            wizardProfile = wizardProfile.copy(
+                                level = newLevel,
+                                health = newHealth,
+                                maxHealth = newMaxHealth,
+                                stamina = newStamina,
+                                maxStamina = newMaxStamina
+                            ),
+                            tasksCompletedThisLevel = tasksCompletedInLevel
+                        )
+                    }
                 }
 
                 val newTotalTasksCompleted = wizardProfile.totalTasksCompleted + 1
@@ -747,36 +617,19 @@ class TaskViewModel(
                     lastTaskCompleted = Timestamp.now()
                 )
 
-                Log.d(
-                    "TaskViewModel",
-                    "UPDATED PROFILE - totalTasksCompleted: ${updatedProfile.totalTasksCompleted}, XP: ${updatedProfile.experience}"
-                )
 
                 // Update task completion status
                 taskRepository.updateTaskCompletionStatus(taskId, true)
 
-                // Update wizard profile in database (background)
+                // Update wizard profile in database
                 wizardRepository.updateWizardProfile(userId, updatedProfile)
 
-                Log.d("TaskViewModel", "Profile updated in repository")
 
-                // Show notification
-                notificationService?.showTaskCompletionNotification(
-                    task = task,
-                    wizardProfile = updatedProfile,
-                    hpGained = actualHpGain,
-                    staminaGained = actualStaminaGain
-                )
-
-                // UPDATE UI IMMEDIATELY with new profile (don't wait for database)
+                //immediate update the profile without update from database
                 mutableState.update { currentState ->
                     val newState = currentState.copy(
                         wizardProfile = Result.success(updatedProfile),
                         isLoading = false
-                    )
-                    Log.d(
-                        "TaskViewModel",
-                        "State updated - profile totalTasks: ${newState.wizardProfile?.getOrNull()?.totalTasksCompleted}, XP: ${newState.wizardProfile?.getOrNull()?.experience}"
                     )
                     newState
                 }
@@ -789,7 +642,6 @@ class TaskViewModel(
                 loadTasksOnly(userId)
 
             } catch (e: Exception) {
-                Log.e("TaskViewModel", "Completion failed: ${e.message}", e)
                 mutableState.update {
                     it.copy(
                         error = "Completion failed: ${e.message}",
@@ -818,17 +670,27 @@ class TaskViewModel(
 
             val filteredTasks = applySearchFiltersToTasks(tasks)
 
-            val totalPages = (filteredTasks.size + pageSize - 1) / pageSize
+            // Only paginate if we have more than the threshold
+            val shouldPaginate = filteredTasks.size > paginationThreshold
+
+            val totalPages = if (shouldPaginate) {
+                (filteredTasks.size + pageSize - 1) / pageSize
+            } else {
+                1  // Single page if under threshold
+            }
+
             val currentPageValue = currentPage.value.coerceIn(1, maxOf(1, totalPages))
 
-            val start = (currentPageValue - 1) * pageSize
-            val end = minOf(start + pageSize, filteredTasks.size)
-
-            val paginatedTasks = if (filteredTasks.isEmpty()) {
-                emptyList()
+            val paginatedTasks = if (shouldPaginate) {
+                // Paginate when over threshold
+                val start = (currentPageValue - 1) * pageSize
+                val end = minOf(start + pageSize, filteredTasks.size)
+                if (filteredTasks.isEmpty()) emptyList() else filteredTasks.subList(start, end)
             } else {
-                filteredTasks.subList(start, end)
+                // Show all tasks when under threshold
+                filteredTasks
             }
+
 
             mutableState.update { state ->
                 state.copy(
@@ -1076,24 +938,6 @@ class TaskViewModel(
         mutableEditTaskState.value = EditTaskState()
     }
 
-    /**
-     * Calculate XP-based task progress for current level
-     */
-    fun getXPBasedTaskProgress(profile: WizardProfile): Pair<Int, Int> {
-        val currentLevel = profile.level
-        val currentExperience = profile.experience
-
-        val tasksRequiredForLevel = getTasksRequiredForLevel(currentLevel)
-        val expPerTask = if (tasksRequiredForLevel > 0) EXP_PER_LEVEL / tasksRequiredForLevel else 0
-
-        val tasksCompleted = if (expPerTask > 0) {
-            (currentExperience / expPerTask).coerceAtMost(tasksRequiredForLevel)
-        } else {
-            0
-        }
-
-        return Pair(tasksCompleted, tasksRequiredForLevel)
-    }
 
     /**
      * Get tasks required for specific level
@@ -1110,23 +954,7 @@ class TaskViewModel(
         }
     }
 
-    fun getTasksCompletedForLevel(profile: WizardProfile): Int {
-        val currentLevelExp = profile.experience
-        val expPerTaskForLevel = calculateExpPerTask(profile.level)
-        val tasksCompleted = if (expPerTaskForLevel > 0) {
-            currentLevelExp / expPerTaskForLevel
-        } else {
-            0
-        }
-        val totalTasksForLevel = getTasksRequiredForLevel(profile.level)
 
-        return tasksCompleted.coerceAtMost(totalTasksForLevel).coerceAtLeast(0)
-    }
-
-    private fun calculateExpPerTask(level: Int): Int {
-        val tasksRequired = getTasksRequiredForLevel(level)
-        return if (tasksRequired > 0) EXP_PER_LEVEL / tasksRequired else 0
-    }
 
     /**
      * Check if wizard is currently defeated (health <= 0)
